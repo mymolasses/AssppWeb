@@ -31,6 +31,6 @@ npm run dev
 
 ## Notes
 
-- `wrangler.jsonc` points at `../Dockerfile` to reuse the existing app build.
+- `wrangler.jsonc` uses `ghcr.io/lakr233/assppweb:latest` so one-click template deploy works even when only this `cloudflare/` folder is copied.
 - The worker routes all HTTP and WebSocket traffic to one named container instance (`main`) to keep app state consistent.
 - Container filesystem is ephemeral. Compiled packages may be lost when the container stops and restarts.

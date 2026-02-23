@@ -6,7 +6,7 @@
   "containers": [
     {
       "class_name": "AssppContainer",
-      "image": "../Dockerfile",
+      "image": "ghcr.io/lakr233/assppweb:latest",
       "instance_type": "standard-1",
       "max_instances": 1
     }

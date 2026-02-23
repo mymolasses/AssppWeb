@@ -18,7 +18,7 @@ AssppWeb uses a zero-trust design where the server **never sees your Apple crede
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Lakr233/AssppWeb/tree/main/cloudflare)
 
-This uses Cloudflare Workers + Containers and reuses this repo's Docker build.
+This uses Cloudflare Workers + Containers with the published image `ghcr.io/lakr233/assppweb:latest`.
 
 ### Self-Host with Docker Compose
 
