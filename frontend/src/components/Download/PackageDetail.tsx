@@ -1,5 +1,4 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
@@ -11,7 +10,6 @@ import { getInstallInfo } from "../../api/install";
 export default function PackageDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isQRVisible, setIsQRVisible] = useState(false);
   const { tasks, deleteDownload, pauseDownload, resumeDownload, hashToEmail } =
     useDownloads();
 
@@ -109,20 +107,25 @@ export default function PackageDetail() {
           {isCompleted && (
             <>
               {installInfo && (
-                <>
+                <div className="relative group flex items-center">
                   <a
                     href={installInfo.installUrl}
-                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                    className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                   >
                     Install on Device
                   </a>
-                  <button
-                    onClick={() => setIsQRVisible((prev) => !prev)}
-                    className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    {isQRVisible ? "Hide QR Code" : "Show QR Code"}
-                  </button>
-                </>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
+                    <div className="bg-white p-2 rounded-lg shadow-xl border border-gray-200 flex flex-col items-center">
+                      <QRCodeSVG
+                        value={installInfo.installUrl}
+                        size={128}
+                        className="mb-1"
+                      />
+                      <span className="text-xs text-gray-500 mt-1">Scan to install</span>
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-gray-200 transform rotate-45"></div>
+                    </div>
+                  </div>
+                </div>
               )}
               <a
                 href={`/api/packages/${task.id}/file?accountHash=${encodeURIComponent(task.accountHash)}`}
@@ -156,17 +159,6 @@ export default function PackageDetail() {
             Delete
           </button>
           </div>
-
-          {isCompleted && installInfo && isQRVisible && (
-            <div className="w-fit bg-white border border-gray-200 rounded-lg p-3">
-              <QRCodeSVG
-                value={installInfo.installUrl}
-                size={160}
-                level="H"
-                includeMargin={true}
-              />
-            </div>
-          )}
         </div>
       </div>
     </PageContainer>
