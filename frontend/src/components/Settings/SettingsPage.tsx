@@ -185,12 +185,16 @@ export default function SettingsPage() {
               </label>
               <select
                 id="language"
-                value={i18n.language.split("-")[0]} // Normalizes en-US to en
+                value={i18n.resolvedLanguage || "en-US"}
                 onChange={(e) => i18n.changeLanguage(e.target.value)}
                 className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
-                <option value="en">English</option>
-                <option value="zh">简体中文</option>
+                <option value="en-US">English (US)</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="ru">Русский</option>
               </select>
             </div>
           </div>
