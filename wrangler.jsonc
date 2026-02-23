@@ -1,12 +1,14 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "assppweb",
-  "main": "src/index.ts",
+  "main": "cloudflare/src/index.ts",
   "compatibility_date": "2026-02-23",
+  "build": {
+    "command": "npm install --no-save --no-package-lock @cloudflare/containers@0.1.0"
+  },
   "containers": [
     {
       "class_name": "AssppContainer",
-      "image": "../Dockerfile",
+      "image": "ghcr.io/lakr233/assppweb:latest",
       "instance_type": "standard-1",
       "max_instances": 1
     }

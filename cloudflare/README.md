@@ -1,6 +1,6 @@
 # Cloudflare Deploy (Workers + Containers)
 
-This folder contains an isolated Cloudflare deployment target for AssppWeb.
+This folder contains the Worker source used by the root `wrangler.jsonc`.
 
 ## Why Containers
 
@@ -15,22 +15,39 @@ Cloudflare Containers runs the existing Dockerized app with minimal changes.
 ## Deploy
 
 ```bash
-cd cloudflare
-npm install
 npx wrangler login
-npm run deploy
+npx wrangler deploy
 ```
 
 For local preview on Cloudflare runtime:
 
 ```bash
-cd cloudflare
-npm install
-npm run dev
+npx wrangler dev
 ```
 
 ## Notes
 
-- `wrangler.jsonc` points at `../Dockerfile` to reuse the existing app build.
+- Deploy configuration lives in the repository root `wrangler.jsonc`.
+- `cloudflare/src/index.ts` imports `@cloudflare/containers`.
+- Root `wrangler.jsonc` runs a build command to install `@cloudflare/containers` automatically before deploy, so CI can still run plain `npx wrangler deploy`.
 - The worker routes all HTTP and WebSocket traffic to one named container instance (`main`) to keep app state consistent.
 - Container filesystem is ephemeral. Compiled packages may be lost when the container stops and restarts.
+
+## Troubleshooting
+
+If deploy logs fail after upload with:
+
+```text
+Deploy a container application
+Unauthorized
+```
+
+the account/token used by CI is missing required permissions for Containers APIs.
+
+Required account token permissions:
+
+- `Workers Scripts Edit`
+- `Containers Edit`
+- `Cloudchamber Edit`
+
+Also ensure the account is on a Workers Paid plan, since Containers are not available on Free.
