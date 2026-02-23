@@ -79,19 +79,53 @@ export default function DownloadList() {
           {t("downloads.loading")}
         </div>
       ) : sortedTasks.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
+        <div className="flex flex-col items-center justify-center py-16 px-4 my-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors">
+          {/* SVG 图标：下载收件箱 */}
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
+            <svg
+              className="w-12 h-12 text-blue-500 dark:text-blue-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
             {filter === "all"
               ? t("downloads.emptyAll")
               : t("downloads.emptyFilter", {
                   status: t(`downloads.status.${filter}`),
                 })}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-sm">
+            {filter === "all" 
+              ? "您的下载队列为空。前往搜索页面探索并下载您需要的应用吧。" 
+              : "没有符合该状态的下载记录。"}
           </p>
           {filter === "all" && (
             <Link
               to="/search"
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
             >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                />
+              </svg>
               {t("downloads.searchApps")}
             </Link>
           )}
