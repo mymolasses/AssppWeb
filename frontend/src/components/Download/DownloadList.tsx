@@ -17,16 +17,12 @@ export default function DownloadList() {
   const filtered =
     filter === "all" ? tasks : tasks.filter((t) => t.status === filter);
 
+  // Sort tasks by creation time in descending order (newest first)
+  // This ensures consistent ordering regardless of task status changes
   const sortedTasks = [...filtered].sort((a, b) => {
-    const statusOrder: Record<string, number> = {
-      downloading: 0,
-      injecting: 1,
-      pending: 2,
-      paused: 3,
-      completed: 4,
-      failed: 5,
-    };
-    return (statusOrder[a.status] ?? 6) - (statusOrder[b.status] ?? 6);
+    const timeA = new Date(a.createdAt || 0).getTime();
+    const timeB = new Date(b.createdAt || 0).getTime();
+    return timeB - timeA;
   });
 
   function handleDelete(id: string) {
