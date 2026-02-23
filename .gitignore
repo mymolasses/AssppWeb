@@ -75,6 +75,7 @@
 .yarn/build-state.yml
 .yarn/cache
 .yarn/unplugged
+.wrangler/
 /*.gcno
 Artifacts
 Artifacts/

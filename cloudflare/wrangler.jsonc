@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "assppweb",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-02-23",
+  "containers": [
+    {
+      "class_name": "AssppContainer",
+      "image": "../Dockerfile",
+      "instance_type": "standard-1",
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ASPP_CONTAINER",
+        "class_name": "AssppContainer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["AssppContainer"]
+    }
+  ],
+  "vars": {
+    "CONTAINER_INSTANCE_NAME": "main"
+  }
+}
