@@ -9,10 +9,12 @@ interface SearchState {
   results: Software[];
   loading: boolean;
   error: string | null;
-  // 用于更新搜索框和选项的状态
-  setSearchParam: (param: Partial<Pick<SearchState, "term" | "country" | "entity">>) => void;
+  setSearchParam: (
+    param: Partial<Pick<SearchState, "term" | "country" | "entity">>,
+  ) => void;
   search: (term: string, country: string, entity: string) => Promise<void>;
   lookup: (bundleId: string, country: string) => Promise<void>;
+  clear: () => void; // 新增：清空搜索状态的方法
 }
 
 export const useSearch = create<SearchState>((set) => ({
@@ -24,13 +26,15 @@ export const useSearch = create<SearchState>((set) => ({
   error: null,
   setSearchParam: (param) => set((state) => ({ ...state, ...param })),
   search: async (term, country, entity) => {
-    // 发起搜索时，同步保存当前的搜索条件和 loading 状态
     set({ loading: true, error: null, term, country, entity });
     try {
       const apps = await searchApps(term, country, entity);
       set({ results: apps });
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : "Search failed", results: [] });
+      set({
+        error: e instanceof Error ? e.message : "Search failed",
+        results: [],
+      });
     } finally {
       set({ loading: false });
     }
@@ -41,9 +45,14 @@ export const useSearch = create<SearchState>((set) => ({
       const app = await lookupApp(bundleId, country);
       set({ results: app ? [app] : [] });
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : "Lookup failed", results: [] });
+      set({
+        error: e instanceof Error ? e.message : "Lookup failed",
+        results: [],
+      });
     } finally {
       set({ loading: false });
     }
   },
+  // 清空关键词、结果和错误信息，但保留选择的国家和设备类型（作为用户偏好）
+  clear: () => set({ term: "", results: [], error: null }),
 }));
