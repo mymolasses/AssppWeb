@@ -178,6 +178,8 @@
       "account": "계정",
       "created": "생성됨",
       "install": "기기에 설치",
+      "share": "공유",
+      "copied": "링크가 클립보드에 복사되었습니다",
       "scan": "스캔하여 설치",
       "downloadIpa": "IPA 다운로드",
       "pause": "일시 정지",

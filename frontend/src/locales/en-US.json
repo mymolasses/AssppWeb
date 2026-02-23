@@ -178,6 +178,8 @@
       "account": "Account",
       "created": "Created",
       "install": "Install on Device",
+      "share": "Share",
+      "copied": "Link copied to clipboard",
       "scan": "Scan to install",
       "downloadIpa": "Download IPA",
       "pause": "Pause",

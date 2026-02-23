@@ -178,6 +178,8 @@
       "account": "帳號",
       "created": "建立時間",
       "install": "在裝置上安裝",
+      "share": "分享",
+      "copied": "連結已複製到剪貼簿",
       "scan": "掃碼安裝",
       "downloadIpa": "下載 IPA",
       "pause": "暫停",

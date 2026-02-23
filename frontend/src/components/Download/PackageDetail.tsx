@@ -39,6 +39,65 @@ export default function PackageDetail() {
     navigate("/downloads");
   }
 
+  async function handleShare(e: React.MouseEvent) {
+    e.preventDefault();
+    if (!installInfo) return;
+    
+    const urlToShare = installInfo.installUrl;
+
+    // 1. Try native share
+    // We only pass the raw URL to the `text` property to ensure receiving apps 
+    // recognize it as a pure, clickable link for auto-installation.
+    if (navigator.share) {
+      try {
+        await navigator.share({ 
+          text: urlToShare 
+        });
+        return; // Exit if share is successful
+      } catch (error: any) {
+        // Ignore AbortError if the user simply closed the share sheet
+        if (error.name === 'AbortError') return;
+        console.warn("Native share failed, falling back to copy:", error);
+      }
+    }
+
+    // 2. Try modern Clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(urlToShare);
+        alert(t("downloads.package.copied"));
+        return;
+      } catch (err) {
+        console.warn("Clipboard API failed, falling back to execCommand:", err);
+      }
+    }
+
+    // 3. Ultimate fallback: traditional execCommand
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = urlToShare;
+      // Move textarea out of viewport to prevent scrolling and flashing
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      
+      textArea.focus();
+      textArea.select();
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        alert(t("downloads.package.copied"));
+      } else {
+        console.error("Fallback execCommand failed to copy");
+      }
+    } catch (err) {
+      console.error("All share/copy methods failed:", err);
+    }
+  }
+
   return (
     <PageContainer title={t("downloads.package.title")}>
       <div className="space-y-6">
@@ -118,27 +177,37 @@ export default function PackageDetail() {
             {isCompleted && (
               <>
                 {installInfo && (
-                  <div className="relative group flex items-center">
+                  <>
                     <a
                       href={installInfo.installUrl}
                       className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                     >
                       {t("downloads.package.install")}
                     </a>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
-                      <div className="bg-white p-2 rounded-lg shadow-xl border border-gray-200 flex flex-col items-center">
-                        <QRCodeSVG
-                          value={installInfo.installUrl}
-                          size={128}
-                          className="mb-1"
-                        />
-                        <span className="text-xs text-gray-500 mt-1">
-                          {t("downloads.package.scan")}
-                        </span>
-                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-gray-200 transform rotate-45"></div>
+                    
+                    {/* Share button with hover QR code */}
+                    <div className="relative group flex items-center">
+                      <button
+                        onClick={handleShare}
+                        className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors cursor-pointer"
+                      >
+                        {t("downloads.package.share")}
+                      </button>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none">
+                        <div className="bg-white p-2 rounded-lg shadow-xl border border-gray-200 flex flex-col items-center">
+                          <QRCodeSVG
+                            value={installInfo.installUrl}
+                            size={128}
+                            className="mb-1"
+                          />
+                          <span className="text-xs text-gray-500 mt-1 whitespace-nowrap">
+                            {t("downloads.package.scan")}
+                          </span>
+                          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-gray-200 transform rotate-45"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
                 <a
                   href={`/api/packages/${task.id}/file?accountHash=${encodeURIComponent(task.accountHash)}`}

@@ -178,6 +178,8 @@
       "account": "账号",
       "created": "创建时间",
       "install": "在设备上安装",
+      "share": "分享",
+      "copied": "链接已复制到剪贴板",
       "scan": "扫码安装",
       "downloadIpa": "下载 IPA",
       "pause": "暂停",
