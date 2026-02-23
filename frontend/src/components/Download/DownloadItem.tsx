@@ -33,25 +33,29 @@ export default function DownloadItem({
           size="sm"
         />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
+          {/* Added gap-3 and items-start to prevent layout shifting, set title container to flex-1 min-w-0 */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <Link
                 to={`/downloads/${task.id}`}
-                className="font-medium text-sm text-gray-900 dark:text-white truncate block hover:text-blue-600 dark:hover:text-blue-400"
+                className="font-medium text-sm text-gray-900 dark:text-white truncate block hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               >
                 {task.software.name}
               </Link>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 v{task.software.version}
               </p>
             </div>
-            <Badge status={task.status} />
+            {/* Wrapped Badge with shrink-0 and whitespace-nowrap to prevent squeezing and text wrapping */}
+            <div className="shrink-0 whitespace-nowrap flex items-center h-5 mt-0.5">
+              <Badge status={task.status} />
+            </div>
           </div>
 
           {(isActive || isPaused) && (
-            <div className="mt-2">
+            <div className="mt-2.5">
               <ProgressBar progress={task.progress} />
-              <div className="flex justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex justify-between mt-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium">
                 <span>{Math.round(task.progress)}%</span>
                 {task.speed && isActive && <span>{task.speed}</span>}
               </div>
@@ -59,16 +63,17 @@ export default function DownloadItem({
           )}
 
           {task.error && (
-            <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">
+            <p className="mt-2 text-xs text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-md border border-red-100 dark:border-red-900/30">
               {task.error}
             </p>
           )}
 
-          <div className="flex gap-3 mt-2">
+          {/* Redesigned action buttons with borders, padding, rounded corners, and shadow */}
+          <div className="flex flex-wrap gap-2 mt-3">
             {isActive && (
               <button
                 onClick={() => onPause(task.id)}
-                className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white font-medium transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition-colors"
               >
                 {t("downloads.package.pause")}
               </button>
@@ -76,7 +81,7 @@ export default function DownloadItem({
             {isPaused && (
               <button
                 onClick={() => onResume(task.id)}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800/60 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 shadow-sm transition-colors"
               >
                 {t("downloads.package.resume")}
               </button>
@@ -84,14 +89,14 @@ export default function DownloadItem({
             {isCompleted && task.hasFile && (
               <Link
                 to={`/downloads/${task.id}`}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+                className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800/60 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 shadow-sm transition-colors"
               >
                 {t("downloads.item.viewPackage")}
               </Link>
             )}
             <button
               onClick={() => onDelete(task.id)}
-              className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800/50 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm transition-colors"
             >
               {t("downloads.package.delete")}
             </button>
