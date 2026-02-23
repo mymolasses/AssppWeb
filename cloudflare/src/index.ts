@@ -21,7 +21,8 @@ interface Env {
 function withForwardHeaders(request: Request): Request {
   const headers = new Headers(request.headers);
   if (!headers.has('x-forwarded-proto')) {
-    headers.set('x-forwarded-proto', new URL(request.url).protocol.replace(':', ''));
+    // Default to HTTPS when the header is missing to avoid local dev redirects.
+    headers.set('x-forwarded-proto', 'https');
   }
   return new Request(request, { headers });
 }
