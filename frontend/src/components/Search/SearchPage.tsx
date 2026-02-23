@@ -43,7 +43,8 @@ export default function SearchPage() {
 
   return (
     <PageContainer title={t("search.title")}>
-      <form onSubmit={handleSubmit} className="space-y-4 mb-6">
+      {/* 限制表单最大宽度，与新建下载页面保持一致，防止在桌面端过度拉伸 */}
+      <form onSubmit={handleSubmit} className="space-y-4 mb-6 max-w-lg">
         <div className="flex gap-2">
           <input
             type="text"
@@ -55,23 +56,24 @@ export default function SearchPage() {
           <button
             type="submit"
             disabled={loading || !term.trim()}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
           >
             {loading ? t("search.searching") : t("search.button")}
           </button>
         </div>
-        <div className="flex gap-3">
+        {/* 参考新建下载页面的底部选择框布局，采用 50/50 的等宽分隔 */}
+        <div className="flex w-full gap-3 overflow-hidden">
           <CountrySelect
             value={country}
             onChange={setCountry}
             availableCountryCodes={availableCountryCodes}
             allCountryCodes={allCountryCodes}
-            className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
+            className="w-1/2 truncate bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
           />
           <select
             value={entity}
             onChange={(e) => setEntity(e.target.value)}
-            className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+            className="w-1/2 truncate rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
           >
             <option value="iPhone">iPhone</option>
             <option value="iPad">iPad</option>
