@@ -15,7 +15,6 @@ import { apiPost } from "../../api/client";
 import { countryCodeMap, storeIdToCountry } from "../../apple/config";
 import {
   accountHash,
-  accountStoreCountry,
   firstAccountCountry,
 } from "../../utils/account";
 import { getErrorMessage } from "../../utils/error";
@@ -56,6 +55,7 @@ export default function AddDownload() {
     return accounts.filter((a) => storeIdToCountry(a.store) === country);
   }, [accounts, country]);
 
+  // Update selected account whenever the available filtered accounts list changes
   useEffect(() => {
     if (filteredAccounts.length > 0) {
       if (
@@ -72,9 +72,12 @@ export default function AddDownload() {
   }, [filteredAccounts, selectedAccount]);
 
   const account = accounts.find((a) => a.email === selectedAccount);
-  const autoCountry =
-    accountStoreCountry(account) ?? firstAccountCountry(accounts);
+  // Break the cyclic dependency: ONLY use the first available account's country to determine autoCountry.
+  // We no longer rely on the actively selected account's country to prevent an infinite loop where 
+  // changing the country updates the account, which in turn reverts the country back.
+  const autoCountry = firstAccountCountry(accounts);
 
+  // Set the default country on initial load if user hasn't touched the selection yet
   useEffect(() => {
     if (countryTouched) return;
     const nextCountry = autoCountry ?? defaultCountry;
