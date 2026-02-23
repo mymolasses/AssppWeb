@@ -107,8 +107,9 @@ export default function SearchPage() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
             {t("search.empty")}
           </h3>
+          {/* Replaced hardcoded description with i18n key */}
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
-            输入应用名称或 Bundle ID，快速在 App Store 中查找并获取应用详情与许可证。
+            {t("search.emptyDesc")}
           </p>
         </div>
       )}

@@ -39,6 +39,7 @@
     "button": "搜索",
     "searching": "搜索中...",
     "empty": "搜索应用以开始。",
+    "emptyDesc": "输入应用名称或 Bundle ID，快速在 App Store 中查找并获取应用详情与许可证。",
     "free": "免费",
     "product": {
       "title": "应用详情",
@@ -84,6 +85,7 @@
     "add": "添加账号",
     "loading": "加载账号中...",
     "empty": "暂未添加账号。",
+    "emptyDesc": "在这里统一管理您的 Apple 账号，随时获取应用下载许可证。",
     "addFirst": "添加您的第一个账号",
     "addForm": {
       "title": "添加账号",
@@ -129,7 +131,9 @@
     "warning": "安装包是临时的，将在服务器重启时被清除。请及时下载或安装。",
     "loading": "加载下载中...",
     "emptyAll": "暂无下载。",
+    "emptyAllDesc": "您的下载队列为空。前往搜索页面探索并下载您需要的应用吧。",
     "emptyFilter": "暂无{{status}}下载。",
+    "emptyFilterDesc": "没有符合该状态的下载记录。",
     "searchApps": "搜索要下载的应用",
     "deleteConfirm": "删除此下载？",
     "status": {
@@ -146,6 +150,8 @@
     },
     "add": {
       "title": "新建下载",
+      "emptyTitle": "准备新建",
+      "emptyDesc": "在上方输入应用的 Bundle ID 并选择对应的账号与地区，即可查找并创建下载任务。",
       "bundleId": "Bundle ID",
       "placeholder": "com.example.app",
       "lookup": "查找",

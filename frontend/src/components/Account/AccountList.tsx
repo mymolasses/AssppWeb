@@ -50,8 +50,9 @@ export default function AccountList() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
             {t("accounts.empty")}
           </h3>
+          {/* Replaced hardcoded description with i18n key */}
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-sm">
-            在这里统一管理您的 Apple 账号，随时获取应用下载许可证。
+            {t("accounts.emptyDesc")}
           </p>
           <Link
             to="/accounts/add"

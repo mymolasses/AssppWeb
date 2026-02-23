@@ -39,6 +39,7 @@
     "button": "搜尋",
     "searching": "搜尋中...",
     "empty": "搜尋應用程式以開始。",
+    "emptyDesc": "輸入應用程式名稱或 Bundle ID，快速在 App Store 中尋找並獲取應用程式詳情與授權。",
     "free": "免費",
     "product": {
       "title": "應用程式詳情",
@@ -84,6 +85,7 @@
     "add": "新增帳號",
     "loading": "載入帳號中...",
     "empty": "尚未新增帳號。",
+    "emptyDesc": "在這裡統一管理您的 Apple 帳號，隨時獲取應用程式下載授權。",
     "addFirst": "新增您的第一個帳號",
     "addForm": {
       "title": "新增帳號",
@@ -129,7 +131,9 @@
     "warning": "安裝包是暫時的，將在伺服器重啟時被清除。請及時下載或安裝。",
     "loading": "載入下載中...",
     "emptyAll": "暫無下載。",
+    "emptyAllDesc": "您的下載佇列為空。前往搜尋頁面探索並下載您需要的應用程式吧。",
     "emptyFilter": "暫無{{status}}下載。",
+    "emptyFilterDesc": "沒有符合該狀態的下載記錄。",
     "searchApps": "搜尋要下載的應用程式",
     "deleteConfirm": "刪除此下載？",
     "status": {
@@ -146,6 +150,8 @@
     },
     "add": {
       "title": "新增下載",
+      "emptyTitle": "準備新增",
+      "emptyDesc": "在上方輸入應用程式的 Bundle ID 並選擇對應的帳號與地區，即可尋找並建立下載任務。",
       "bundleId": "Bundle ID",
       "placeholder": "com.example.app",
       "lookup": "尋找",

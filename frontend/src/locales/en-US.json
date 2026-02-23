@@ -39,6 +39,7 @@
     "button": "Search",
     "searching": "Searching...",
     "empty": "Search for apps to get started.",
+    "emptyDesc": "Enter an app name or Bundle ID to quickly search the App Store and get app details and licenses.",
     "free": "Free",
     "product": {
       "title": "App Details",
@@ -84,6 +85,7 @@
     "add": "Add Account",
     "loading": "Loading accounts...",
     "empty": "No accounts added yet.",
+    "emptyDesc": "Manage your Apple accounts here to easily acquire app download licenses anytime.",
     "addFirst": "Add your first account",
     "addForm": {
       "title": "Add Account",
@@ -129,7 +131,9 @@
     "warning": "Packages are temporary and will be cleared on server restart. Download or install promptly.",
     "loading": "Loading downloads...",
     "emptyAll": "No downloads yet.",
+    "emptyAllDesc": "Your download queue is empty. Head to the search page to explore and download the apps you need.",
     "emptyFilter": "No {{status}} downloads.",
+    "emptyFilterDesc": "No download records match this status.",
     "searchApps": "Search for apps to download",
     "deleteConfirm": "Delete this download?",
     "status": {
@@ -146,6 +150,8 @@
     },
     "add": {
       "title": "New Download",
+      "emptyTitle": "Ready to Create",
+      "emptyDesc": "Enter the app's Bundle ID above and select the corresponding account and region to find and create a download task.",
       "bundleId": "Bundle ID",
       "placeholder": "com.example.app",
       "lookup": "Look Up",

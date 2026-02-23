@@ -242,11 +242,12 @@ export default function AddDownload() {
                 />
               </svg>
             </div>
+            {/* Replaced hardcoded title and description with i18n keys */}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
-              准备新建
+              {t("downloads.add.emptyTitle")}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
-              在上方输入应用的 Bundle ID 并选择对应的账号与地区，即可查找并创建下载任务。
+              {t("downloads.add.emptyDesc")}
             </p>
           </div>
         )}

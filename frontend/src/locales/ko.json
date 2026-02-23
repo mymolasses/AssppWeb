@@ -39,6 +39,7 @@
     "button": "검색",
     "searching": "검색 중...",
     "empty": "앱을 검색하여 시작하세요.",
+    "emptyDesc": "앱 이름이나 Bundle ID를 입력하여 App Store를 빠르게 검색하고 앱 세부 정보 및 라이선스를 얻으세요.",
     "free": "무료",
     "product": {
       "title": "앱 세부 정보",
@@ -84,6 +85,7 @@
     "add": "계정 추가",
     "loading": "계정 로딩 중...",
     "empty": "아직 추가된 계정이 없습니다.",
+    "emptyDesc": "여기에서 Apple 계정을 통합 관리하여 언제든지 앱 다운로드 라이선스를 얻으세요.",
     "addFirst": "첫 번째 계정 추가",
     "addForm": {
       "title": "계정 추가",
@@ -129,7 +131,9 @@
     "warning": "패키지는 임시 저장되며 서버 재시작 시 삭제됩니다. 즉시 다운로드하거나 설치하세요.",
     "loading": "다운로드 로딩 중...",
     "emptyAll": "다운로드가 없습니다.",
+    "emptyAllDesc": "다운로드 대기열이 비어 있습니다. 검색 페이지로 이동하여 필요한 앱을 탐색하고 다운로드하세요.",
     "emptyFilter": "{{status}} 상태의 다운로드가 없습니다.",
+    "emptyFilterDesc": "이 상태와 일치하는 다운로드 기록이 없습니다.",
     "searchApps": "다운로드할 앱 검색",
     "deleteConfirm": "이 다운로드를 삭제하시겠습니까?",
     "status": {
@@ -146,6 +150,8 @@
     },
     "add": {
       "title": "새 다운로드",
+      "emptyTitle": "생성 준비 완료",
+      "emptyDesc": "위에 앱의 Bundle ID를 입력하고 해당 계정과 지역을 선택하여 다운로드 작업을 검색하고 생성하세요.",
       "bundleId": "Bundle ID",
       "placeholder": "com.example.app",
       "lookup": "조회",

@@ -103,10 +103,11 @@ export default function DownloadList() {
                   status: t(`downloads.status.${filter}`),
                 })}
           </h3>
+          {/* Replaced hardcoded description with i18n keys */}
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-sm">
             {filter === "all" 
-              ? "您的下载队列为空。前往搜索页面探索并下载您需要的应用吧。" 
-              : "没有符合该状态的下载记录。"}
+              ? t("downloads.emptyAllDesc") 
+              : t("downloads.emptyFilterDesc")}
           </p>
           {filter === "all" && (
             <Link
