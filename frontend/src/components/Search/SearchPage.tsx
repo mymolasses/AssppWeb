@@ -43,7 +43,6 @@ export default function SearchPage() {
 
   return (
     <PageContainer title={t("search.title")}>
-      {/* 限制表单最大宽度，与新建下载页面保持一致，防止在桌面端过度拉伸 */}
       <form onSubmit={handleSubmit} className="space-y-4 mb-6 max-w-lg">
         <div className="flex gap-2">
           <input
@@ -61,7 +60,6 @@ export default function SearchPage() {
             {loading ? t("search.searching") : t("search.button")}
           </button>
         </div>
-        {/* 参考新建下载页面的底部选择框布局，采用 50/50 的等宽分隔 */}
         <div className="flex w-full gap-3 overflow-hidden">
           <CountrySelect
             value={country}
@@ -82,14 +80,35 @@ export default function SearchPage() {
       </form>
 
       {error && (
-        <Alert type="error" className="mb-4">
+        <Alert type="error" className="mb-4 max-w-lg">
           {error}
         </Alert>
       )}
 
+      {/* 搜索页面：空状态占位，同样限制宽度 max-w-lg 并与表单对齐 */}
       {results.length === 0 && !loading && !error && (
-        <div className="text-center text-gray-500 dark:text-gray-400 py-12">
-          {t("search.empty")}
+        <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors max-w-lg">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
+            <svg
+              className="w-12 h-12 text-blue-500 dark:text-blue-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
+            {t("search.empty")}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
+            输入应用名称或 Bundle ID，快速在 App Store 中查找并获取应用详情与许可证。
+          </p>
         </div>
       )}
 

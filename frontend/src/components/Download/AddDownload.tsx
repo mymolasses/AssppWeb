@@ -72,9 +72,6 @@ export default function AddDownload() {
   }, [filteredAccounts, selectedAccount]);
 
   const account = accounts.find((a) => a.email === selectedAccount);
-  // Break the cyclic dependency: ONLY use the first available account's country to determine autoCountry.
-  // We no longer rely on the actively selected account's country to prevent an infinite loop where 
-  // changing the country updates the account, which in turn reverts the country back.
   const autoCountry = firstAccountCountry(accounts);
 
   // Set the default country on initial load if user hasn't touched the selection yet
@@ -173,16 +170,27 @@ export default function AddDownload() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t("downloads.add.bundleId")}
             </label>
-            <input
-              type="text"
-              value={bundleId}
-              onChange={(e) => setBundleId(e.target.value)}
-              placeholder={t("downloads.add.placeholder")}
-              className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-              disabled={loading}
-            />
+            {/* 将输入框和查找按钮并排放在一起 */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={bundleId}
+                onChange={(e) => setBundleId(e.target.value)}
+                placeholder={t("downloads.add.placeholder")}
+                className="block w-full flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                disabled={loading || !bundleId.trim()}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+              >
+                {loading && step === "lookup"
+                  ? t("downloads.add.lookingUp")
+                  : t("downloads.add.lookup")}
+              </button>
+            </div>
           </div>
-          {/* Constrained dropdown width to prevent stretching */}
           <div className="flex w-full gap-3 overflow-hidden">
             <CountrySelect
               value={country}
@@ -216,16 +224,34 @@ export default function AddDownload() {
               </select>
             )}
           </div>
-          <button
-            type="submit"
-            disabled={loading || !bundleId.trim()}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {loading && step === "lookup"
-              ? t("downloads.add.lookingUp")
-              : t("downloads.add.lookup")}
-          </button>
         </form>
+
+        {/* 新建下载：空状态占位 */}
+        {!app && !loading && !error && (
+          <div className="flex flex-col items-center justify-center py-12 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
+              <svg
+                className="w-10 h-10 text-blue-500 dark:text-blue-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
+              准备新建
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
+              在上方输入应用的 Bundle ID 并选择对应的账号与地区，即可查找并创建下载任务。
+            </p>
+          </div>
+        )}
 
         {app && (
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 transition-colors">
