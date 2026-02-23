@@ -170,7 +170,6 @@ export default function AddDownload() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t("downloads.add.bundleId")}
             </label>
-            {/* 将输入框和查找按钮并排放在一起 */}
             <div className="flex gap-2">
               <input
                 type="text"
@@ -203,30 +202,28 @@ export default function AddDownload() {
               disabled={loading}
               className="w-1/2 truncate disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed"
             />
-            {accounts.length > 0 && (
-              <select
-                value={selectedAccount}
-                onChange={(e) => setSelectedAccount(e.target.value)}
-                className="w-1/2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-                disabled={loading || filteredAccounts.length === 0}
-              >
-                {filteredAccounts.length > 0 ? (
-                  filteredAccounts.map((a) => (
-                    <option key={a.email} value={a.email}>
-                      {a.firstName} {a.lastName} ({a.email})
-                    </option>
-                  ))
-                ) : (
-                  <option value="">
-                    {t("downloads.add.noAccountsForRegion")}
+            {/* 移除了 {accounts.length > 0 && (...)} 的条件判断，保证下拉框始终渲染 */}
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="w-1/2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+              disabled={loading || filteredAccounts.length === 0}
+            >
+              {filteredAccounts.length > 0 ? (
+                filteredAccounts.map((a) => (
+                  <option key={a.email} value={a.email}>
+                    {a.firstName} {a.lastName} ({a.email})
                   </option>
-                )}
-              </select>
-            )}
+                ))
+              ) : (
+                <option value="">
+                  {t("downloads.add.noAccountsForRegion")}
+                </option>
+              )}
+            </select>
           </div>
         </form>
 
-        {/* 新建下载：空状态占位 */}
         {!app && !loading && !error && (
           <div className="flex flex-col items-center justify-center py-12 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
