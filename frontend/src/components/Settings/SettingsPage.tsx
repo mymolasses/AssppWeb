@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import { countryCodeMap } from "../../apple/config";
+import { useAccountsStore } from "../../store/accounts";
+import { encryptData, decryptData } from "../../utils/crypto";
+import type { Account } from "../../types";
 
 interface ServerInfo {
   version?: string;
@@ -8,153 +12,15 @@ interface ServerInfo {
   dataDir?: string;
 }
 
-const countryNames: Record<string, string> = {
-  AE: "United Arab Emirates",
-  AG: "Antigua and Barbuda",
-  AI: "Anguilla",
-  AL: "Albania",
-  AM: "Armenia",
-  AO: "Angola",
-  AR: "Argentina",
-  AT: "Austria",
-  AU: "Australia",
-  AZ: "Azerbaijan",
-  BB: "Barbados",
-  BD: "Bangladesh",
-  BE: "Belgium",
-  BG: "Bulgaria",
-  BH: "Bahrain",
-  BM: "Bermuda",
-  BN: "Brunei",
-  BO: "Bolivia",
-  BR: "Brazil",
-  BS: "Bahamas",
-  BW: "Botswana",
-  BY: "Belarus",
-  BZ: "Belize",
-  CA: "Canada",
-  CH: "Switzerland",
-  CI: "Côte d'Ivoire",
-  CL: "Chile",
-  CN: "China",
-  CO: "Colombia",
-  CR: "Costa Rica",
-  CY: "Cyprus",
-  CZ: "Czech Republic",
-  DE: "Germany",
-  DK: "Denmark",
-  DM: "Dominica",
-  DO: "Dominican Republic",
-  DZ: "Algeria",
-  EC: "Ecuador",
-  EE: "Estonia",
-  EG: "Egypt",
-  ES: "Spain",
-  FI: "Finland",
-  FR: "France",
-  GB: "United Kingdom",
-  GD: "Grenada",
-  GE: "Georgia",
-  GH: "Ghana",
-  GR: "Greece",
-  GT: "Guatemala",
-  GY: "Guyana",
-  HK: "Hong Kong",
-  HN: "Honduras",
-  HR: "Croatia",
-  HU: "Hungary",
-  ID: "Indonesia",
-  IE: "Ireland",
-  IL: "Israel",
-  IN: "India",
-  IS: "Iceland",
-  IT: "Italy",
-  IQ: "Iraq",
-  JM: "Jamaica",
-  JO: "Jordan",
-  JP: "Japan",
-  KE: "Kenya",
-  KN: "St. Kitts and Nevis",
-  KR: "South Korea",
-  KW: "Kuwait",
-  KY: "Cayman Islands",
-  KZ: "Kazakhstan",
-  LB: "Lebanon",
-  LC: "St. Lucia",
-  LI: "Liechtenstein",
-  LK: "Sri Lanka",
-  LT: "Lithuania",
-  LU: "Luxembourg",
-  LV: "Latvia",
-  MD: "Moldova",
-  MG: "Madagascar",
-  MK: "North Macedonia",
-  ML: "Mali",
-  MN: "Mongolia",
-  MO: "Macau",
-  MS: "Montserrat",
-  MT: "Malta",
-  MU: "Mauritius",
-  MV: "Maldives",
-  MX: "Mexico",
-  MY: "Malaysia",
-  NE: "Niger",
-  NG: "Nigeria",
-  NI: "Nicaragua",
-  NL: "Netherlands",
-  NO: "Norway",
-  NP: "Nepal",
-  NZ: "New Zealand",
-  OM: "Oman",
-  PA: "Panama",
-  PE: "Peru",
-  PH: "Philippines",
-  PK: "Pakistan",
-  PL: "Poland",
-  PT: "Portugal",
-  PY: "Paraguay",
-  QA: "Qatar",
-  RO: "Romania",
-  RS: "Serbia",
-  RU: "Russia",
-  SA: "Saudi Arabia",
-  SE: "Sweden",
-  SG: "Singapore",
-  SI: "Slovenia",
-  SK: "Slovakia",
-  SN: "Senegal",
-  SR: "Suriname",
-  SV: "El Salvador",
-  TC: "Turks and Caicos",
-  TH: "Thailand",
-  TN: "Tunisia",
-  TR: "Turkey",
-  TT: "Trinidad and Tobago",
-  TW: "Taiwan",
-  TZ: "Tanzania",
-  UA: "Ukraine",
-  UG: "Uganda",
-  US: "United States",
-  UY: "Uruguay",
-  UZ: "Uzbekistan",
-  VC: "St. Vincent and the Grenadines",
-  VE: "Venezuela",
-  VG: "British Virgin Islands",
-  VN: "Vietnam",
-  YE: "Yemen",
-  ZA: "South Africa",
-};
-
 const entityTypes = [
   { value: "software", label: "iPhone" },
   { value: "iPadSoftware", label: "iPad" },
 ];
 
-function getCountryLabel(code: string): string {
-  return countryNames[code] || code;
-}
-
 export default function SettingsPage() {
+  const { t, i18n } = useTranslation();
+  const { accounts, addAccount, updateAccount } = useAccountsStore();
+
   const [country, setCountry] = useState(
     () => localStorage.getItem("asspp-default-country") || "US",
   );
@@ -162,6 +28,21 @@ export default function SettingsPage() {
     () => localStorage.getItem("asspp-default-entity") || "software",
   );
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
+
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportPassword, setExportPassword] = useState("");
+  const [exportConfirmPassword, setExportConfirmPassword] = useState("");
+  const [exportError, setExportError] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importPassword, setImportPassword] = useState("");
+  const [importError, setImportError] = useState("");
+  const [importFileData, setImportFileData] = useState("");
+
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [pendingAccounts, setPendingAccounts] = useState<Account[]>([]);
+  const [conflictStats, setConflictStats] = useState({ conflict: 0, new: 0 });
 
   useEffect(() => {
     localStorage.setItem("asspp-default-country", country);
@@ -179,21 +60,152 @@ export default function SettingsPage() {
   }, []);
 
   const sortedCountries = Object.keys(countryCodeMap).sort((a, b) =>
-    getCountryLabel(a).localeCompare(getCountryLabel(b)),
+    t(`countries.${a}`, a).localeCompare(t(`countries.${b}`, b)),
   );
 
+  const handleExport = async () => {
+    if (exportPassword !== exportConfirmPassword) {
+      setExportError(t("settings.data.passwordMismatch"));
+      return;
+    }
+    try {
+      const encrypted = await encryptData(accounts, exportPassword);
+      const blob = new Blob([encrypted], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "asspp-accounts.enc";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setExportModalOpen(false);
+      setExportPassword("");
+      setExportConfirmPassword("");
+      setExportError("");
+      alert(t("settings.data.exportSuccess"));
+    } catch (e) {
+      setExportError("Export failed.");
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setImportFileData(content);
+      setImportModalOpen(true);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleImport = async () => {
+    try {
+      const parsed = await decryptData(importFileData, importPassword);
+      if (!Array.isArray(parsed)) throw new Error("Invalid format");
+      const valid = parsed.filter(
+        (item: any) =>
+          item &&
+          typeof item === "object" &&
+          typeof item.email === "string" &&
+          item.email.length > 0,
+      ) as Account[];
+      if (valid.length === 0) throw new Error("No valid accounts found");
+
+      if (accounts.length === 0) {
+        for (const acc of valid) {
+          await addAccount(acc);
+        }
+        alert(t("settings.data.importSuccess"));
+        setImportModalOpen(false);
+        setImportPassword("");
+        setImportError("");
+      } else {
+        let conflictCount = 0;
+        let newCount = 0;
+        valid.forEach((imported) => {
+          if (accounts.some((a) => a.email === imported.email)) conflictCount++;
+          else newCount++;
+        });
+
+        if (conflictCount > 0) {
+          setConflictStats({ conflict: conflictCount, new: newCount });
+          setPendingAccounts(valid);
+          setImportModalOpen(false);
+          setImportPassword("");
+          setImportError("");
+          setConflictModalOpen(true);
+        } else {
+          for (const acc of valid) {
+            await addAccount(acc);
+          }
+          alert(t("settings.data.importSuccess"));
+          setImportModalOpen(false);
+          setImportPassword("");
+          setImportError("");
+        }
+      }
+    } catch (e) {
+      setImportError(t("settings.data.incorrectPassword"));
+    }
+  };
+
+  const handleResolveConflict = async (overwrite: boolean) => {
+    for (const imported of pendingAccounts) {
+      const exists = accounts.some((a) => a.email === imported.email);
+      if (exists) {
+        if (overwrite) await updateAccount(imported); // Replace local
+      } else {
+        await addAccount(imported); // Always add new ones
+      }
+    }
+    setConflictModalOpen(false);
+    setPendingAccounts([]);
+    alert(t("settings.data.importSuccess"));
+  };
+
   return (
-    <PageContainer title="Settings">
+    <PageContainer title={t("settings.title")}>
       <div className="space-y-6">
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Defaults</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.language.title")}
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="language"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                {t("settings.language.label")}
+              </label>
+              <select
+                id="language"
+                value={i18n.language.split("-")[0]} // Normalizes en-US to en
+                onChange={(e) => i18n.changeLanguage(e.target.value)}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="en">English</option>
+                <option value="zh">简体中文</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.defaults.title")}
+          </h2>
           <div className="space-y-4">
             <div>
               <label
                 htmlFor="country"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Default Country / Region
+                {t("settings.defaults.country")}
               </label>
               <select
                 id="country"
@@ -203,7 +215,7 @@ export default function SettingsPage() {
               >
                 {sortedCountries.map((code) => (
                   <option key={code} value={code}>
-                    {getCountryLabel(code)} ({code})
+                    {t(`countries.${code}`, code)} ({code})
                   </option>
                 ))}
               </select>
@@ -213,7 +225,7 @@ export default function SettingsPage() {
                 htmlFor="entity"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Default Entity Type
+                {t("settings.defaults.entity")}
               </label>
               <select
                 id="entity"
@@ -232,12 +244,16 @@ export default function SettingsPage() {
         </section>
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Server</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.server.title")}
+          </h2>
           {serverInfo ? (
             <dl className="space-y-3">
               {serverInfo.version && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Version</dt>
+                  <dt className="text-sm font-medium text-gray-500">
+                    {t("settings.server.version")}
+                  </dt>
                   <dd className="text-sm text-gray-900">
                     {serverInfo.version}
                   </dd>
@@ -246,7 +262,7 @@ export default function SettingsPage() {
               {serverInfo.dataDir && (
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    Data Directory
+                    {t("settings.server.dataDir")}
                   </dt>
                   <dd className="text-sm text-gray-900 font-mono">
                     {serverInfo.dataDir}
@@ -255,7 +271,9 @@ export default function SettingsPage() {
               )}
               {serverInfo.uptime != null && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Uptime</dt>
+                  <dt className="text-sm font-medium text-gray-500">
+                    {t("settings.server.uptime")}
+                  </dt>
                   <dd className="text-sm text-gray-900">
                     {formatUptime(serverInfo.uptime)}
                   </dd>
@@ -264,44 +282,196 @@ export default function SettingsPage() {
             </dl>
           ) : (
             <p className="text-sm text-gray-500">
-              Unable to connect to server.
+              {t("settings.server.offline")}
             </p>
           )}
         </section>
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Data</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.data.title")}
+          </h2>
           <p className="text-sm text-gray-600 mb-4">
-            Clear all local data including accounts, credentials, and settings
-            stored in this browser.
+            {t("settings.data.description")}
           </p>
+
+          <div className="flex flex-wrap gap-3 mb-6">
+            <button
+              onClick={() => {
+                setExportModalOpen(true);
+                setExportError("");
+              }}
+              className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              {t("settings.data.exportBtn")}
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2 text-sm font-medium text-green-600 border border-green-300 rounded-lg hover:bg-green-50 transition-colors"
+            >
+              {t("settings.data.importBtn")}
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept=".enc"
+              onChange={handleFileSelect}
+            />
+          </div>
+
           <button
             onClick={() => {
-              if (
-                !confirm(
-                  "This will delete all accounts, credentials, and settings. This cannot be undone. Continue?",
-                )
-              )
-                return;
+              if (!confirm(t("settings.data.confirm"))) return;
               localStorage.clear();
               indexedDB.deleteDatabase("asspp-accounts");
               window.location.href = "/";
             }}
             className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
           >
-            Reset All Data
+            {t("settings.data.button")}
           </button>
         </section>
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">About</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.about.title")}
+          </h2>
           <p className="text-sm text-gray-600">
-            Asspp Web -- a web-based interface for managing Apple app downloads
-            and licenses.
+            {t("settings.about.description")}
           </p>
           <p className="mt-2 text-xs text-gray-400">v0.0.1</p>
         </section>
       </div>
+
+      {exportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold mb-4">
+              {t("settings.data.exportBtn")}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("settings.data.passwordPrompt")}
+                </label>
+                <input
+                  type="password"
+                  value={exportPassword}
+                  onChange={(e) => setExportPassword(e.target.value)}
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("settings.data.passwordConfirm")}
+                </label>
+                <input
+                  type="password"
+                  value={exportConfirmPassword}
+                  onChange={(e) => setExportConfirmPassword(e.target.value)}
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              {exportError && (
+                <p className="text-sm text-red-600">{exportError}</p>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setExportModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                {t("settings.data.cancel")}
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={!exportPassword || !exportConfirmPassword}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {t("settings.data.confirmBtn")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {importModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold mb-4">
+              {t("settings.data.importBtn")}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("settings.data.passwordPrompt")}
+                </label>
+                <input
+                  type="password"
+                  value={importPassword}
+                  onChange={(e) => setImportPassword(e.target.value)}
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              {importError && (
+                <p className="text-sm text-red-600">{importError}</p>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setImportModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                {t("settings.data.cancel")}
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={!importPassword}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {t("settings.data.confirmBtn")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {conflictModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold mb-4">
+              {t("settings.data.conflictTitle")}
+            </h3>
+            <p className="text-sm text-gray-700 mb-6">
+              {t("settings.data.conflictDesc", {
+                conflict: conflictStats.conflict,
+                new: conflictStats.new,
+              })}
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => handleResolveConflict(true)}
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                {t("settings.data.conflictOverwrite")}
+              </button>
+              <button
+                onClick={() => handleResolveConflict(false)}
+                className="w-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                {t("settings.data.conflictSkip")}
+              </button>
+              <button
+                onClick={() => setConflictModalOpen(false)}
+                className="w-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 mt-2"
+              >
+                {t("settings.data.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
 import { useAccounts } from "../../hooks/useAccounts";
@@ -9,7 +10,7 @@ import { getDownloadInfo } from "../../apple/download";
 import { purchaseApp } from "../../apple/purchase";
 import { listVersions } from "../../apple/versionFinder";
 import { apiPost } from "../../api/client";
-import { countryCodeMap } from "../../apple/config";
+import { countryCodeMap, storeIdToCountry } from "../../apple/config";
 import {
   accountHash,
   accountStoreCountry,
@@ -17,12 +18,11 @@ import {
 } from "../../utils/account";
 import type { Software } from "../../types";
 
-const sortedCountries = Object.keys(countryCodeMap).sort();
-
 export default function AddDownload() {
   const navigate = useNavigate();
   const { accounts, updateAccount } = useAccounts();
   const { defaultCountry } = useSettingsStore();
+  const { t } = useTranslation();
 
   const [bundleId, setBundleId] = useState("");
   const [country, setCountry] = useState(defaultCountry);
@@ -35,11 +35,38 @@ export default function AddDownload() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const availableCountryCodes = Array.from(
+    new Set(
+      accounts
+        .map((a) => storeIdToCountry(a.store))
+        .filter(Boolean) as string[],
+    ),
+  ).sort((a, b) =>
+    t(`countries.${a}`, a).localeCompare(t(`countries.${b}`, b)),
+  );
+
+  const allCountryCodes = Object.keys(countryCodeMap).sort((a, b) =>
+    t(`countries.${a}`, a).localeCompare(t(`countries.${b}`, b)),
+  );
+
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter((a) => storeIdToCountry(a.store) === country);
+  }, [accounts, country]);
+
   useEffect(() => {
-    if (accounts.length > 0 && !selectedAccount) {
-      setSelectedAccount(accounts[0].email);
+    if (filteredAccounts.length > 0) {
+      if (
+        !selectedAccount ||
+        !filteredAccounts.find((a) => a.email === selectedAccount)
+      ) {
+        setSelectedAccount(filteredAccounts[0].email);
+      }
+    } else {
+      if (selectedAccount !== "") {
+        setSelectedAccount("");
+      }
     }
-  }, [accounts, selectedAccount]);
+  }, [filteredAccounts, selectedAccount]);
 
   const account = accounts.find((a) => a.email === selectedAccount);
   const autoCountry =
@@ -61,13 +88,15 @@ export default function AddDownload() {
     try {
       const result = await lookupApp(bundleId.trim(), country);
       if (!result) {
-        setError("App not found");
+        setError(t("downloads.add.notFound"));
         return;
       }
       setApp(result);
       setStep("ready");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Lookup failed");
+      setError(
+        e instanceof Error ? e.message : t("downloads.add.lookupFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -81,7 +110,9 @@ export default function AddDownload() {
       const result = await purchaseApp(account, app);
       await updateAccount({ ...account, cookies: result.updatedCookies });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to get license");
+      setError(
+        e instanceof Error ? e.message : t("downloads.add.licenseFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -97,7 +128,9 @@ export default function AddDownload() {
       await updateAccount({ ...account, cookies: result.updatedCookies });
       setStep("versions");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load versions");
+      setError(
+        e instanceof Error ? e.message : t("downloads.add.versionsFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -124,14 +157,16 @@ export default function AddDownload() {
       });
       navigate("/downloads");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Download failed");
+      setError(
+        e instanceof Error ? e.message : t("downloads.add.downloadFailed"),
+      );
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <PageContainer title="New Download">
+    <PageContainer title={t("downloads.add.title")}>
       <div className="max-w-lg space-y-6">
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -142,45 +177,65 @@ export default function AddDownload() {
         <form onSubmit={handleLookup} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Bundle ID
+              {t("downloads.add.bundleId")}
             </label>
             <input
               type="text"
               value={bundleId}
               onChange={(e) => setBundleId(e.target.value)}
-              placeholder="com.example.app"
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              placeholder={t("downloads.add.placeholder")}
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
               disabled={loading}
             />
           </div>
-          <div className="flex gap-3">
+          {/* Constrained dropdown width to prevent stretching */}
+          <div className="flex w-full gap-3 overflow-hidden">
             <select
               value={country}
               onChange={(e) => {
                 setCountry(e.target.value);
                 setCountryTouched(true);
               }}
-              className="rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-1/2 rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              {sortedCountries.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
+              {/* Group 1: Available Regions (only shows if there are valid accounts) */}
+              {availableCountryCodes.length > 0 && (
+                <optgroup label={t("regions.available")}>
+                  {availableCountryCodes.map((c) => (
+                    <option key={`avail-${c}`} value={c}>
+                      {t(`countries.${c}`, c)} ({c})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {/* Group 2: All Regions */}
+              <optgroup label={t("regions.all")}>
+                {allCountryCodes.map((c) => (
+                  <option key={`all-${c}`} value={c}>
+                    {t(`countries.${c}`, c)} ({c})
+                  </option>
+                ))}
+              </optgroup>
             </select>
             {accounts.length > 0 && (
               <select
                 value={selectedAccount}
                 onChange={(e) => setSelectedAccount(e.target.value)}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                disabled={loading}
+                className="w-1/2 rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                disabled={loading || filteredAccounts.length === 0}
               >
-                {accounts.map((a) => (
-                  <option key={a.email} value={a.email}>
-                    {a.firstName} {a.lastName}
+                {filteredAccounts.length > 0 ? (
+                  filteredAccounts.map((a) => (
+                    <option key={a.email} value={a.email}>
+                      {a.firstName} {a.lastName} ({a.email})
+                    </option>
+                  ))
+                ) : (
+                  <option value="">
+                    {t("downloads.add.noAccountsForRegion")}
                   </option>
-                ))}
+                )}
               </select>
             )}
           </div>
@@ -189,7 +244,9 @@ export default function AddDownload() {
             disabled={loading || !bundleId.trim()}
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {loading && step === "lookup" ? "Looking up..." : "Look Up"}
+            {loading && step === "lookup"
+              ? t("downloads.add.lookingUp")
+              : t("downloads.add.lookup")}
           </button>
         </form>
 
@@ -201,7 +258,8 @@ export default function AddDownload() {
                 <p className="font-medium text-gray-900">{app.name}</p>
                 <p className="text-sm text-gray-500">{app.artistName}</p>
                 <p className="text-sm text-gray-400">
-                  v{app.version} - {app.formattedPrice ?? "Free"}
+                  v{app.version} -{" "}
+                  {app.formattedPrice ?? t("search.product.free")}
                 </p>
               </div>
             </div>
@@ -209,14 +267,14 @@ export default function AddDownload() {
             {step === "versions" && versions.length > 0 && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Version (optional)
+                  {t("downloads.add.versionOptional")}
                 </label>
                 <select
                   value={selectedVersion}
                   onChange={(e) => setSelectedVersion(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                 >
-                  <option value="">Latest</option>
+                  <option value="">{t("downloads.add.latest")}</option>
                   {versions.map((v) => (
                     <option key={v} value={v}>
                       {v}
@@ -231,26 +289,28 @@ export default function AddDownload() {
                 <button
                   onClick={handleGetLicense}
                   disabled={loading || !account}
-                  className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+                  className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Get License
+                  {t("downloads.add.getLicense")}
                 </button>
               )}
               {step !== "versions" && (
                 <button
                   onClick={handleLoadVersions}
                   disabled={loading || !account}
-                  className="px-3 py-1.5 text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  className="px-3 py-1.5 text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Select Version
+                  {t("downloads.add.selectVersion")}
                 </button>
               )}
               <button
                 onClick={handleDownload}
                 disabled={loading || !account}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? "Processing..." : "Download"}
+                {loading
+                  ? t("downloads.add.processing")
+                  : t("downloads.add.download")}
               </button>
             </div>
           </div>

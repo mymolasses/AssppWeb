@@ -1,5 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
+
 import Sidebar from "./components/Layout/Sidebar";
 import MobileNav from "./components/Layout/MobileNav";
 
@@ -18,7 +20,8 @@ const PackageDetail = lazy(() => import("./components/Download/PackageDetail"));
 const SettingsPage = lazy(() => import("./components/Settings/SettingsPage"));
 
 function Loading() {
-  return <div className="p-8 text-center text-gray-500">Loading...</div>;
+  const { t } = useTranslation();
+  return <div className="p-8 text-center text-gray-500">{t("loading")}</div>;
 }
 
 export default function App() {

@@ -1,14 +1,17 @@
 import { NavLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const navItems = [
-  { to: "/", label: "Home", icon: HomeIcon },
-  { to: "/accounts", label: "Accounts", icon: AccountsIcon },
-  { to: "/search", label: "Search", icon: SearchIcon },
-  { to: "/downloads", label: "Downloads", icon: DownloadsIcon },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/", label: "home", icon: HomeIcon },
+  { to: "/accounts", label: "accounts", icon: AccountsIcon },
+  { to: "/search", label: "search", icon: SearchIcon },
+  { to: "/downloads", label: "downloads", icon: DownloadsIcon },
+  { to: "/settings", label: "settings", icon: SettingsIcon },
 ];
 
 export default function MobileNav() {
+  const { t } = useTranslation();
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-bottom">
       <div className="flex justify-around items-center h-14">
@@ -24,7 +27,7 @@ export default function MobileNav() {
             }
           >
             <item.icon className="w-5 h-5" />
-            <span>{item.label}</span>
+            <span>{t(`nav.${item.label}`)}</span>
           </NavLink>
         ))}
       </div>
