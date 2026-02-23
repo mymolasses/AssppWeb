@@ -1,5 +1,10 @@
 {
   "loading": "加载中...",
+  "theme": {
+    "light": "日间模式",
+    "dark": "夜间模式",
+    "system": "跟随系统"
+  },
   "regions": {
     "available": "可用国家 / 地区",
     "all": "所有国家 / 地区"

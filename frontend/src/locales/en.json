@@ -1,5 +1,10 @@
 {
   "loading": "Loading...",
+  "theme": {
+    "light": "Light Mode",
+    "dark": "Dark Mode",
+    "system": "System Theme"
+  },
   "regions": {
     "available": "Available Regions",
     "all": "All Regions"

@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSettingsStore } from "./store/settings";
 
 import Sidebar from "./components/Layout/Sidebar";
 import MobileNav from "./components/Layout/MobileNav";
@@ -21,12 +22,39 @@ const SettingsPage = lazy(() => import("./components/Settings/SettingsPage"));
 
 function Loading() {
   const { t } = useTranslation();
-  return <div className="p-8 text-center text-gray-500">{t("loading")}</div>;
+  return (
+    <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+      {t("loading")}
+    </div>
+  );
 }
 
 export default function App() {
+  const theme = useSettingsStore((s) => s.theme);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function applyTheme() {
+      const isDark =
+        theme === "dark" || (theme === "system" && mediaQuery.matches);
+      if (isDark) {
+        root.classList.add("dark");
+        root.style.colorScheme = "dark";
+      } else {
+        root.classList.remove("dark");
+        root.style.colorScheme = "light";
+      }
+    }
+
+    applyTheme();
+    mediaQuery.addEventListener("change", applyTheme);
+    return () => mediaQuery.removeEventListener("change", applyTheme);
+  }, [theme]);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex text-gray-900 dark:text-gray-100 transition-colors duration-200">
       <Sidebar />
       <main className="flex-1 min-w-0 safe-top">
         <Suspense fallback={<Loading />}>
