@@ -17,7 +17,6 @@ export default function SearchPage() {
   const { accounts } = useAccounts();
   const initialCountry = firstAccountCountry(accounts) ?? defaultCountry;
 
-  // 从全局 Store 中获取搜索状态和方法
   const {
     term,
     country,
@@ -29,13 +28,11 @@ export default function SearchPage() {
     setSearchParam,
   } = useSearch();
 
-  // 如果全局 store 中还没有地区或设备记录（例如首次进入），则使用默认值初始化
   useEffect(() => {
     if (!country && initialCountry) setSearchParam({ country: initialCountry });
     if (!entity && defaultEntity) setSearchParam({ entity: defaultEntity });
   }, [country, initialCountry, entity, defaultEntity, setSearchParam]);
 
-  // 保证渲染时始终有值
   const activeCountry = country || initialCountry;
   const activeEntity = entity || defaultEntity;
 
@@ -103,9 +100,9 @@ export default function SearchPage() {
         </Alert>
       )}
 
-      {/* 空状态占位 */}
+      {/* Removed transition-colors to prevent dark mode flashing */}
       {results.length === 0 && !loading && !error && (
-        <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors">
+        <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
             <svg
               className="w-12 h-12 text-blue-500 dark:text-blue-400"

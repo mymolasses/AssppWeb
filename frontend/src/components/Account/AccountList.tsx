@@ -30,8 +30,8 @@ export default function AccountList() {
           {t("accounts.loading")}
         </div>
       ) : accounts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4 my-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors">
-          {/* SVG 图标：用户群组 + */}
+        /* Removed transition-colors to prevent dark mode flashing */
+        <div className="flex flex-col items-center justify-center py-16 px-4 my-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
             <svg
               className="w-12 h-12 text-blue-500 dark:text-blue-400"
@@ -50,7 +50,6 @@ export default function AccountList() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
             {t("accounts.empty")}
           </h3>
-          {/* Replaced hardcoded description with i18n key */}
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-sm">
             {t("accounts.emptyDesc")}
           </p>
@@ -102,7 +101,6 @@ export default function AccountList() {
                     </p>
                   </div>
                   <div className="text-sm text-gray-400 dark:text-gray-500">
-                    {/* Translate country code to localized name */}
                     {t(`countries.${countryCode}`, countryCode)}
                   </div>
                 </div>

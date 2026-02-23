@@ -55,7 +55,6 @@ export default function AddDownload() {
     return accounts.filter((a) => storeIdToCountry(a.store) === country);
   }, [accounts, country]);
 
-  // Update selected account whenever the available filtered accounts list changes
   useEffect(() => {
     if (filteredAccounts.length > 0) {
       if (
@@ -74,7 +73,6 @@ export default function AddDownload() {
   const account = accounts.find((a) => a.email === selectedAccount);
   const autoCountry = firstAccountCountry(accounts);
 
-  // Set the default country on initial load if user hasn't touched the selection yet
   useEffect(() => {
     if (countryTouched) return;
     const nextCountry = autoCountry ?? defaultCountry;
@@ -162,7 +160,6 @@ export default function AddDownload() {
 
   return (
     <PageContainer title={t("downloads.add.title")}>
-      {/* 移除了 max-w-lg 的外层限制，让所有元素自适应铺满 */}
       <div className="space-y-6">
         {error && <Alert type="error">{error}</Alert>}
 
@@ -224,9 +221,9 @@ export default function AddDownload() {
           </div>
         </form>
 
-        {/* 空状态占位：自适应宽度 */}
+        {/* Removed transition-colors to prevent dark mode flashing */}
         {!app && !loading && !error && (
-          <div className="flex flex-col items-center justify-center py-12 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors">
+          <div className="flex flex-col items-center justify-center py-12 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
               <svg
                 className="w-10 h-10 text-blue-500 dark:text-blue-400"
@@ -242,7 +239,6 @@ export default function AddDownload() {
                 />
               </svg>
             </div>
-            {/* Replaced hardcoded title and description with i18n keys */}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
               {t("downloads.add.emptyTitle")}
             </h3>
