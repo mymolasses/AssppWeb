@@ -20,25 +20,19 @@ AssppWeb uses a zero-trust design where the server **never sees your Apple crede
 
 This uses Cloudflare Workers + Containers and reuses this repo's Docker build.
 
-Manual deploy:
+### Self-Host with Docker Compose
 
-```bash
-cd cloudflare
-npm install
-npx wrangler login
-npm run deploy
-```
+<details>
+<summary>Click to show manual Docker Compose setup instructions</summary>
 
-### Docker Compose
+**Setup Docker Compose**
 
 ```bash
 curl -O https://raw.githubusercontent.com/Lakr233/AssppWeb/main/compose.yml
 docker compose up -d
 ```
 
-The app will be available at `http://localhost:8080`.
-
-## Environment Variables
+**Environment Variables**
 
 | Variable          | Default         | Description                                                                    |
 | ----------------- | --------------- | ------------------------------------------------------------------------------ |
@@ -46,21 +40,25 @@ The app will be available at `http://localhost:8080`.
 | `DATA_DIR`        | `./data`        | Directory for storing compiled IPAs                                            |
 | `PUBLIC_BASE_URL` | _(auto-detect)_ | Public URL for generating install manifests (e.g. `https://asspp.example.com`) |
 
-## Reverse Proxy (Required for iOS)
+**Reverse Proxy (Required for Install Apps on iOS)**
 
 iOS requires HTTPS for `itms-services://` install links. You must put AssppWeb behind a reverse proxy with a valid TLS certificate.
 
-> **⚠️ WebSocket Required:** AssppWeb relies on the Wisp protocol over WebSocket (`/wisp/`) for its zero-trust architecture. Ensure your reverse proxy or CDN (e.g., Nginx, Cloudflare) is configured to allow WebSocket connections, otherwise the app will fail to communicate with Apple servers.
-
-### Caddy
+The following is an example Caddyfile configuration:
 
 ```
-asspp.example.com {
-    reverse_proxy 127.0.0.1:8080
-}
+asspp.example.com { reverse_proxy 127.0.0.1:8080 }
 ```
 
-## DDoS Protection
+**⚠️ Make Sure WebSocket Works**
+
+AssppWeb relies on the Wisp protocol over WebSocket (`/wisp/`) for its zero-trust architecture. Ensure your reverse proxy or CDN (e.g., Nginx, Cloudflare) is configured to allow WebSocket connections, otherwise the app will fail to communicate with Apple servers.
+
+</details>
+
+## Security Recommendations
+
+**DDoS Protection**
 
 IPA files can be hundreds of megabytes. If your instance is publicly accessible, put it behind a CDN like Cloudflare to absorb bandwidth and prevent abuse.
 
