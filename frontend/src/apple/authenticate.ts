@@ -3,7 +3,6 @@ import { appleRequest } from "./request";
 import { buildPlist, parsePlist } from "./plist";
 import { mergeCookies, parseCookieHeaders } from "./cookies";
 import { fetchBag, defaultAuthURL } from "./bag";
-// Import i18n for error translations
 import i18n from "../i18n";
 
 export class AuthenticationError extends Error {
@@ -110,7 +109,7 @@ export async function authenticate(
       // Handle non-plist responses (e.g. 403 with empty body)
       if (!response.body.trim()) {
         throw new Error(
-          i18n.t("errors.auth.emptyBody", { status: response.status })
+          i18n.t("errors.auth.emptyBody", { status: response.status }),
         );
       }
 
@@ -134,7 +133,9 @@ export async function authenticate(
 
       const accountInfo = dict.accountInfo as Record<string, any>;
       if (!accountInfo) {
-        throw new Error(failureMessage ?? i18n.t("errors.auth.missingAccountInfo"));
+        throw new Error(
+          failureMessage ?? i18n.t("errors.auth.missingAccountInfo"),
+        );
       }
 
       const address = accountInfo.address as Record<string, any>;

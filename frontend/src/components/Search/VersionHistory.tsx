@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
@@ -19,7 +18,6 @@ export default function VersionHistory() {
   const navigate = useNavigate();
   const { accounts, updateAccount } = useAccounts();
   const { defaultCountry } = useSettingsStore();
-  // Initialize translation hook
   const { t } = useTranslation();
 
   const stateApp = (location.state as { app?: Software; country?: string })
@@ -58,7 +56,9 @@ export default function VersionHistory() {
       setVersions(result.versions);
       await updateAccount({ ...account, cookies: result.updatedCookies });
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("search.versions.loadFailed"));
+      setError(
+        e instanceof Error ? e.message : t("search.versions.loadFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,9 @@ export default function VersionHistory() {
       });
       navigate("/downloads");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("search.versions.downloadFailed"));
+      setError(
+        e instanceof Error ? e.message : t("search.versions.downloadFailed"),
+      );
     } finally {
       setDownloadingVersion(null);
     }
@@ -113,9 +115,7 @@ export default function VersionHistory() {
   if (!app) {
     return (
       <PageContainer title={t("search.versions.title")}>
-        <p className="text-gray-500">
-          {t("search.versions.unavailable")}
-        </p>
+        <p className="text-gray-500">{t("search.versions.unavailable")}</p>
       </PageContainer>
     );
   }
@@ -165,7 +165,9 @@ export default function VersionHistory() {
               disabled={loading || !account}
               className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
             >
-              {loading ? t("search.versions.loading") : t("search.versions.load")}
+              {loading
+                ? t("search.versions.loading")
+                : t("search.versions.load")}
             </button>
           </div>
         )}
@@ -200,7 +202,9 @@ export default function VersionHistory() {
                       </button>
                     )}
                     {isLoadingMeta && (
-                      <span className="text-xs text-gray-400">{t("search.versions.loading")}</span>
+                      <span className="text-xs text-gray-400">
+                        {t("search.versions.loading")}
+                      </span>
                     )}
                   </div>
                   <button
@@ -208,7 +212,9 @@ export default function VersionHistory() {
                     disabled={isDownloading || downloadingVersion !== null}
                     className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
-                    {isDownloading ? t("search.versions.downloading") : t("search.versions.download")}
+                    {isDownloading
+                      ? t("search.versions.downloading")
+                      : t("search.versions.download")}
                   </button>
                 </div>
               );

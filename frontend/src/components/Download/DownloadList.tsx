@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import DownloadItem from "./DownloadItem";
@@ -10,7 +9,6 @@ import type { DownloadTask } from "../../types";
 type StatusFilter = "all" | DownloadTask["status"];
 
 export default function DownloadList() {
-  // Initialize translation hook
   const { t } = useTranslation();
   const { tasks, loading, pauseDownload, resumeDownload, deleteDownload } =
     useDownloads();
@@ -89,7 +87,11 @@ export default function DownloadList() {
       ) : sortedTasks.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 mb-4">
-            {filter === "all" ? t("downloads.emptyAll") : t("downloads.emptyFilter", { status: t(`downloads.status.${filter}`) })}
+            {filter === "all"
+              ? t("downloads.emptyAll")
+              : t("downloads.emptyFilter", {
+                  status: t(`downloads.status.${filter}`),
+                })}
           </p>
           {filter === "all" && (
             <Link

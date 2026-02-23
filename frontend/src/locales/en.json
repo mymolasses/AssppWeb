@@ -206,7 +206,7 @@
       "exportSuccess": "Accounts exported successfully.",
       "importSuccess": "Accounts imported successfully.",
       "cancel": "Cancel",
-      "confirm": "Confirm",
+      "confirmBtn": "Confirm",
       "conflictTitle": "Account Conflicts Detected",
       "conflictDesc": "Found {{conflict}} identical accounts and {{new}} new accounts in the backup.",
       "conflictOverwrite": "Overwrite Local",

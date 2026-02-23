@@ -80,23 +80,31 @@ export default function PackageDetail() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500 flex-shrink-0">{t("downloads.package.bundleId")}</dt>
+              <dt className="text-gray-500 flex-shrink-0">
+                {t("downloads.package.bundleId")}
+              </dt>
               <dd className="text-gray-900 min-w-0 truncate ml-4">
                 {task.software.bundleID}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 flex-shrink-0">{t("downloads.package.version")}</dt>
+              <dt className="text-gray-500 flex-shrink-0">
+                {t("downloads.package.version")}
+              </dt>
               <dd className="text-gray-900">{task.software.version}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 flex-shrink-0">{t("downloads.package.account")}</dt>
+              <dt className="text-gray-500 flex-shrink-0">
+                {t("downloads.package.account")}
+              </dt>
               <dd className="text-gray-900 min-w-0 truncate ml-4">
                 {hashToEmail[task.accountHash] || task.accountHash}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 flex-shrink-0">{t("downloads.package.created")}</dt>
+              <dt className="text-gray-500 flex-shrink-0">
+                {t("downloads.package.created")}
+              </dt>
               <dd className="text-gray-900">
                 {new Date(task.createdAt).toLocaleString()}
               </dd>
@@ -106,60 +114,62 @@ export default function PackageDetail() {
 
         <div className="space-y-3">
           <div className="flex flex-wrap gap-3">
-          {isCompleted && (
-            <>
-              {installInfo && (
-                <div className="relative group flex items-center">
-                  <a
-                    href={installInfo.installUrl}
-                    className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    {t("downloads.package.install")}
-                  </a>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
-                    <div className="bg-white p-2 rounded-lg shadow-xl border border-gray-200 flex flex-col items-center">
-                      <QRCodeSVG
-                        value={installInfo.installUrl}
-                        size={128}
-                        className="mb-1"
-                      />
-                      <span className="text-xs text-gray-500 mt-1">{t("downloads.package.scan")}</span>
-                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-gray-200 transform rotate-45"></div>
+            {isCompleted && (
+              <>
+                {installInfo && (
+                  <div className="relative group flex items-center">
+                    <a
+                      href={installInfo.installUrl}
+                      className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      {t("downloads.package.install")}
+                    </a>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
+                      <div className="bg-white p-2 rounded-lg shadow-xl border border-gray-200 flex flex-col items-center">
+                        <QRCodeSVG
+                          value={installInfo.installUrl}
+                          size={128}
+                          className="mb-1"
+                        />
+                        <span className="text-xs text-gray-500 mt-1">
+                          {t("downloads.package.scan")}
+                        </span>
+                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-gray-200 transform rotate-45"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-              <a
-                href={`/api/packages/${task.id}/file?accountHash=${encodeURIComponent(task.accountHash)}`}
-                download
+                )}
+                <a
+                  href={`/api/packages/${task.id}/file?accountHash=${encodeURIComponent(task.accountHash)}`}
+                  download
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {t("downloads.package.downloadIpa")}
+                </a>
+              </>
+            )}
+            {isActive && (
+              <button
+                onClick={() => pauseDownload(task.id)}
+                className="px-4 py-2 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                {t("downloads.package.pause")}
+              </button>
+            )}
+            {isPaused && (
+              <button
+                onClick={() => resumeDownload(task.id)}
                 className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {t("downloads.package.downloadIpa")}
-              </a>
-            </>
-          )}
-          {isActive && (
+                {t("downloads.package.resume")}
+              </button>
+            )}
             <button
-              onClick={() => pauseDownload(task.id)}
-              className="px-4 py-2 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              onClick={handleDelete}
+              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
             >
-              {t("downloads.package.pause")}
+              {t("downloads.package.delete")}
             </button>
-          )}
-          {isPaused && (
-            <button
-              onClick={() => resumeDownload(task.id)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              {t("downloads.package.resume")}
-            </button>
-          )}
-          <button
-            onClick={handleDelete}
-            className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-          >
-            {t("downloads.package.delete")}
-          </button>
           </div>
         </div>
       </div>

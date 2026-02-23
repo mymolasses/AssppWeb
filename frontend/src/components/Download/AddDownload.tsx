@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
@@ -23,7 +22,6 @@ export default function AddDownload() {
   const navigate = useNavigate();
   const { accounts, updateAccount } = useAccounts();
   const { defaultCountry } = useSettingsStore();
-  // Initialize translation hook
   const { t } = useTranslation();
 
   const [bundleId, setBundleId] = useState("");
@@ -37,27 +35,30 @@ export default function AddDownload() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Extract unique country codes from user's added accounts to build the "Available Regions" list
   const availableCountryCodes = Array.from(
-    new Set(accounts.map((a) => storeIdToCountry(a.store)).filter(Boolean) as string[])
+    new Set(
+      accounts
+        .map((a) => storeIdToCountry(a.store))
+        .filter(Boolean) as string[],
+    ),
   ).sort((a, b) =>
     t(`countries.${a}`, a).localeCompare(t(`countries.${b}`, b)),
   );
 
-  // Dynamically sort all countries inside component to access the translation function
   const allCountryCodes = Object.keys(countryCodeMap).sort((a, b) =>
     t(`countries.${a}`, a).localeCompare(t(`countries.${b}`, b)),
   );
 
-  // Filter accounts based on the selected country/region
   const filteredAccounts = useMemo(() => {
     return accounts.filter((a) => storeIdToCountry(a.store) === country);
   }, [accounts, country]);
 
-  // Automatically select an account when the filtered list changes
   useEffect(() => {
     if (filteredAccounts.length > 0) {
-      if (!selectedAccount || !filteredAccounts.find((a) => a.email === selectedAccount)) {
+      if (
+        !selectedAccount ||
+        !filteredAccounts.find((a) => a.email === selectedAccount)
+      ) {
         setSelectedAccount(filteredAccounts[0].email);
       }
     } else {
@@ -93,7 +94,9 @@ export default function AddDownload() {
       setApp(result);
       setStep("ready");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("downloads.add.lookupFailed"));
+      setError(
+        e instanceof Error ? e.message : t("downloads.add.lookupFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -107,7 +110,9 @@ export default function AddDownload() {
       const result = await purchaseApp(account, app);
       await updateAccount({ ...account, cookies: result.updatedCookies });
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("downloads.add.licenseFailed"));
+      setError(
+        e instanceof Error ? e.message : t("downloads.add.licenseFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -123,7 +128,9 @@ export default function AddDownload() {
       await updateAccount({ ...account, cookies: result.updatedCookies });
       setStep("versions");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("downloads.add.versionsFailed"));
+      setError(
+        e instanceof Error ? e.message : t("downloads.add.versionsFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -150,7 +157,9 @@ export default function AddDownload() {
       });
       navigate("/downloads");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("downloads.add.downloadFailed"));
+      setError(
+        e instanceof Error ? e.message : t("downloads.add.downloadFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -223,7 +232,9 @@ export default function AddDownload() {
                     </option>
                   ))
                 ) : (
-                  <option value="">{t("downloads.add.noAccountsForRegion")}</option>
+                  <option value="">
+                    {t("downloads.add.noAccountsForRegion")}
+                  </option>
                 )}
               </select>
             )}
@@ -233,7 +244,9 @@ export default function AddDownload() {
             disabled={loading || !bundleId.trim()}
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {loading && step === "lookup" ? t("downloads.add.lookingUp") : t("downloads.add.lookup")}
+            {loading && step === "lookup"
+              ? t("downloads.add.lookingUp")
+              : t("downloads.add.lookup")}
           </button>
         </form>
 
@@ -245,7 +258,8 @@ export default function AddDownload() {
                 <p className="font-medium text-gray-900">{app.name}</p>
                 <p className="text-sm text-gray-500">{app.artistName}</p>
                 <p className="text-sm text-gray-400">
-                  v{app.version} - {app.formattedPrice ?? t("search.product.free")}
+                  v{app.version} -{" "}
+                  {app.formattedPrice ?? t("search.product.free")}
                 </p>
               </div>
             </div>
@@ -294,7 +308,9 @@ export default function AddDownload() {
                 disabled={loading || !account}
                 className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? t("downloads.add.processing") : t("downloads.add.download")}
+                {loading
+                  ? t("downloads.add.processing")
+                  : t("downloads.add.download")}
               </button>
             </div>
           </div>

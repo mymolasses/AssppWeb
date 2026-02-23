@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import { useAccounts } from "../../hooks/useAccounts";
@@ -10,7 +9,6 @@ import { generateDeviceId } from "../../apple/config";
 export default function AddAccountForm() {
   const navigate = useNavigate();
   const { addAccount } = useAccounts();
-  // Initialize translation hook
   const { t } = useTranslation();
 
   const [email, setEmail] = useState("");
@@ -45,7 +43,9 @@ export default function AddAccountForm() {
         setNeedsCode(true);
         setError(err.message);
       } else {
-        setError(err instanceof Error ? err.message : t("accounts.addForm.authFailed"));
+        setError(
+          err instanceof Error ? err.message : t("accounts.addForm.authFailed"),
+        );
       }
     } finally {
       setLoading(false);
@@ -109,14 +109,12 @@ export default function AddAccountForm() {
                   value={deviceId}
                   onChange={(e) => setDeviceId(e.target.value)}
                   disabled={loading || needsCode}
-                  // Added explicit height h-[42px] to match the button
                   className="block flex-1 h-[42px] rounded-md border border-gray-300 px-3 py-2 text-base font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 />
                 <button
                   type="button"
                   onClick={() => setDeviceId(generateDeviceId())}
                   disabled={loading || needsCode}
-                  // Added explicit height h-[42px] to match the input
                   className="h-[42px] px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t("accounts.addForm.randomize")}
@@ -168,7 +166,9 @@ export default function AddAccountForm() {
               className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading && <Spinner />}
-              {needsCode ? t("accounts.addForm.verify") : t("accounts.addForm.signIn")}
+              {needsCode
+                ? t("accounts.addForm.verify")
+                : t("accounts.addForm.signIn")}
             </button>
             <button
               type="button"

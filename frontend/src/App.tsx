@@ -1,6 +1,5 @@
 import { Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
-// Import useTranslation hook for i18n support
 import { useTranslation } from "react-i18next";
 
 import Sidebar from "./components/Layout/Sidebar";
@@ -21,10 +20,7 @@ const PackageDetail = lazy(() => import("./components/Download/PackageDetail"));
 const SettingsPage = lazy(() => import("./components/Settings/SettingsPage"));
 
 function Loading() {
-  // Initialize the translation hook
   const { t } = useTranslation();
-  
-  // Use the translation key "loading" from our JSON files
   return <div className="p-8 text-center text-gray-500">{t("loading")}</div>;
 }
 

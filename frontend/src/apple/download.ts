@@ -3,7 +3,6 @@ import { appleRequest } from "./request";
 import { buildPlist, parsePlist } from "./plist";
 import { mergeCookies, parseCookieHeaders } from "./cookies";
 import { storeAPIHost } from "./config";
-// Import i18n to support translations in raw TS files
 import i18n from "../i18n";
 
 export class DownloadError extends Error {
@@ -86,7 +85,10 @@ export async function getDownloadInfo(
       switch (failureType) {
         case "2034":
         case "2042":
-          throw new DownloadError(i18n.t("errors.download.passwordExpired"), failureType);
+          throw new DownloadError(
+            i18n.t("errors.download.passwordExpired"),
+            failureType,
+          );
         case "9610":
           throw new DownloadError(
             i18n.t("errors.download.licenseRequired"),
@@ -94,11 +96,15 @@ export async function getDownloadInfo(
           );
         default: {
           if (customerMessage === "Your password has changed.") {
-            throw new DownloadError(i18n.t("errors.download.passwordExpired"), failureType);
+            throw new DownloadError(
+              i18n.t("errors.download.passwordExpired"),
+              failureType,
+            );
           }
           // If apple provides a specific string, we fall back to it, otherwise we use the localized default.
           throw new DownloadError(
-            customerMessage ?? i18n.t("errors.download.downloadFailed", { failureType }),
+            customerMessage ??
+              i18n.t("errors.download.downloadFailed", { failureType }),
             failureType,
           );
         }

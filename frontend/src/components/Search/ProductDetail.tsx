@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
@@ -15,7 +14,6 @@ import {
   accountStoreCountry,
   firstAccountCountry,
 } from "../../utils/account";
-// Import storeIdToCountry to display account region
 import { storeIdToCountry } from "../../apple/config";
 import type { Software } from "../../types";
 
@@ -24,7 +22,6 @@ export default function ProductDetail() {
   const location = useLocation();
   const { accounts, updateAccount } = useAccounts();
   const { defaultCountry } = useSettingsStore();
-  // Initialize translation hook
   const { t } = useTranslation();
 
   const navigate = useNavigate();
@@ -97,7 +94,9 @@ export default function ProductDetail() {
       await updateAccount({ ...account, cookies: result.updatedCookies });
       setSuccess(t("search.product.licenseSuccess"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("search.product.purchaseFailed"));
+      setError(
+        e instanceof Error ? e.message : t("search.product.purchaseFailed"),
+      );
     } finally {
       setActionLoading(false);
     }
@@ -125,7 +124,9 @@ export default function ProductDetail() {
       });
       navigate("/downloads");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("search.product.downloadFailed"));
+      setError(
+        e instanceof Error ? e.message : t("search.product.downloadFailed"),
+      );
     } finally {
       setActionLoading(false);
     }
@@ -182,12 +183,14 @@ export default function ProductDetail() {
                 disabled={actionLoading}
               >
                 {accounts.map((a) => {
-                  // Resolve region code and display name for each account
                   const regionCode = storeIdToCountry(a.store);
-                  const regionDisplay = regionCode ? t(`countries.${regionCode}`, regionCode) : a.store;
+                  const regionDisplay = regionCode
+                    ? t(`countries.${regionCode}`, regionCode)
+                    : a.store;
                   return (
                     <option key={a.email} value={a.email}>
-                      {a.firstName} {a.lastName} ({a.email}){regionDisplay ? ` - ${regionDisplay}` : ""}
+                      {a.firstName} {a.lastName} ({a.email})
+                      {regionDisplay ? ` - ${regionDisplay}` : ""}
                     </option>
                   );
                 })}
@@ -200,7 +203,9 @@ export default function ProductDetail() {
                   disabled={actionLoading}
                   className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
                 >
-                  {actionLoading ? t("search.product.processing") : t("search.product.getLicense")}
+                  {actionLoading
+                    ? t("search.product.processing")
+                    : t("search.product.getLicense")}
                 </button>
               )}
               <button
@@ -208,7 +213,9 @@ export default function ProductDetail() {
                 disabled={actionLoading}
                 className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
-                {actionLoading ? t("search.product.processing") : t("search.product.download")}
+                {actionLoading
+                  ? t("search.product.processing")
+                  : t("search.product.download")}
               </button>
               <Link
                 to={`/search/${app.id}/versions`}
@@ -222,7 +229,9 @@ export default function ProductDetail() {
         )}
 
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="font-semibold text-gray-900 mb-2">{t("search.product.details")}</h2>
+          <h2 className="font-semibold text-gray-900 mb-2">
+            {t("search.product.details")}
+          </h2>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-gray-500">{t("search.product.bundleId")}</dt>
             <dd className="text-gray-900 break-all">{app.bundleID}</dd>
@@ -247,7 +256,9 @@ export default function ProductDetail() {
 
         {app.description && (
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="font-semibold text-gray-900 mb-2">{t("search.product.description")}</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">
+              {t("search.product.description")}
+            </h2>
             <p className="text-sm text-gray-700 whitespace-pre-line">
               {app.description}
             </p>
@@ -256,7 +267,9 @@ export default function ProductDetail() {
 
         {app.releaseNotes && (
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="font-semibold text-gray-900 mb-2">{t("search.product.releaseNotes")}</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">
+              {t("search.product.releaseNotes")}
+            </h2>
             <p className="text-sm text-gray-700 whitespace-pre-line">
               {app.releaseNotes}
             </p>
@@ -265,7 +278,9 @@ export default function ProductDetail() {
 
         {app.screenshotUrls && app.screenshotUrls.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="font-semibold text-gray-900 mb-2">{t("search.product.screenshots")}</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">
+              {t("search.product.screenshots")}
+            </h2>
             <div className="flex gap-3 overflow-x-auto pb-2">
               {app.screenshotUrls.map((url, i) => (
                 <img

@@ -1,4 +1,3 @@
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 
 interface BadgeProps {
@@ -21,7 +20,6 @@ const styles: Record<BadgeProps["status"], string> = {
 };
 
 export default function Badge({ status }: BadgeProps) {
-  // Initialize translation hook
   const { t } = useTranslation();
 
   return (

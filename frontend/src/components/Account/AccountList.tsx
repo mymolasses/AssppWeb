@@ -1,13 +1,11 @@
 import { useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import { useAccountsStore } from "../../store/accounts";
 import { storeIdToCountry } from "../../apple/config";
 import PageContainer from "../Layout/PageContainer";
 
 export default function AccountList() {
-  // Initialize translation hook
   const { t } = useTranslation();
   const { accounts, loading, loadAccounts } = useAccountsStore();
 
@@ -44,8 +42,9 @@ export default function AccountList() {
       ) : (
         <div className="space-y-2">
           {accounts.map((account) => {
-            const countryCode = storeIdToCountry(account.store) || account.store;
-            
+            const countryCode =
+              storeIdToCountry(account.store) || account.store;
+
             return (
               <NavLink
                 key={account.email}

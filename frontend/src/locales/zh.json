@@ -206,7 +206,7 @@
       "exportSuccess": "账号导出成功。",
       "importSuccess": "账号导入成功。",
       "cancel": "取消",
-      "confirm": "确认",
+      "confirmBtn": "确认",
       "conflictTitle": "发现重复账号",
       "conflictDesc": "在备份中发现 {{conflict}} 个相同的账号以及 {{new}} 个新账号。",
       "conflictOverwrite": "覆盖本地",

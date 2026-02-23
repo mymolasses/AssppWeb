@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import { countryCodeMap } from "../../apple/config";
@@ -19,11 +18,9 @@ const entityTypes = [
 ];
 
 export default function SettingsPage() {
-  // Initialize translation hook and i18n instance
   const { t, i18n } = useTranslation();
-  // Get accounts and store methods to interact with IndexedDB locally
   const { accounts, addAccount, updateAccount } = useAccountsStore();
-  
+
   const [country, setCountry] = useState(
     () => localStorage.getItem("asspp-default-country") || "US",
   );
@@ -32,20 +29,17 @@ export default function SettingsPage() {
   );
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
 
-  // States for Export feature
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportPassword, setExportPassword] = useState("");
   const [exportConfirmPassword, setExportConfirmPassword] = useState("");
   const [exportError, setExportError] = useState("");
 
-  // States for Import feature
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importPassword, setImportPassword] = useState("");
   const [importError, setImportError] = useState("");
   const [importFileData, setImportFileData] = useState("");
 
-  // States for Import Conflict Resolution
   const [conflictModalOpen, setConflictModalOpen] = useState(false);
   const [pendingAccounts, setPendingAccounts] = useState<Account[]>([]);
   const [conflictStats, setConflictStats] = useState({ conflict: 0, new: 0 });
@@ -65,19 +59,16 @@ export default function SettingsPage() {
       .catch(() => setServerInfo(null));
   }, []);
 
-  // Sort countries dynamically based on the translated names of the current language
   const sortedCountries = Object.keys(countryCodeMap).sort((a, b) =>
     t(`countries.${a}`, a).localeCompare(t(`countries.${b}`, b)),
   );
 
-  // Handle Export File Generation
   const handleExport = async () => {
     if (exportPassword !== exportConfirmPassword) {
       setExportError(t("settings.data.passwordMismatch"));
       return;
     }
     try {
-      // Encrypt accounts array
       const encrypted = await encryptData(accounts, exportPassword);
       const blob = new Blob([encrypted], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
@@ -86,7 +77,7 @@ export default function SettingsPage() {
       a.download = "asspp-accounts.enc";
       a.click();
       URL.revokeObjectURL(url);
-      
+
       setExportModalOpen(false);
       setExportPassword("");
       setExportConfirmPassword("");
@@ -97,7 +88,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Triggered when user selects a file from the hidden input
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -109,19 +99,24 @@ export default function SettingsPage() {
       setImportModalOpen(true);
     };
     reader.readAsText(file);
-    // Reset input so same file can be selected again if needed
     e.target.value = "";
   };
 
-  // Handle Import Decryption and Conflict Detection
   const handleImport = async () => {
     try {
       const parsed = await decryptData(importFileData, importPassword);
       if (!Array.isArray(parsed)) throw new Error("Invalid format");
-      
+      const valid = parsed.filter(
+        (item: any) =>
+          item &&
+          typeof item === "object" &&
+          typeof item.email === "string" &&
+          item.email.length > 0,
+      ) as Account[];
+      if (valid.length === 0) throw new Error("No valid accounts found");
+
       if (accounts.length === 0) {
-        // Safe sequential addition to prevent state clobbering
-        for (const acc of parsed) {
+        for (const acc of valid) {
           await addAccount(acc);
         }
         alert(t("settings.data.importSuccess"));
@@ -129,23 +124,22 @@ export default function SettingsPage() {
         setImportPassword("");
         setImportError("");
       } else {
-        // Detect duplicates
         let conflictCount = 0;
         let newCount = 0;
-        parsed.forEach(imported => {
-          if (accounts.some(a => a.email === imported.email)) conflictCount++;
+        valid.forEach((imported) => {
+          if (accounts.some((a) => a.email === imported.email)) conflictCount++;
           else newCount++;
         });
 
         if (conflictCount > 0) {
           setConflictStats({ conflict: conflictCount, new: newCount });
-          setPendingAccounts(parsed);
+          setPendingAccounts(valid);
           setImportModalOpen(false);
           setImportPassword("");
           setImportError("");
-          setConflictModalOpen(true); // Open conflict resolution modal
+          setConflictModalOpen(true);
         } else {
-          for (const acc of parsed) {
+          for (const acc of valid) {
             await addAccount(acc);
           }
           alert(t("settings.data.importSuccess"));
@@ -159,10 +153,9 @@ export default function SettingsPage() {
     }
   };
 
-  // Handle specific resolution chosen by user (Overwrite vs Skip)
   const handleResolveConflict = async (overwrite: boolean) => {
     for (const imported of pendingAccounts) {
-      const exists = accounts.some(a => a.email === imported.email);
+      const exists = accounts.some((a) => a.email === imported.email);
       if (exists) {
         if (overwrite) await updateAccount(imported); // Replace local
       } else {
@@ -177,10 +170,10 @@ export default function SettingsPage() {
   return (
     <PageContainer title={t("settings.title")}>
       <div className="space-y-6">
-        
-        {/* Language Selection Section */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t("settings.language.title")}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.language.title")}
+          </h2>
           <div className="space-y-4">
             <div>
               <label
@@ -203,7 +196,9 @@ export default function SettingsPage() {
         </section>
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t("settings.defaults.title")}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.defaults.title")}
+          </h2>
           <div className="space-y-4">
             <div>
               <label
@@ -249,12 +244,16 @@ export default function SettingsPage() {
         </section>
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t("settings.server.title")}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.server.title")}
+          </h2>
           {serverInfo ? (
             <dl className="space-y-3">
               {serverInfo.version && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">{t("settings.server.version")}</dt>
+                  <dt className="text-sm font-medium text-gray-500">
+                    {t("settings.server.version")}
+                  </dt>
                   <dd className="text-sm text-gray-900">
                     {serverInfo.version}
                   </dd>
@@ -272,7 +271,9 @@ export default function SettingsPage() {
               )}
               {serverInfo.uptime != null && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">{t("settings.server.uptime")}</dt>
+                  <dt className="text-sm font-medium text-gray-500">
+                    {t("settings.server.uptime")}
+                  </dt>
                   <dd className="text-sm text-gray-900">
                     {formatUptime(serverInfo.uptime)}
                   </dd>
@@ -287,7 +288,9 @@ export default function SettingsPage() {
         </section>
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t("settings.data.title")}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.data.title")}
+          </h2>
           <p className="text-sm text-gray-600 mb-4">
             {t("settings.data.description")}
           </p>
@@ -331,7 +334,9 @@ export default function SettingsPage() {
         </section>
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t("settings.about.title")}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {t("settings.about.title")}
+          </h2>
           <p className="text-sm text-gray-600">
             {t("settings.about.description")}
           </p>
@@ -339,14 +344,17 @@ export default function SettingsPage() {
         </section>
       </div>
 
-      {/* Export Password Modal */}
       {exportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-bold mb-4">{t("settings.data.exportBtn")}</h3>
+            <h3 className="text-lg font-bold mb-4">
+              {t("settings.data.exportBtn")}
+            </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("settings.data.passwordPrompt")}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("settings.data.passwordPrompt")}
+                </label>
                 <input
                   type="password"
                   value={exportPassword}
@@ -355,7 +363,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("settings.data.passwordConfirm")}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("settings.data.passwordConfirm")}
+                </label>
                 <input
                   type="password"
                   value={exportConfirmPassword}
@@ -363,7 +373,9 @@ export default function SettingsPage() {
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
-              {exportError && <p className="text-sm text-red-600">{exportError}</p>}
+              {exportError && (
+                <p className="text-sm text-red-600">{exportError}</p>
+              )}
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -377,21 +389,24 @@ export default function SettingsPage() {
                 disabled={!exportPassword || !exportConfirmPassword}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {t("settings.data.confirm")}
+                {t("settings.data.confirmBtn")}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Import Password Modal */}
       {importModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-bold mb-4">{t("settings.data.importBtn")}</h3>
+            <h3 className="text-lg font-bold mb-4">
+              {t("settings.data.importBtn")}
+            </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("settings.data.passwordPrompt")}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("settings.data.passwordPrompt")}
+                </label>
                 <input
                   type="password"
                   value={importPassword}
@@ -399,7 +414,9 @@ export default function SettingsPage() {
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
-              {importError && <p className="text-sm text-red-600">{importError}</p>}
+              {importError && (
+                <p className="text-sm text-red-600">{importError}</p>
+              )}
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -413,20 +430,24 @@ export default function SettingsPage() {
                 disabled={!importPassword}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {t("settings.data.confirm")}
+                {t("settings.data.confirmBtn")}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Import Conflict Resolution Modal */}
       {conflictModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-bold mb-4">{t("settings.data.conflictTitle")}</h3>
+            <h3 className="text-lg font-bold mb-4">
+              {t("settings.data.conflictTitle")}
+            </h3>
             <p className="text-sm text-gray-700 mb-6">
-              {t("settings.data.conflictDesc", { conflict: conflictStats.conflict, new: conflictStats.new })}
+              {t("settings.data.conflictDesc", {
+                conflict: conflictStats.conflict,
+                new: conflictStats.new,
+              })}
             </p>
             <div className="flex flex-col gap-3">
               <button
@@ -441,7 +462,6 @@ export default function SettingsPage() {
               >
                 {t("settings.data.conflictSkip")}
               </button>
-              {/* Updated cancel button with border and consistent styling */}
               <button
                 onClick={() => setConflictModalOpen(false)}
                 className="w-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 mt-2"
@@ -452,7 +472,6 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-
     </PageContainer>
   );
 }

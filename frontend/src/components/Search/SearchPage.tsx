@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
@@ -11,7 +10,6 @@ import { countryCodeMap, storeIdToCountry } from "../../apple/config";
 import { firstAccountCountry } from "../../utils/account";
 
 export default function SearchPage() {
-  // Initialize translation hook
   const { t } = useTranslation();
   const { defaultCountry, defaultEntity } = useSettingsStore();
   const { accounts } = useAccounts();
@@ -21,14 +19,16 @@ export default function SearchPage() {
   const [entity, setEntity] = useState<string>(defaultEntity);
   const { results, loading, error, search } = useSearch();
 
-  // Extract unique country codes from user's added accounts to build the "Available Regions" list
   const availableCountryCodes = Array.from(
-    new Set(accounts.map((a) => storeIdToCountry(a.store)).filter(Boolean) as string[])
+    new Set(
+      accounts
+        .map((a) => storeIdToCountry(a.store))
+        .filter(Boolean) as string[],
+    ),
   ).sort((a, b) =>
     t(`countries.${a}`, a).localeCompare(t(`countries.${b}`, b)),
   );
 
-  // Dynamically sort all countries inside component to access the translation function
   const allCountryCodes = Object.keys(countryCodeMap).sort((a, b) =>
     t(`countries.${a}`, a).localeCompare(t(`countries.${b}`, b)),
   );

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import { useAccounts } from "../../hooks/useAccounts";
@@ -10,7 +9,6 @@ import { storeIdToCountry } from "../../apple/config";
 export default function AccountDetail() {
   const { email } = useParams<{ email: string }>();
   const navigate = useNavigate();
-  // Initialize translation hook
   const { t } = useTranslation();
   const {
     accounts,
@@ -81,7 +79,9 @@ export default function AccountDetail() {
         setError(err.message);
       } else {
         setError(
-          err instanceof Error ? err.message : t("accounts.detail.reauthFailed"),
+          err instanceof Error
+            ? err.message
+            : t("accounts.detail.reauthFailed"),
         );
       }
     } finally {
@@ -96,9 +96,8 @@ export default function AccountDetail() {
   }
 
   const countryCode = storeIdToCountry(account.store);
-  // Prepare localized region string
-  const displayRegion = countryCode 
-    ? `${t(`countries.${countryCode}`, countryCode)} (${account.store})` 
+  const displayRegion = countryCode
+    ? `${t(`countries.${countryCode}`, countryCode)} (${account.store})`
     : account.store;
 
   return (
@@ -110,7 +109,10 @@ export default function AccountDetail() {
               label={t("accounts.detail.name")}
               value={`${account.firstName} ${account.lastName}`}
             />
-            <DetailRow label={t("accounts.detail.email")} value={account.email} />
+            <DetailRow
+              label={t("accounts.detail.email")}
+              value={account.email}
+            />
             <DetailRow
               label={t("accounts.detail.appleId")}
               value={account.appleId || account.email}
@@ -127,7 +129,9 @@ export default function AccountDetail() {
               label={t("accounts.detail.deviceId")}
               value={account.deviceIdentifier}
             />
-            {account.pod && <DetailRow label={t("accounts.detail.pod")} value={account.pod} />}
+            {account.pod && (
+              <DetailRow label={t("accounts.detail.pod")} value={account.pod} />
+            )}
           </dl>
         </section>
 
@@ -196,7 +200,9 @@ export default function AccountDetail() {
             </button>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-600">{t("accounts.detail.areYouSure")}</span>
+              <span className="text-sm text-gray-600">
+                {t("accounts.detail.areYouSure")}
+              </span>
               <button
                 onClick={handleDelete}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"

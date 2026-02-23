@@ -3,7 +3,6 @@ import { appleRequest } from "./request";
 import { buildPlist, parsePlist } from "./plist";
 import { mergeCookies, parseCookieHeaders } from "./cookies";
 import { purchaseAPIHost } from "./config";
-// Import i18n to support translations in raw TS files
 import i18n from "../i18n";
 
 export class PurchaseError extends Error {
@@ -102,13 +101,22 @@ async function purchaseWithParams(
         throw new PurchaseError(i18n.t("errors.purchase.unavailable"), "2059");
       case "2034":
       case "2042":
-        throw new PurchaseError(i18n.t("errors.purchase.passwordExpired"), failureType);
+        throw new PurchaseError(
+          i18n.t("errors.purchase.passwordExpired"),
+          failureType,
+        );
       default: {
         if (customerMessage === "Your password has changed.") {
-          throw new PurchaseError(i18n.t("errors.purchase.passwordExpired"), failureType);
+          throw new PurchaseError(
+            i18n.t("errors.purchase.passwordExpired"),
+            failureType,
+          );
         }
         if (customerMessage === "Subscription Required") {
-          throw new PurchaseError(i18n.t("errors.purchase.subscriptionRequired"), failureType);
+          throw new PurchaseError(
+            i18n.t("errors.purchase.subscriptionRequired"),
+            failureType,
+          );
         }
         // Check for terms page action
         const action = dict.action as Record<string, any> | undefined;
@@ -124,7 +132,10 @@ async function purchaseWithParams(
 
         // Handle unknown error specific fallback mappings
         let msg = customerMessage;
-        if (msg === "An unknown error has occurred" || msg === "An unknown error has occurred.") {
+        if (
+          msg === "An unknown error has occurred" ||
+          msg === "An unknown error has occurred."
+        ) {
           msg = i18n.t("errors.purchase.unknownError");
         }
 

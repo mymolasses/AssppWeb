@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import type { DownloadTask } from "../../types";
 import AppIcon from "../common/AppIcon";
@@ -19,9 +18,8 @@ export default function DownloadItem({
   onResume,
   onDelete,
 }: DownloadItemProps) {
-  // Initialize translation hook
   const { t } = useTranslation();
-  
+
   const isActive = task.status === "downloading" || task.status === "injecting";
   const isPaused = task.status === "paused";
   const isCompleted = task.status === "completed";

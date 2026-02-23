@@ -1,5 +1,4 @@
 import { NavLink } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 
 const navItems = [
@@ -11,7 +10,6 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  // Initialize translation hook
   const { t } = useTranslation();
 
   return (
@@ -34,7 +32,6 @@ export default function Sidebar() {
             }
           >
             <item.icon className="w-5 h-5" />
-            {/* Map label to translation key */}
             {t(`nav.${item.label}`)}
           </NavLink>
         ))}

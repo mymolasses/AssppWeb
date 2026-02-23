@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import { useAccounts } from "../../hooks/useAccounts";
@@ -13,7 +12,6 @@ interface Stats {
 }
 
 export default function HomePage() {
-  // Initialize translation hook
   const { t } = useTranslation();
   const { accounts } = useAccounts();
   const [stats, setStats] = useState<Stats>({
@@ -70,9 +68,7 @@ export default function HomePage() {
           <h1 className="text-3xl font-bold text-gray-900">
             {t("home.welcome")}
           </h1>
-          <p className="mt-2 text-gray-600">
-            {t("home.subtitle")}
-          </p>
+          <p className="mt-2 text-gray-600">{t("home.subtitle")}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

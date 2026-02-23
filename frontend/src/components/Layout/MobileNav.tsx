@@ -1,17 +1,15 @@
 import { NavLink } from "react-router-dom";
-// Import useTranslation hook
 import { useTranslation } from "react-i18next";
 
 const navItems = [
-  { to: "/", label: "Home", icon: HomeIcon },
-  { to: "/accounts", label: "Accounts", icon: AccountsIcon },
-  { to: "/search", label: "Search", icon: SearchIcon },
-  { to: "/downloads", label: "Downloads", icon: DownloadsIcon },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/", label: "home", icon: HomeIcon },
+  { to: "/accounts", label: "accounts", icon: AccountsIcon },
+  { to: "/search", label: "search", icon: SearchIcon },
+  { to: "/downloads", label: "downloads", icon: DownloadsIcon },
+  { to: "/settings", label: "settings", icon: SettingsIcon },
 ];
 
 export default function MobileNav() {
-  // Initialize translation hook
   const { t } = useTranslation();
 
   return (
@@ -29,8 +27,7 @@ export default function MobileNav() {
             }
           >
             <item.icon className="w-5 h-5" />
-            {/* Map label to translation key using lowercase to match JSON structure */}
-            <span>{t(`nav.${item.label.toLowerCase()}`)}</span>
+            <span>{t(`nav.${item.label}`)}</span>
           </NavLink>
         ))}
       </div>
