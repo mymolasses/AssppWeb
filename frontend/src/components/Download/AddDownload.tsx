@@ -170,7 +170,7 @@ export default function AddDownload() {
 
         <form onSubmit={handleLookup} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t("downloads.add.bundleId")}
             </label>
             <input
@@ -178,7 +178,7 @@ export default function AddDownload() {
               value={bundleId}
               onChange={(e) => setBundleId(e.target.value)}
               placeholder={t("downloads.add.placeholder")}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+              className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
               disabled={loading}
             />
           </div>
@@ -193,13 +193,13 @@ export default function AddDownload() {
               availableCountryCodes={availableCountryCodes}
               allCountryCodes={allCountryCodes}
               disabled={loading}
-              className="w-1/2 truncate disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+              className="w-1/2 truncate disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed"
             />
             {accounts.length > 0 && (
               <select
                 value={selectedAccount}
                 onChange={(e) => setSelectedAccount(e.target.value)}
-                className="w-1/2 rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                className="w-1/2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
                 disabled={loading || filteredAccounts.length === 0}
               >
                 {filteredAccounts.length > 0 ? (
@@ -228,13 +228,17 @@ export default function AddDownload() {
         </form>
 
         {app && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 transition-colors">
             <div className="flex items-center gap-4 mb-4">
               <AppIcon url={app.artworkUrl} name={app.name} size="md" />
               <div>
-                <p className="font-medium text-gray-900">{app.name}</p>
-                <p className="text-sm text-gray-500">{app.artistName}</p>
-                <p className="text-sm text-gray-400">
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {app.name}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {app.artistName}
+                </p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">
                   v{app.version} -{" "}
                   {app.formattedPrice ?? t("search.product.free")}
                 </p>
@@ -243,13 +247,13 @@ export default function AddDownload() {
 
             {step === "versions" && versions.length > 0 && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t("downloads.add.versionOptional")}
                 </label>
                 <select
                   value={selectedVersion}
                   onChange={(e) => setSelectedVersion(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
                   <option value="">{t("downloads.add.latest")}</option>
                   {versions.map((v) => (
@@ -275,7 +279,7 @@ export default function AddDownload() {
                 <button
                   onClick={handleLoadVersions}
                   disabled={loading || !account}
-                  className="px-3 py-1.5 text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {t("downloads.add.selectVersion")}
                 </button>

@@ -26,15 +26,17 @@ export default function AccountList() {
       }
     >
       {loading ? (
-        <div className="text-center text-gray-500 py-12">
+        <div className="text-center text-gray-500 dark:text-gray-400 py-12">
           {t("accounts.loading")}
         </div>
       ) : accounts.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">{t("accounts.empty")}</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            {t("accounts.empty")}
+          </p>
           <Link
             to="/accounts/add"
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
           >
             {t("accounts.addFirst")}
           </Link>
@@ -50,21 +52,23 @@ export default function AccountList() {
                 key={account.email}
                 to={`/accounts/${encodeURIComponent(account.email)}`}
                 className={({ isActive }) =>
-                  `block bg-white rounded-lg border p-4 transition-colors ${
+                  `block bg-white dark:bg-gray-900 rounded-lg border p-4 transition-colors ${
                     isActive
-                      ? "border-blue-300 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30"
+                      : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
                   }`
                 }
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-white">
                       {account.firstName} {account.lastName}
                     </p>
-                    <p className="text-sm text-gray-500">{account.email}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {account.email}
+                    </p>
                   </div>
-                  <div className="text-sm text-gray-400">
+                  <div className="text-sm text-gray-400 dark:text-gray-500">
                     {/* Translate country code to localized name */}
                     {t(`countries.${countryCode}`, countryCode)}
                   </div>

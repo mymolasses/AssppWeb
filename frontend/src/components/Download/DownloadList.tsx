@@ -17,8 +17,6 @@ export default function DownloadList() {
   const filtered =
     filter === "all" ? tasks : tasks.filter((t) => t.status === filter);
 
-  // Sort tasks by creation time in descending order (newest first)
-  // This ensures consistent ordering regardless of task status changes
   const sortedTasks = [...filtered].sort((a, b) => {
     const timeA = new Date(a.createdAt || 0).getTime();
     const timeB = new Date(b.createdAt || 0).getTime();
@@ -59,7 +57,7 @@ export default function DownloadList() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               filter === status
                 ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
             }`}
           >
             {t(`downloads.status.${status}`)}
@@ -72,17 +70,17 @@ export default function DownloadList() {
         ))}
       </div>
 
-      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+      <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-400 transition-colors">
         {t("downloads.warning")}
       </div>
 
       {loading && tasks.length === 0 ? (
-        <div className="text-center text-gray-500 py-12">
+        <div className="text-center text-gray-500 dark:text-gray-400 py-12">
           {t("downloads.loading")}
         </div>
       ) : sortedTasks.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
             {filter === "all"
               ? t("downloads.emptyAll")
               : t("downloads.emptyFilter", {
@@ -92,7 +90,7 @@ export default function DownloadList() {
           {filter === "all" && (
             <Link
               to="/search"
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
             >
               {t("downloads.searchApps")}
             </Link>

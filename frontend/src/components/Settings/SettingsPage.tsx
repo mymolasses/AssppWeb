@@ -171,15 +171,15 @@ export default function SettingsPage() {
   return (
     <PageContainer title={t("settings.title")}>
       <div className="space-y-6">
-        <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {t("settings.language.title")}
           </h2>
           <div className="space-y-4">
             <div>
               <label
                 htmlFor="language"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t("settings.language.label")}
               </label>
@@ -187,7 +187,7 @@ export default function SettingsPage() {
                 id="language"
                 value={i18n.language.split("-")[0]} // Normalizes en-US to en
                 onChange={(e) => i18n.changeLanguage(e.target.value)}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
                 <option value="en">English</option>
                 <option value="zh">简体中文</option>
@@ -196,15 +196,15 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {t("settings.defaults.title")}
           </h2>
           <div className="space-y-4">
             <div>
               <label
                 htmlFor="country"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t("settings.defaults.country")}
               </label>
@@ -212,7 +212,7 @@ export default function SettingsPage() {
                 id="country"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
                 {sortedCountries.map((code) => (
                   <option key={code} value={code}>
@@ -224,7 +224,7 @@ export default function SettingsPage() {
             <div>
               <label
                 htmlFor="entity"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t("settings.defaults.entity")}
               </label>
@@ -232,7 +232,7 @@ export default function SettingsPage() {
                 id="entity"
                 value={entity}
                 onChange={(e) => setEntity(e.target.value)}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
                 {entityTypes.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -244,55 +244,55 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {t("settings.server.title")}
           </h2>
           {serverInfo ? (
             <dl className="space-y-3">
               {serverInfo.version && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     {t("settings.server.version")}
                   </dt>
-                  <dd className="text-sm text-gray-900">
+                  <dd className="text-sm text-gray-900 dark:text-gray-200">
                     {serverInfo.version}
                   </dd>
                 </div>
               )}
               {serverInfo.dataDir && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     {t("settings.server.dataDir")}
                   </dt>
-                  <dd className="text-sm text-gray-900 font-mono">
+                  <dd className="text-sm text-gray-900 dark:text-gray-200 font-mono">
                     {serverInfo.dataDir}
                   </dd>
                 </div>
               )}
               {serverInfo.uptime != null && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     {t("settings.server.uptime")}
                   </dt>
-                  <dd className="text-sm text-gray-900">
+                  <dd className="text-sm text-gray-900 dark:text-gray-200">
                     {formatUptime(serverInfo.uptime)}
                   </dd>
                 </div>
               )}
             </dl>
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {t("settings.server.offline")}
             </p>
           )}
         </section>
 
-        <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {t("settings.data.title")}
           </h2>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             {t("settings.data.description")}
           </p>
 
@@ -302,13 +302,13 @@ export default function SettingsPage() {
                 setExportModalOpen(true);
                 setExportError("");
               }}
-              className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
             >
               {t("settings.data.exportBtn")}
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 text-sm font-medium text-green-600 border border-green-300 rounded-lg hover:bg-green-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 border border-green-300 dark:border-green-800 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
             >
               {t("settings.data.importBtn")}
             </button>
@@ -328,20 +328,22 @@ export default function SettingsPage() {
               indexedDB.deleteDatabase("asspp-accounts");
               window.location.href = "/";
             }}
-            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
           >
             {t("settings.data.button")}
           </button>
         </section>
 
-        <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {t("settings.about.title")}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {t("settings.about.description")}
           </p>
-          <p className="mt-2 text-xs text-gray-400">v0.0.1</p>
+          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+            v0.0.1
+          </p>
         </section>
       </div>
 
@@ -352,40 +354,44 @@ export default function SettingsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t("settings.data.passwordPrompt")}
             </label>
             <input
               type="password"
               value={exportPassword}
               onChange={(e) => setExportPassword(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t("settings.data.passwordConfirm")}
             </label>
             <input
               type="password"
               value={exportConfirmPassword}
               onChange={(e) => setExportConfirmPassword(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
           </div>
-          {exportError && <p className="text-sm text-red-600">{exportError}</p>}
+          {exportError && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {exportError}
+            </p>
+          )}
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={() => setExportModalOpen(false)}
-            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             {t("settings.data.cancel")}
           </button>
           <button
             onClick={handleExport}
             disabled={!exportPassword || !exportConfirmPassword}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {t("settings.data.confirmBtn")}
           </button>
@@ -399,29 +405,33 @@ export default function SettingsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t("settings.data.passwordPrompt")}
             </label>
             <input
               type="password"
               value={importPassword}
               onChange={(e) => setImportPassword(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
           </div>
-          {importError && <p className="text-sm text-red-600">{importError}</p>}
+          {importError && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {importError}
+            </p>
+          )}
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={() => setImportModalOpen(false)}
-            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             {t("settings.data.cancel")}
           </button>
           <button
             onClick={handleImport}
             disabled={!importPassword}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {t("settings.data.confirmBtn")}
           </button>
@@ -433,7 +443,7 @@ export default function SettingsPage() {
         onClose={() => setConflictModalOpen(false)}
         title={t("settings.data.conflictTitle")}
       >
-        <p className="text-sm text-gray-700 mb-6">
+        <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
           {t("settings.data.conflictDesc", {
             conflict: conflictStats.conflict,
             new: conflictStats.new,
@@ -442,19 +452,19 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-3">
           <button
             onClick={() => handleResolveConflict(true)}
-            className="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+            className="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
           >
             {t("settings.data.conflictOverwrite")}
           </button>
           <button
             onClick={() => handleResolveConflict(false)}
-            className="w-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             {t("settings.data.conflictSkip")}
           </button>
           <button
             onClick={() => setConflictModalOpen(false)}
-            className="w-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 mt-2"
+            className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 mt-2 transition-colors"
           >
             {t("settings.data.cancel")}
           </button>

@@ -21,7 +21,7 @@ export default function PackageDetail() {
   if (!task) {
     return (
       <PageContainer title={t("downloads.package.title")}>
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           {tasks.length === 0 ? t("loading") : t("downloads.package.notFound")}
         </div>
       </PageContainer>
@@ -49,13 +49,15 @@ export default function PackageDetail() {
             size="lg"
           />
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               {task.software.name}
             </h2>
-            <p className="text-gray-500">{task.software.artistName}</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              {task.software.artistName}
+            </p>
             <div className="flex items-center gap-2 mt-2">
               <Badge status={task.status} />
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
                 v{task.software.version}
               </span>
             </div>
@@ -65,7 +67,7 @@ export default function PackageDetail() {
         {(isActive || isPaused) && (
           <div>
             <ProgressBar progress={task.progress} />
-            <div className="flex justify-between mt-1 text-sm text-gray-500">
+            <div className="flex justify-between mt-1 text-sm text-gray-500 dark:text-gray-400">
               <span>{Math.round(task.progress)}%</span>
               {task.speed && isActive && <span>{task.speed}</span>}
             </div>
@@ -74,35 +76,37 @@ export default function PackageDetail() {
 
         {task.error && <Alert type="error">{task.error}</Alert>}
 
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 transition-colors">
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500 flex-shrink-0">
+              <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
                 {t("downloads.package.bundleId")}
               </dt>
-              <dd className="text-gray-900 min-w-0 truncate ml-4">
+              <dd className="text-gray-900 dark:text-gray-200 min-w-0 truncate ml-4">
                 {task.software.bundleID}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 flex-shrink-0">
+              <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
                 {t("downloads.package.version")}
               </dt>
-              <dd className="text-gray-900">{task.software.version}</dd>
+              <dd className="text-gray-900 dark:text-gray-200">
+                {task.software.version}
+              </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 flex-shrink-0">
+              <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
                 {t("downloads.package.account")}
               </dt>
-              <dd className="text-gray-900 min-w-0 truncate ml-4">
+              <dd className="text-gray-900 dark:text-gray-200 min-w-0 truncate ml-4">
                 {hashToEmail[task.accountHash] || task.accountHash}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 flex-shrink-0">
+              <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
                 {t("downloads.package.created")}
               </dt>
-              <dd className="text-gray-900">
+              <dd className="text-gray-900 dark:text-gray-200">
                 {new Date(task.createdAt).toLocaleString()}
               </dd>
             </div>
@@ -148,7 +152,7 @@ export default function PackageDetail() {
             {isActive && (
               <button
                 onClick={() => pauseDownload(task.id)}
-                className="px-4 py-2 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 {t("downloads.package.pause")}
               </button>

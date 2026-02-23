@@ -50,7 +50,7 @@ export default function SearchPage() {
             value={term}
             onChange={(e) => setTerm(e.target.value)}
             placeholder={t("search.placeholder")}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
           />
           <button
             type="submit"
@@ -66,11 +66,12 @@ export default function SearchPage() {
             onChange={setCountry}
             availableCountryCodes={availableCountryCodes}
             allCountryCodes={allCountryCodes}
+            className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
           />
           <select
             value={entity}
             onChange={(e) => setEntity(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
           >
             <option value="iPhone">iPhone</option>
             <option value="iPad">iPad</option>
@@ -85,7 +86,7 @@ export default function SearchPage() {
       )}
 
       {results.length === 0 && !loading && !error && (
-        <div className="text-center text-gray-500 py-12">
+        <div className="text-center text-gray-500 dark:text-gray-400 py-12">
           {t("search.empty")}
         </div>
       )}
@@ -96,16 +97,18 @@ export default function SearchPage() {
             key={app.id}
             to={`/search/${app.id}`}
             state={{ app, country }}
-            className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
+            className="block bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             <div className="flex items-center gap-4">
               <AppIcon url={app.artworkUrl} name={app.name} size="md" />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 truncate">{app.name}</p>
-                <p className="text-sm text-gray-500 truncate">
+                <p className="font-medium text-gray-900 dark:text-white truncate">
+                  {app.name}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                   {app.artistName}
                 </p>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 dark:text-gray-500">
                   <span>{app.formattedPrice ?? t("search.free")}</span>
                   <span>{app.primaryGenreName}</span>
                   <span>
