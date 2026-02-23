@@ -8,5 +8,5 @@
     "lib": ["ES2022", "WebWorker"],
     "types": ["@cloudflare/workers-types"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts"]
 }

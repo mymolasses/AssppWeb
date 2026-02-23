@@ -1,4 +1,4 @@
-import { Container } from '@cloudflare/containers';
+import { Container } from 'cloudflare:containers';
 
 export class AssppContainer extends Container {
   defaultPort = 8080;
@@ -14,8 +14,17 @@ export class AssppContainer extends Container {
 }
 
 interface Env {
-  ASPP_CONTAINER: DurableObjectNamespace<AssppContainer>;
+  ASPP_CONTAINER: ContainerNamespace;
   CONTAINER_INSTANCE_NAME?: string;
+}
+
+interface ContainerInstance {
+  fetch(request: Request): Promise<Response>;
+  startAndWaitForPorts(): Promise<void>;
+}
+
+interface ContainerNamespace {
+  getByName(name: string): ContainerInstance;
 }
 
 function withForwardHeaders(request: Request): Request {
