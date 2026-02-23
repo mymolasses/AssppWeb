@@ -1,4 +1,4 @@
-import { Container } from 'cloudflare:containers';
+import { Container } from '@cloudflare/containers';
 
 export class AssppContainer extends Container {
   defaultPort = 8080;

@@ -2,6 +2,9 @@
   "name": "assppweb",
   "main": "cloudflare/src/index.ts",
   "compatibility_date": "2026-02-23",
+  "build": {
+    "command": "npm install --no-save --no-package-lock @cloudflare/containers@0.1.0"
+  },
   "containers": [
     {
       "class_name": "AssppContainer",

@@ -28,6 +28,7 @@ npx wrangler dev
 ## Notes
 
 - Deploy configuration lives in the repository root `wrangler.jsonc`.
-- `cloudflare/src/index.ts` imports `cloudflare:containers` (runtime module), so deploy does not require installing local npm dependencies.
+- `cloudflare/src/index.ts` imports `@cloudflare/containers`.
+- Root `wrangler.jsonc` runs a build command to install `@cloudflare/containers` automatically before deploy, so CI can still run plain `npx wrangler deploy`.
 - The worker routes all HTTP and WebSocket traffic to one named container instance (`main`) to keep app state consistent.
 - Container filesystem is ephemeral. Compiled packages may be lost when the container stops and restarts.
