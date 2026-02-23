@@ -43,7 +43,8 @@ export default function SearchPage() {
 
   return (
     <PageContainer title={t("search.title")}>
-      <form onSubmit={handleSubmit} className="space-y-4 mb-6 max-w-lg">
+      {/* 移除了 max-w-lg，表单宽度自适应容器 */}
+      <form onSubmit={handleSubmit} className="space-y-4 mb-6">
         <div className="flex gap-2">
           <input
             type="text"
@@ -80,14 +81,14 @@ export default function SearchPage() {
       </form>
 
       {error && (
-        <Alert type="error" className="mb-4 max-w-lg">
+        <Alert type="error" className="mb-4">
           {error}
         </Alert>
       )}
 
-      {/* 搜索页面：空状态占位，同样限制宽度 max-w-lg 并与表单对齐 */}
+      {/* 空状态占位：移除了 max-w-lg，保证和上方的输入框等宽 */}
       {results.length === 0 && !loading && !error && (
-        <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors max-w-lg">
+        <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
             <svg
               className="w-12 h-12 text-blue-500 dark:text-blue-400"

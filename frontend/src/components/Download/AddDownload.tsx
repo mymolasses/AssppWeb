@@ -162,7 +162,8 @@ export default function AddDownload() {
 
   return (
     <PageContainer title={t("downloads.add.title")}>
-      <div className="max-w-lg space-y-6">
+      {/* 移除了 max-w-lg 的外层限制，让所有元素自适应铺满 */}
+      <div className="space-y-6">
         {error && <Alert type="error">{error}</Alert>}
 
         <form onSubmit={handleLookup} className="space-y-4">
@@ -202,7 +203,6 @@ export default function AddDownload() {
               disabled={loading}
               className="w-1/2 truncate disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed"
             />
-            {/* 移除了 {accounts.length > 0 && (...)} 的条件判断，保证下拉框始终渲染 */}
             <select
               value={selectedAccount}
               onChange={(e) => setSelectedAccount(e.target.value)}
@@ -224,6 +224,7 @@ export default function AddDownload() {
           </div>
         </form>
 
+        {/* 空状态占位：自适应宽度 */}
         {!app && !loading && !error && (
           <div className="flex flex-col items-center justify-center py-12 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl transition-colors">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
