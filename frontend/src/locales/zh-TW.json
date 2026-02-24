@@ -101,7 +101,8 @@
       "signIn": "登入",
       "verify": "驗證",
       "cancel": "取消",
-      "authFailed": "認證失敗"
+      "authFailed": "認證失敗",
+      "addSuccess": "帳號新增成功。"
     },
     "detail": {
       "title": "帳號詳情",
@@ -122,7 +123,8 @@
       "delete": "刪除帳號",
       "confirmDelete": "確認刪除",
       "cancel": "取消",
-      "areYouSure": "您確定嗎？"
+      "areYouSure": "您確定嗎？",
+      "deleteSuccess": "帳號刪除成功。"
     }
   },
   "downloads": {
@@ -191,12 +193,15 @@
     "title": "設定",
     "language": {
       "title": "語言",
-      "label": "顯示語言"
+      "label": "顯示語言",
+      "changed": "語言切換成功"
     },
     "defaults": {
       "title": "預設設定",
       "country": "預設國家 / 地區",
-      "entity": "預設裝置類型"
+      "entity": "預設裝置類型",
+      "countryChanged": "預設國家 / 地區已更新",
+      "entityChanged": "預設裝置類型已更新"
     },
     "server": {
       "title": "伺服器",
@@ -223,7 +228,8 @@
       "conflictTitle": "發現重複帳號",
       "conflictDesc": "在備份中發現 {{conflict}} 個相同的帳號以及 {{new}} 個新帳號。",
       "conflictOverwrite": "覆蓋本機",
-      "conflictSkip": "保留本機 (僅新增新帳號)"
+      "conflictSkip": "保留本機 (僅新增新帳號)",
+      "cleared": "所有本機資料已清空"
     },
     "about": {
       "title": "關於",
@@ -315,7 +321,7 @@
     "MN": "蒙古",
     "MO": "澳門",
     "MS": "蒙哲臘",
-    "MT": "馬爾他",
+    "MT": "馬耳他",
     "MU": "模里西斯",
     "MV": "馬爾地夫",
     "MX": "墨西哥",
@@ -398,5 +404,21 @@
       "missingAddress": "回應中缺少 address",
       "unknownReason": "未知原因導致認證失敗"
     }
+  },
+  "toast": {
+    "title": {
+      "downloadStarted": "開始下載",
+      "downloadSuccess": "下載成功",
+      "downloadFailed": "下載失敗",
+      "licenseSuccess": "獲取授權成功",
+      "licenseFailed": "獲取授權失敗",
+      "installStarted": "開始安裝",
+      "shareAcquired": "連結已獲取",
+      "downloadIpaStarted": "開始下載 IPA",
+      "deleteSuccess": "刪除成功"
+    },
+    "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
+    "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\n您可以使用 Airdrop 分享給您的朋友。",
+    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\n錯誤: {{error}}"
   }
 }

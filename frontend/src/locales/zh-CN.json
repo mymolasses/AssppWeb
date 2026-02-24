@@ -101,7 +101,8 @@
       "signIn": "登录",
       "verify": "验证",
       "cancel": "取消",
-      "authFailed": "认证失败"
+      "authFailed": "认证失败",
+      "addSuccess": "账号添加成功。"
     },
     "detail": {
       "title": "账号详情",
@@ -122,7 +123,8 @@
       "delete": "删除账号",
       "confirmDelete": "确认删除",
       "cancel": "取消",
-      "areYouSure": "您确定吗？"
+      "areYouSure": "您确定吗？",
+      "deleteSuccess": "账号删除成功。"
     }
   },
   "downloads": {
@@ -191,12 +193,15 @@
     "title": "设置",
     "language": {
       "title": "语言",
-      "label": "显示语言"
+      "label": "显示语言",
+      "changed": "语言切换成功"
     },
     "defaults": {
       "title": "默认设置",
       "country": "默认国家 / 地区",
-      "entity": "默认设备类型"
+      "entity": "默认设备类型",
+      "countryChanged": "默认国家 / 地区已更新",
+      "entityChanged": "默认设备类型已更新"
     },
     "server": {
       "title": "服务器",
@@ -223,7 +228,8 @@
       "conflictTitle": "发现重复账号",
       "conflictDesc": "在备份中发现 {{conflict}} 个相同的账号以及 {{new}} 个新账号。",
       "conflictOverwrite": "覆盖本地",
-      "conflictSkip": "保留本地 (仅添加新账号)"
+      "conflictSkip": "保留本地 (仅添加新账号)",
+      "cleared": "所有本地数据已清空"
     },
     "about": {
       "title": "关于",
@@ -398,5 +404,21 @@
       "missingAddress": "响应中缺少 address",
       "unknownReason": "未知原因导致认证失败"
     }
+  },
+  "toast": {
+    "title": {
+      "downloadStarted": "开始下载",
+      "downloadSuccess": "下载成功",
+      "downloadFailed": "下载失败",
+      "licenseSuccess": "获取许可证成功",
+      "licenseFailed": "获取许可证失败",
+      "installStarted": "开始安装",
+      "shareAcquired": "链接已获取",
+      "downloadIpaStarted": "开始下载 IPA",
+      "deleteSuccess": "删除成功"
+    },
+    "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
+    "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\n您可以使用 Airdrop 分享给您的朋友。",
+    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\n错误: {{error}}"
   }
 }

@@ -1,32 +1,29 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
-import Alert from "../common/Alert";
 import { useAccounts } from "../../hooks/useAccounts";
+import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { useSettingsStore } from "../../store/settings";
 import { lookupApp } from "../../api/search";
-import { purchaseApp } from "../../apple/purchase";
-import { getDownloadInfo } from "../../apple/download";
-import { apiPost } from "../../api/client";
-import {
-  accountHash,
-  accountStoreCountry,
-  firstAccountCountry,
-} from "../../utils/account";
 import { storeIdToCountry } from "../../apple/config";
-import { getErrorMessage } from "../../utils/error";
+import { accountStoreCountry, firstAccountCountry } from "../../utils/account";
 import type { Software } from "../../types";
 
 export default function ProductDetail() {
   const { appId } = useParams<{ appId: string }>();
   const location = useLocation();
-  const { accounts, updateAccount } = useAccounts();
+  const { accounts } = useAccounts();
   const { defaultCountry } = useSettingsStore();
   const { t } = useTranslation();
+  const {
+    startDownload,
+    acquireLicense,
+    toastDownloadError,
+    toastLicenseError,
+  } = useDownloadAction();
 
-  const navigate = useNavigate();
   const stateApp = (location.state as { app?: Software; country?: string })
     ?.app;
   const stateCountry = (location.state as { country?: string })?.country;
@@ -34,9 +31,9 @@ export default function ProductDetail() {
   const [app, setApp] = useState<Software | null>(stateApp ?? null);
   const [loading, setLoading] = useState(!stateApp);
   const [selectedAccount, setSelectedAccount] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loadingAction, setLoadingAction] = useState<
+    "purchase" | "download" | null
+  >(null);
 
   const account = accounts.find((a) => a.email === selectedAccount);
 
@@ -88,45 +85,25 @@ export default function ProductDetail() {
 
   async function handlePurchase() {
     if (!account || !app) return;
-    setActionLoading(true);
-    setError("");
-    setSuccess("");
+    setLoadingAction("purchase");
     try {
-      const result = await purchaseApp(account, app);
-      await updateAccount({ ...account, cookies: result.updatedCookies });
-      setSuccess(t("search.product.licenseSuccess"));
+      await acquireLicense(account, app);
     } catch (e) {
-      setError(getErrorMessage(e, t("search.product.purchaseFailed")));
+      toastLicenseError(account, app, e);
     } finally {
-      setActionLoading(false);
+      setLoadingAction(null);
     }
   }
 
   async function handleDownload() {
     if (!account || !app) return;
-    setActionLoading(true);
-    setError("");
-    setSuccess("");
+    setLoadingAction("download");
     try {
-      const { output, updatedCookies } = await getDownloadInfo(account, app);
-      await updateAccount({ ...account, cookies: updatedCookies });
-      const hash = await accountHash(account);
-      const versionedSoftware = {
-        ...app,
-        version: output.bundleShortVersionString,
-      };
-      await apiPost("/api/downloads", {
-        software: versionedSoftware,
-        accountHash: hash,
-        downloadURL: output.downloadURL,
-        sinfs: output.sinfs,
-        iTunesMetadata: output.iTunesMetadata,
-      });
-      navigate("/downloads");
+      await startDownload(account, app);
     } catch (e) {
-      setError(getErrorMessage(e, t("search.product.downloadFailed")));
+      toastDownloadError(account, app, e);
     } finally {
-      setActionLoading(false);
+      setLoadingAction(null);
     }
   }
 
@@ -152,9 +129,6 @@ export default function ProductDetail() {
           </div>
         </div>
 
-        {error && <Alert type="error">{error}</Alert>}
-        {success && <Alert type="success">{success}</Alert>}
-
         {accounts.length === 0 ? (
           <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
             <Link to="/accounts/add" className="font-medium underline">
@@ -172,7 +146,7 @@ export default function ProductDetail() {
                 value={selectedAccount}
                 onChange={(e) => setSelectedAccount(e.target.value)}
                 className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                disabled={actionLoading}
+                disabled={loadingAction !== null}
               >
                 {accounts.map((a) => {
                   const regionCode = storeIdToCountry(a.store);
@@ -192,20 +166,20 @@ export default function ProductDetail() {
               {(app.price === undefined || app.price === 0) && (
                 <button
                   onClick={handlePurchase}
-                  disabled={actionLoading}
+                  disabled={loadingAction !== null}
                   className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
                 >
-                  {actionLoading
+                  {loadingAction === "purchase"
                     ? t("search.product.processing")
                     : t("search.product.getLicense")}
                 </button>
               )}
               <button
                 onClick={handleDownload}
-                disabled={actionLoading}
+                disabled={loadingAction !== null}
                 className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
-                {actionLoading
+                {loadingAction === "download"
                   ? t("search.product.processing")
                   : t("search.product.download")}
               </button>

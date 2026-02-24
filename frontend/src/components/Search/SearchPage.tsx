@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
-import Alert from "../common/Alert";
 import CountrySelect from "../common/CountrySelect";
 import { useSearch } from "../../hooks/useSearch";
 import { useAccounts } from "../../hooks/useAccounts";
 import { useSettingsStore } from "../../store/settings";
+import { useToastStore } from "../../store/toast";
 import { countryCodeMap, storeIdToCountry } from "../../apple/config";
 import { firstAccountCountry } from "../../utils/account";
 
@@ -16,6 +16,7 @@ export default function SearchPage() {
   const { defaultCountry, defaultEntity } = useSettingsStore();
   const { accounts } = useAccounts();
   const initialCountry = firstAccountCountry(accounts) ?? defaultCountry;
+  const addToast = useToastStore((s) => s.addToast);
 
   const {
     term,
@@ -27,6 +28,12 @@ export default function SearchPage() {
     search,
     setSearchParam,
   } = useSearch();
+
+  useEffect(() => {
+    if (error) {
+      addToast(error, "error");
+    }
+  }, [error, addToast]);
 
   useEffect(() => {
     if (!country && initialCountry) setSearchParam({ country: initialCountry });
@@ -94,13 +101,6 @@ export default function SearchPage() {
         </div>
       </form>
 
-      {error && (
-        <Alert type="error" className="mb-4">
-          {error}
-        </Alert>
-      )}
-
-      {/* Removed transition-colors to prevent dark mode flashing */}
       {results.length === 0 && !loading && !error && (
         <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">

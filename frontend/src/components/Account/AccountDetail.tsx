@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import Spinner from "../common/Spinner";
-import Alert from "../common/Alert";
 import { useAccounts } from "../../hooks/useAccounts";
+import { useToastStore } from "../../store/toast";
 import { authenticate, AuthenticationError } from "../../apple/authenticate";
 import { storeIdToCountry } from "../../apple/config";
 import { getErrorMessage } from "../../utils/error";
@@ -20,12 +20,12 @@ export default function AccountDetail() {
     updateAccount,
     removeAccount,
   } = useAccounts();
+  const addToast = useToastStore((s) => s.addToast);
+
   const [showDelete, setShowDelete] = useState(false);
   const [reauthing, setReauthing] = useState(false);
   const [reauthCode, setReauthCode] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     loadAccounts();
@@ -60,8 +60,6 @@ export default function AccountDetail() {
 
   async function handleReauth() {
     if (!account) return;
-    setError(null);
-    setSuccess(null);
     setReauthing(true);
 
     try {
@@ -75,13 +73,16 @@ export default function AccountDetail() {
       await updateAccount(updated);
       setNeedsCode(false);
       setReauthCode("");
-      setSuccess(t("accounts.detail.reauthSuccess"));
+      addToast(t("accounts.detail.reauthSuccess"), "success");
     } catch (err) {
       if (err instanceof AuthenticationError && err.codeRequired) {
         setNeedsCode(true);
-        setError(err.message);
+        addToast(err.message, "error");
       } else {
-        setError(getErrorMessage(err, t("accounts.detail.reauthFailed")));
+        addToast(
+          getErrorMessage(err, t("accounts.detail.reauthFailed")),
+          "error",
+        );
       }
     } finally {
       setReauthing(false);
@@ -91,6 +92,7 @@ export default function AccountDetail() {
   async function handleDelete() {
     if (!account) return;
     await removeAccount(account.email);
+    addToast(t("accounts.detail.deleteSuccess"), "success");
     navigate("/accounts");
   }
 
@@ -166,18 +168,6 @@ export default function AccountDetail() {
               </button>
             </div>
           </section>
-        )}
-
-        {error && (
-          <Alert type="error" className="p-4">
-            {error}
-          </Alert>
-        )}
-
-        {success && (
-          <Alert type="success" className="p-4">
-            {success}
-          </Alert>
         )}
 
         <div className="flex flex-wrap items-center gap-3">

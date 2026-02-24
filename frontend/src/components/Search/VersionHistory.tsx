@@ -1,26 +1,25 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
-import Alert from "../common/Alert";
 import { useAccounts } from "../../hooks/useAccounts";
+import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { useSettingsStore } from "../../store/settings";
 import { listVersions } from "../../apple/versionFinder";
 import { getVersionMetadata } from "../../apple/versionLookup";
-import { getDownloadInfo } from "../../apple/download";
-import { apiPost } from "../../api/client";
-import { accountHash } from "../../utils/account";
 import { getErrorMessage } from "../../utils/error";
+import { useToastStore } from "../../store/toast";
 import type { Software, VersionMetadata } from "../../types";
 
 export default function VersionHistory() {
   const { appId } = useParams<{ appId: string }>();
   const location = useLocation();
-  const navigate = useNavigate();
   const { accounts, updateAccount } = useAccounts();
   const { defaultCountry } = useSettingsStore();
   const { t } = useTranslation();
+  const addToast = useToastStore((s) => s.addToast);
+  const { startDownload, toastDownloadError } = useDownloadAction();
 
   const stateApp = (location.state as { app?: Software; country?: string })
     ?.app;
@@ -38,8 +37,6 @@ export default function VersionHistory() {
   const [downloadingVersion, setDownloadingVersion] = useState<string | null>(
     null,
   );
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     if (accounts.length > 0 && !selectedAccount) {
@@ -52,13 +49,12 @@ export default function VersionHistory() {
   async function handleLoadVersions() {
     if (!account || !app) return;
     setLoading(true);
-    setError("");
     try {
       const result = await listVersions(account, app);
       setVersions(result.versions);
       await updateAccount({ ...account, cookies: result.updatedCookies });
     } catch (e) {
-      setError(getErrorMessage(e, t("search.versions.loadFailed")));
+      addToast(getErrorMessage(e, t("search.versions.loadFailed")), "error");
     } finally {
       setLoading(false);
     }
@@ -81,30 +77,10 @@ export default function VersionHistory() {
   async function handleDownloadVersion(versionId: string) {
     if (!account || !app) return;
     setDownloadingVersion(versionId);
-    setError("");
-    setSuccess("");
     try {
-      const { output, updatedCookies } = await getDownloadInfo(
-        account,
-        app,
-        versionId,
-      );
-      await updateAccount({ ...account, cookies: updatedCookies });
-      const hash = await accountHash(account);
-      const versionedSoftware = {
-        ...app,
-        version: output.bundleShortVersionString,
-      };
-      await apiPost("/api/downloads", {
-        software: versionedSoftware,
-        accountHash: hash,
-        downloadURL: output.downloadURL,
-        sinfs: output.sinfs,
-        iTunesMetadata: output.iTunesMetadata,
-      });
-      navigate("/downloads");
+      await startDownload(account, app, versionId);
     } catch (e) {
-      setError(getErrorMessage(e, t("search.versions.downloadFailed")));
+      toastDownloadError(account, app, e);
     } finally {
       setDownloadingVersion(null);
     }
@@ -132,9 +108,6 @@ export default function VersionHistory() {
             </p>
           </div>
         </div>
-
-        {error && <Alert type="error">{error}</Alert>}
-        {success && <Alert type="success">{success}</Alert>}
 
         {accounts.length > 0 && (
           <div className="flex items-end gap-3">

@@ -101,7 +101,8 @@
       "signIn": "Войти",
       "verify": "Проверить",
       "cancel": "Отмена",
-      "authFailed": "Ошибка аутентификации"
+      "authFailed": "Ошибка аутентификации",
+      "addSuccess": "Аккаунт успешно добавлен."
     },
     "detail": {
       "title": "Детали аккаунта",
@@ -122,7 +123,8 @@
       "delete": "Удалить аккаунт",
       "confirmDelete": "Подтвердить удаление",
       "cancel": "Отмена",
-      "areYouSure": "Вы уверены?"
+      "areYouSure": "Вы уверены?",
+      "deleteSuccess": "Аккаунт успешно удален."
     }
   },
   "downloads": {
@@ -191,12 +193,15 @@
     "title": "Настройки",
     "language": {
       "title": "Язык",
-      "label": "Язык интерфейса"
+      "label": "Язык интерфейса",
+      "changed": "Язык успешно изменен"
     },
     "defaults": {
       "title": "По умолчанию",
       "country": "Регион / Страна",
-      "entity": "Тип устройства"
+      "entity": "Тип устройства",
+      "countryChanged": "Страна / регион по умолчанию обновлены",
+      "entityChanged": "Тип устройства по умолчанию обновлен"
     },
     "server": {
       "title": "Сервер",
@@ -223,7 +228,8 @@
       "conflictTitle": "Обнаружен конфликт аккаунтов",
       "conflictDesc": "В резервной копии найдено {{conflict}} идентичных аккаунтов и {{new}} новых аккаунтов.",
       "conflictOverwrite": "Перезаписать локальные",
-      "conflictSkip": "Оставить локальные (Добавить только новые)"
+      "conflictSkip": "Оставить локальные (Добавить только новые)",
+      "cleared": "Все локальные данные очищены"
     },
     "about": {
       "title": "О программе",
@@ -398,5 +404,21 @@
       "missingAddress": "В ответе отсутствует address",
       "unknownReason": "Аутентификация не удалась по неизвестной причине"
     }
+  },
+  "toast": {
+    "title": {
+      "downloadStarted": "Начало загрузки",
+      "downloadSuccess": "Успешная загрузка",
+      "downloadFailed": "Ошибка загрузки",
+      "licenseSuccess": "Лицензия получена",
+      "licenseFailed": "Ошибка получения лицензии",
+      "installStarted": "Начало установки",
+      "shareAcquired": "Ссылка получена",
+      "downloadIpaStarted": "Начало загрузки IPA",
+      "deleteSuccess": "Успешное удаление"
+    },
+    "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
+    "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nВы можете использовать AirDrop, чтобы поделиться ею с друзьями.",
+    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nОшибка: {{error}}"
   }
 }

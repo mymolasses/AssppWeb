@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
-import Alert from "../common/Alert";
 import Badge from "../common/Badge";
 import ProgressBar from "../common/ProgressBar";
 import { useDownloads } from "../../hooks/useDownloads";
+import { useAccounts } from "../../hooks/useAccounts";
+import { useToastStore } from "../../store/toast";
 import { getInstallInfo } from "../../api/install";
+import { getAccountContext } from "../../utils/toast";
 
 export default function PackageDetail() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +17,8 @@ export default function PackageDetail() {
   const { tasks, deleteDownload, pauseDownload, resumeDownload, hashToEmail } =
     useDownloads();
   const { t } = useTranslation();
+  const addToast = useToastStore((s) => s.addToast);
+  const { accounts } = useAccounts();
 
   const task = tasks.find((t) => t.id === id);
 
@@ -33,68 +37,61 @@ export default function PackageDetail() {
   const isCompleted = task.status === "completed";
   const installInfo = isCompleted ? getInstallInfo(task.id) : null;
 
+  const accountEmail = hashToEmail[task.accountHash];
+  const account = accounts.find((a) => a.email === accountEmail);
+  const ctx = getAccountContext(account, t);
+  const appName = task.software.name;
+
+  function toastAction(titleKey: string, type: "success" | "info" = "info") {
+    addToast(t("toast.msg", { appName, ...ctx }), type, t(titleKey));
+  }
+
   async function handleDelete() {
     if (!confirm(t("downloads.package.deleteConfirm"))) return;
     await deleteDownload(task!.id);
+    toastAction("toast.title.deleteSuccess", "success");
     navigate("/downloads");
   }
 
   async function handleShare(e: React.MouseEvent) {
     e.preventDefault();
     if (!installInfo) return;
-    
+
     const urlToShare = installInfo.installUrl;
 
-    // 1. Try native share
-    // We only pass the raw URL to the `text` property to ensure receiving apps 
-    // recognize it as a pure, clickable link for auto-installation.
-    if (navigator.share) {
-      try {
-        await navigator.share({ 
-          text: urlToShare 
-        });
-        return; // Exit if share is successful
-      } catch (error: any) {
-        // Ignore AbortError if the user simply closed the share sheet
-        if (error.name === 'AbortError') return;
-        console.warn("Native share failed, falling back to copy:", error);
-      }
-    }
-
-    // 2. Try modern Clipboard API
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      try {
-        await navigator.clipboard.writeText(urlToShare);
-        alert(t("downloads.package.copied"));
-        return;
-      } catch (err) {
-        console.warn("Clipboard API failed, falling back to execCommand:", err);
-      }
-    }
-
-    // 3. Ultimate fallback: traditional execCommand
     try {
-      const textArea = document.createElement("textarea");
-      textArea.value = urlToShare;
-      // Move textarea out of viewport to prevent scrolling and flashing
-      textArea.style.position = "fixed";
-      textArea.style.left = "-999999px";
-      textArea.style.top = "-999999px";
-      document.body.appendChild(textArea);
-      
-      textArea.focus();
-      textArea.select();
-      
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-      
-      if (successful) {
-        alert(t("downloads.package.copied"));
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(urlToShare);
       } else {
-        console.error("Fallback execCommand failed to copy");
+        const textArea = document.createElement("textarea");
+        textArea.value = urlToShare;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
       }
     } catch (err) {
-      console.error("All share/copy methods failed:", err);
+      console.warn("Clipboard fallback failed:", err);
+    }
+
+    addToast(
+      t("toast.msgShare", { appName, ...ctx }),
+      "success",
+      t("toast.title.shareAcquired"),
+    );
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: urlToShare });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        console.warn("Native share failed or aborted by user:", error);
+      }
     }
   }
 
@@ -133,7 +130,9 @@ export default function PackageDetail() {
           </div>
         )}
 
-        {task.error && <Alert type="error">{task.error}</Alert>}
+        {task.error && (
+          <p className="text-sm text-red-500 dark:text-red-400">{task.error}</p>
+        )}
 
         <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4">
           <dl className="space-y-3 text-sm">
@@ -158,7 +157,7 @@ export default function PackageDetail() {
                 {t("downloads.package.account")}
               </dt>
               <dd className="text-gray-900 dark:text-gray-200 min-w-0 truncate ml-4">
-                {hashToEmail[task.accountHash] || task.accountHash}
+                {accountEmail || task.accountHash}
               </dd>
             </div>
             <div className="flex justify-between">
@@ -180,12 +179,12 @@ export default function PackageDetail() {
                   <>
                     <a
                       href={installInfo.installUrl}
+                      onClick={() => toastAction("toast.title.installStarted")}
                       className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                     >
                       {t("downloads.package.install")}
                     </a>
-                    
-                    {/* Share button with hover QR code */}
+
                     <div className="relative group flex items-center">
                       <button
                         onClick={handleShare}
@@ -212,6 +211,7 @@ export default function PackageDetail() {
                 <a
                   href={`/api/packages/${task.id}/file?accountHash=${encodeURIComponent(task.accountHash)}`}
                   download
+                  onClick={() => toastAction("toast.title.downloadIpaStarted")}
                   className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   {t("downloads.package.downloadIpa")}

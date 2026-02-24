@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import Modal from "../common/Modal";
 import { useAccountsStore } from "../../store/accounts";
+import { useToastStore } from "../../store/toast";
 import { encryptData, decryptData } from "../../utils/crypto";
 import { countryCodeMap } from "../../apple/config";
 import type { Account } from "../../types";
@@ -21,6 +22,7 @@ const entityTypes = [
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { accounts, addAccount, updateAccount } = useAccountsStore();
+  const addToast = useToastStore((s) => s.addToast);
 
   const [country, setCountry] = useState(
     () => localStorage.getItem("asspp-default-country") || "US",
@@ -33,12 +35,10 @@ export default function SettingsPage() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportPassword, setExportPassword] = useState("");
   const [exportConfirmPassword, setExportConfirmPassword] = useState("");
-  const [exportError, setExportError] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importPassword, setImportPassword] = useState("");
-  const [importError, setImportError] = useState("");
   const [importFileData, setImportFileData] = useState("");
 
   const [conflictModalOpen, setConflictModalOpen] = useState(false);
@@ -66,7 +66,7 @@ export default function SettingsPage() {
 
   const handleExport = async () => {
     if (exportPassword !== exportConfirmPassword) {
-      setExportError(t("settings.data.passwordMismatch"));
+      addToast(t("settings.data.passwordMismatch"), "error");
       return;
     }
     try {
@@ -82,10 +82,9 @@ export default function SettingsPage() {
       setExportModalOpen(false);
       setExportPassword("");
       setExportConfirmPassword("");
-      setExportError("");
-      alert(t("settings.data.exportSuccess"));
-    } catch (e) {
-      setExportError("Export failed.");
+      addToast(t("settings.data.exportSuccess"), "success");
+    } catch {
+      addToast(t("settings.data.exportFailed"), "error");
     }
   };
 
@@ -120,10 +119,9 @@ export default function SettingsPage() {
         for (const acc of valid) {
           await addAccount(acc);
         }
-        alert(t("settings.data.importSuccess"));
+        addToast(t("settings.data.importSuccess"), "success");
         setImportModalOpen(false);
         setImportPassword("");
-        setImportError("");
       } else {
         let conflictCount = 0;
         let newCount = 0;
@@ -137,20 +135,18 @@ export default function SettingsPage() {
           setPendingAccounts(valid);
           setImportModalOpen(false);
           setImportPassword("");
-          setImportError("");
           setConflictModalOpen(true);
         } else {
           for (const acc of valid) {
             await addAccount(acc);
           }
-          alert(t("settings.data.importSuccess"));
+          addToast(t("settings.data.importSuccess"), "success");
           setImportModalOpen(false);
           setImportPassword("");
-          setImportError("");
         }
       }
-    } catch (e) {
-      setImportError(t("settings.data.incorrectPassword"));
+    } catch {
+      addToast(t("settings.data.incorrectPassword"), "error");
     }
   };
 
@@ -158,14 +154,14 @@ export default function SettingsPage() {
     for (const imported of pendingAccounts) {
       const exists = accounts.some((a) => a.email === imported.email);
       if (exists) {
-        if (overwrite) await updateAccount(imported); // Replace local
+        if (overwrite) await updateAccount(imported);
       } else {
-        await addAccount(imported); // Always add new ones
+        await addAccount(imported);
       }
     }
     setConflictModalOpen(false);
     setPendingAccounts([]);
-    alert(t("settings.data.importSuccess"));
+    addToast(t("settings.data.importSuccess"), "success");
   };
 
   return (
@@ -186,7 +182,11 @@ export default function SettingsPage() {
               <select
                 id="language"
                 value={i18n.resolvedLanguage || "en-US"}
-                onChange={(e) => i18n.changeLanguage(e.target.value)}
+                onChange={async (e) => {
+                  const newLang = e.target.value;
+                  await i18n.changeLanguage(newLang);
+                  addToast(t("settings.language.changed"), "success");
+                }}
                 className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
                 <option value="en-US">English (US)</option>
@@ -215,7 +215,10 @@ export default function SettingsPage() {
               <select
                 id="country"
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                onChange={(e) => {
+                  setCountry(e.target.value);
+                  addToast(t("settings.defaults.countryChanged"), "success");
+                }}
                 className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
                 {sortedCountries.map((code) => (
@@ -235,12 +238,15 @@ export default function SettingsPage() {
               <select
                 id="entity"
                 value={entity}
-                onChange={(e) => setEntity(e.target.value)}
+                onChange={(e) => {
+                  setEntity(e.target.value);
+                  addToast(t("settings.defaults.entityChanged"), "success");
+                }}
                 className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
-                {entityTypes.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
+                {entityTypes.map((et) => (
+                  <option key={et.value} value={et.value}>
+                    {et.label}
                   </option>
                 ))}
               </select>
@@ -302,10 +308,7 @@ export default function SettingsPage() {
 
           <div className="flex flex-wrap gap-3 mb-6">
             <button
-              onClick={() => {
-                setExportModalOpen(true);
-                setExportError("");
-              }}
+              onClick={() => setExportModalOpen(true)}
               className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
             >
               {t("settings.data.exportBtn")}
@@ -330,7 +333,10 @@ export default function SettingsPage() {
               if (!confirm(t("settings.data.confirm"))) return;
               localStorage.clear();
               indexedDB.deleteDatabase("asspp-accounts");
-              window.location.href = "/";
+              addToast(t("settings.data.cleared"), "success");
+              setTimeout(() => {
+                window.location.href = "/";
+              }, 1000);
             }}
             className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
           >
@@ -379,11 +385,6 @@ export default function SettingsPage() {
               className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
           </div>
-          {exportError && (
-            <p className="text-sm text-red-600 dark:text-red-400">
-              {exportError}
-            </p>
-          )}
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -419,11 +420,6 @@ export default function SettingsPage() {
               className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
           </div>
-          {importError && (
-            <p className="text-sm text-red-600 dark:text-red-400">
-              {importError}
-            </p>
-          )}
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button

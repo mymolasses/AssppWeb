@@ -101,7 +101,8 @@
       "signIn": "サインイン",
       "verify": "確認",
       "cancel": "キャンセル",
-      "authFailed": "認証に失敗しました"
+      "authFailed": "認証に失敗しました",
+      "addSuccess": "アカウントが正常に追加されました。"
     },
     "detail": {
       "title": "アカウントの詳細",
@@ -122,7 +123,8 @@
       "delete": "アカウントを削除",
       "confirmDelete": "削除を確認",
       "cancel": "キャンセル",
-      "areYouSure": "本当によろしいですか？"
+      "areYouSure": "本当によろしいですか？",
+      "deleteSuccess": "アカウントが正常に削除されました。"
     }
   },
   "downloads": {
@@ -191,12 +193,15 @@
     "title": "設定",
     "language": {
       "title": "言語",
-      "label": "表示言語"
+      "label": "表示言語",
+      "changed": "言語を切り替えました"
     },
     "defaults": {
       "title": "デフォルト設定",
       "country": "デフォルトの国 / 地域",
-      "entity": "デフォルトのデバイスタイプ"
+      "entity": "デフォルトのデバイスタイプ",
+      "countryChanged": "デフォルトの国 / 地域を更新しました",
+      "entityChanged": "デフォルトのデバイスタイプを更新しました"
     },
     "server": {
       "title": "サーバー",
@@ -223,7 +228,8 @@
       "conflictTitle": "重複アカウントの検出",
       "conflictDesc": "バックアップに {{conflict}} 個の同一アカウントと {{new}} 個の新規アカウントが見つかりました。",
       "conflictOverwrite": "ローカルを上書き",
-      "conflictSkip": "ローカルを保持 (新規のみ追加)"
+      "conflictSkip": "ローカルを保持 (新規のみ追加)",
+      "cleared": "すべてのローカルデータを消去しました"
     },
     "about": {
       "title": "概要",
@@ -398,5 +404,21 @@
       "missingAddress": "レスポンスに address がありません",
       "unknownReason": "不明な理由により認証に失敗しました"
     }
+  },
+  "toast": {
+    "title": {
+      "downloadStarted": "ダウンロード開始",
+      "downloadSuccess": "ダウンロード成功",
+      "downloadFailed": "ダウンロード失敗",
+      "licenseSuccess": "ライセンス取得成功",
+      "licenseFailed": "ライセンス取得失敗",
+      "installStarted": "インストール開始",
+      "shareAcquired": "リンク取得成功",
+      "downloadIpaStarted": "IPA ダウンロード開始",
+      "deleteSuccess": "削除成功"
+    },
+    "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
+    "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nAirDropを使用して友達と共有できます。",
+    "msgFailed": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nエラー: {{error}}"
   }
 }
