@@ -136,9 +136,11 @@ export default function ProductDetail() {
         <div className="flex items-start gap-4">
           <AppIcon url={app.artworkUrl} name={app.name} size="lg" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900">{app.name}</h1>
-            <p className="text-gray-500">{app.artistName}</p>
-            <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {app.name}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">{app.artistName}</p>
+            <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
               <span>{app.formattedPrice ?? t("search.product.free")}</span>
               <span>{app.primaryGenreName}</span>
               <span>v{app.version}</span>
@@ -154,22 +156,22 @@ export default function ProductDetail() {
         {success && <Alert type="success">{success}</Alert>}
 
         {accounts.length === 0 ? (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400 transition-colors">
             <Link to="/accounts/add" className="font-medium underline">
               {t("search.product.addAccountLink")}
             </Link>{" "}
             {t("search.product.addAccountPrompt")}
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-4 transition-colors">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t("search.product.account")}
               </label>
               <select
                 value={selectedAccount}
                 onChange={(e) => setSelectedAccount(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-base w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                 disabled={actionLoading}
               >
                 {accounts.map((a) => {
@@ -210,7 +212,7 @@ export default function ProductDetail() {
               <Link
                 to={`/search/${app.id}/versions`}
                 state={{ app, country }}
-                className="px-4 py-2 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 {t("search.product.versionHistory")}
               </Link>
@@ -218,57 +220,75 @@ export default function ProductDetail() {
           </div>
         )}
 
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="font-semibold text-gray-900 mb-2">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 transition-colors">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-2">
             {t("search.product.details")}
           </h2>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <dt className="text-gray-500">{t("search.product.bundleId")}</dt>
-            <dd className="text-gray-900 break-all">{app.bundleID}</dd>
-            <dt className="text-gray-500">{t("search.product.version")}</dt>
-            <dd className="text-gray-900">{app.version}</dd>
-            <dt className="text-gray-500">{t("search.product.size")}</dt>
-            <dd className="text-gray-900">
+            <dt className="text-gray-500 dark:text-gray-400">
+              {t("search.product.bundleId")}
+            </dt>
+            <dd className="text-gray-900 dark:text-gray-200 break-all">
+              {app.bundleID}
+            </dd>
+            <dt className="text-gray-500 dark:text-gray-400">
+              {t("search.product.version")}
+            </dt>
+            <dd className="text-gray-900 dark:text-gray-200">{app.version}</dd>
+            <dt className="text-gray-500 dark:text-gray-400">
+              {t("search.product.size")}
+            </dt>
+            <dd className="text-gray-900 dark:text-gray-200">
               {app.fileSizeBytes
                 ? `${(parseInt(app.fileSizeBytes) / 1024 / 1024).toFixed(1)} MB`
                 : "N/A"}
             </dd>
-            <dt className="text-gray-500">{t("search.product.minOs")}</dt>
-            <dd className="text-gray-900">{app.minimumOsVersion}</dd>
-            <dt className="text-gray-500">{t("search.product.seller")}</dt>
-            <dd className="text-gray-900">{app.sellerName}</dd>
-            <dt className="text-gray-500">{t("search.product.released")}</dt>
-            <dd className="text-gray-900">
+            <dt className="text-gray-500 dark:text-gray-400">
+              {t("search.product.minOs")}
+            </dt>
+            <dd className="text-gray-900 dark:text-gray-200">
+              {app.minimumOsVersion}
+            </dd>
+            <dt className="text-gray-500 dark:text-gray-400">
+              {t("search.product.seller")}
+            </dt>
+            <dd className="text-gray-900 dark:text-gray-200">
+              {app.sellerName}
+            </dd>
+            <dt className="text-gray-500 dark:text-gray-400">
+              {t("search.product.released")}
+            </dt>
+            <dd className="text-gray-900 dark:text-gray-200">
               {new Date(app.releaseDate).toLocaleDateString()}
             </dd>
           </dl>
         </div>
 
         {app.description && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="font-semibold text-gray-900 mb-2">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 transition-colors">
+            <h2 className="font-semibold text-gray-900 dark:text-white mb-2">
               {t("search.product.description")}
             </h2>
-            <p className="text-sm text-gray-700 whitespace-pre-line">
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
               {app.description}
             </p>
           </div>
         )}
 
         {app.releaseNotes && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="font-semibold text-gray-900 mb-2">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 transition-colors">
+            <h2 className="font-semibold text-gray-900 dark:text-white mb-2">
               {t("search.product.releaseNotes")}
             </h2>
-            <p className="text-sm text-gray-700 whitespace-pre-line">
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
               {app.releaseNotes}
             </p>
           </div>
         )}
 
         {app.screenshotUrls && app.screenshotUrls.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="font-semibold text-gray-900 mb-2">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 transition-colors">
+            <h2 className="font-semibold text-gray-900 dark:text-white mb-2">
               {t("search.product.screenshots")}
             </h2>
             <div className="flex gap-3 overflow-x-auto pb-2">

@@ -65,10 +65,12 @@ export default function HomePage() {
     <PageContainer>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             {t("home.welcome")}
           </h1>
-          <p className="mt-2 text-gray-600">{t("home.subtitle")}</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            {t("home.subtitle")}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -101,9 +103,13 @@ export default function HomePage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-5">
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+    <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-5 transition-colors">
+      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+        {value}
+      </p>
     </div>
   );
 }
@@ -120,10 +126,14 @@ function ActionCard({
   return (
     <Link
       to={to}
-      className="block bg-white rounded-lg border border-gray-200 p-5 hover:border-blue-300 hover:shadow-sm transition-all"
+      className="block bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-5 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm transition-all"
     >
-      <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-      <p className="mt-1 text-sm text-gray-500">{description}</p>
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+        {title}
+      </h3>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        {description}
+      </p>
     </Link>
   );
 }

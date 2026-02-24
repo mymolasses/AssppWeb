@@ -55,13 +55,14 @@ export default function AddAccountForm() {
 
   return (
     <PageContainer title={t("accounts.addForm.title")}>
-      <div className="max-w-lg">
+      {/* 移除了 max-w-lg 以便表单在所有设备上自适应全宽 */}
+      <div>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <section className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+          <section className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 space-y-4 transition-colors">
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t("accounts.addForm.email")}
               </label>
@@ -73,14 +74,14 @@ export default function AddAccountForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
                 placeholder={t("accounts.addForm.emailPlaceholder")}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 transition-colors"
               />
             </div>
 
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t("accounts.addForm.password")}
               </label>
@@ -91,18 +92,19 @@ export default function AddAccountForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 transition-colors"
               />
             </div>
 
             <div>
               <label
                 htmlFor="deviceId"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 {t("accounts.addForm.deviceId")}
               </label>
               <div className="flex items-center gap-2">
+                {/* 增加 min-w-0 防止 flex 子元素在极窄屏幕下溢出 */}
                 <input
                   id="deviceId"
                   type="text"
@@ -110,18 +112,19 @@ export default function AddAccountForm() {
                   value={deviceId}
                   onChange={(e) => setDeviceId(e.target.value)}
                   disabled={loading || needsCode}
-                  className="block flex-1 h-[42px] rounded-md border border-gray-300 px-3 py-2 text-base font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="block flex-1 min-w-0 h-[42px] rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 transition-colors"
                 />
+                {/* 增加 whitespace-nowrap 和 flex-shrink-0，保证文字不折行且按钮不被挤压 */}
                 <button
                   type="button"
                   onClick={() => setDeviceId(generateDeviceId())}
                   disabled={loading || needsCode}
-                  className="h-[42px] px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-[42px] px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex-shrink-0"
                 >
                   {t("accounts.addForm.randomize")}
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("accounts.addForm.deviceIdHelp")}
               </p>
             </div>
@@ -130,7 +133,7 @@ export default function AddAccountForm() {
               <div>
                 <label
                   htmlFor="code"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   {t("accounts.addForm.code")}
                 </label>
@@ -144,10 +147,10 @@ export default function AddAccountForm() {
                   onChange={(e) => setCode(e.target.value)}
                   disabled={loading}
                   placeholder={t("accounts.addForm.codePlaceholder")}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 transition-colors"
                   autoFocus
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {t("accounts.addForm.codeHelp")}
                 </p>
               </div>
@@ -175,7 +178,7 @@ export default function AddAccountForm() {
               type="button"
               onClick={() => navigate("/accounts")}
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
               {t("accounts.addForm.cancel")}
             </button>
