@@ -92,6 +92,96 @@ function persistTasks() {
   fs.writeFileSync(TASKS_FILE, JSON.stringify(completed, null, 2));
 }
 
+// Auto-cleanup: delete completed files older than configured days
+export function runTimeCleanup() {
+  const { autoCleanupDays } = config;
+  if (autoCleanupDays <= 0) return;
+  const cutoff = Date.now() - autoCleanupDays * 24 * 60 * 60 * 1000;
+
+  // Collect IDs first to avoid mutating the map during iteration
+  const expiredIds: string[] = [];
+  for (const task of tasks.values()) {
+    if (
+      task.status === "completed" &&
+      task.filePath &&
+      fs.existsSync(task.filePath)
+    ) {
+      try {
+        const stat = fs.statSync(task.filePath);
+        if (stat.mtimeMs < cutoff) {
+          expiredIds.push(task.id);
+        }
+      } catch {
+        // File inaccessible — skip
+      }
+    }
+  }
+
+  for (const id of expiredIds) {
+    console.log(`[Cleanup] Deleting expired task: ${id}`);
+    deleteTask(id);
+  }
+}
+
+// Auto-cleanup: evict oldest completed files when total size exceeds limit
+export function runSpaceCleanup() {
+  const { autoCleanupMaxMB } = config;
+  if (autoCleanupMaxMB <= 0) return;
+  const maxBytes = autoCleanupMaxMB * 1024 * 1024;
+
+  let totalBytes = 0;
+  const fileTasks: { id: string; size: number; mtimeMs: number }[] = [];
+
+  for (const task of tasks.values()) {
+    if (
+      task.status === "completed" &&
+      task.filePath &&
+      fs.existsSync(task.filePath)
+    ) {
+      try {
+        const stat = fs.statSync(task.filePath);
+        totalBytes += stat.size;
+        fileTasks.push({ id: task.id, size: stat.size, mtimeMs: stat.mtimeMs });
+      } catch {
+        // File inaccessible — skip
+      }
+    }
+  }
+
+  if (totalBytes <= maxBytes) return;
+
+  fileTasks.sort((a, b) => a.mtimeMs - b.mtimeMs);
+  for (const ft of fileTasks) {
+    console.log(`[Cleanup] Space limit exceeded, deleting task: ${ft.id}`);
+    deleteTask(ft.id);
+    totalBytes -= ft.size;
+    if (totalBytes <= maxBytes) break;
+  }
+}
+
+// Schedule daily time-based cleanup at midnight (self-correcting to avoid drift)
+function scheduleDailyCleanup() {
+  function msUntilMidnight(): number {
+    const now = new Date();
+    const next = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+      0,
+      0,
+      0,
+    );
+    return next.getTime() - now.getTime();
+  }
+
+  function tick() {
+    runTimeCleanup();
+    setTimeout(tick, msUntilMidnight());
+  }
+
+  setTimeout(tick, msUntilMidnight());
+}
+
 function initOnStartup() {
   // Remove legacy downloads.json from old code
   if (fs.existsSync(LEGACY_DOWNLOADS_FILE)) {
@@ -137,6 +227,10 @@ function initOnStartup() {
 
   // Clean up orphaned IPA files (files without a task)
   cleanOrphanedPackages();
+
+  // Run time-based cleanup once on startup, then schedule daily
+  runTimeCleanup();
+  scheduleDailyCleanup();
 }
 
 function cleanOrphanedPackages() {
@@ -313,6 +407,10 @@ export function createTask(
 }
 
 async function startDownload(task: DownloadTask) {
+  // Pre-download cleanup: expire old files + enforce space limit
+  runTimeCleanup();
+  runSpaceCleanup();
+
   const controller = new AbortController();
   abortControllers.set(task.id, controller);
 
