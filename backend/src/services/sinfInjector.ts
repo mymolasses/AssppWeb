@@ -3,6 +3,8 @@ import { promisify } from "util";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { open as openZip } from "yauzl-promise";
+import type { Readable } from "stream";
 import bplistParser from "bplist-parser";
 import bplistCreator from "bplist-creator";
 import plist from "plist";
@@ -10,18 +12,22 @@ import type { Sinf } from "../types/index.js";
 
 const execFile = promisify(execFileCb);
 
+interface IpaMetadata {
+  bundleName: string;
+  manifest: { sinfPaths: string[] } | null;
+  info: { bundleExecutable: string } | null;
+}
+
 export async function inject(
   sinfs: Sinf[],
   ipaPath: string,
   iTunesMetadata?: string,
 ): Promise<void> {
-  const entries = await listEntries(ipaPath);
-  const bundleName = readBundleName(entries);
+  const { bundleName, manifest, info } = await readIpaMetadata(ipaPath);
 
   // Collect all files to inject
   const filesToInject: { entryPath: string; data: Buffer }[] = [];
 
-  const manifest = await readManifestPlist(ipaPath, entries);
   if (manifest) {
     for (let i = 0; i < manifest.sinfPaths.length; i++) {
       if (i >= sinfs.length) continue;
@@ -32,19 +38,16 @@ export async function inject(
         data: Buffer.from(sinfs[i].sinf, "base64"),
       });
     }
-  } else {
-    const info = await readInfoPlist(ipaPath, entries);
-    if (info) {
-      if (sinfs.length > 0) {
-        const sinfPath = `Payload/${bundleName}.app/SC_Info/${info.bundleExecutable}.sinf`;
-        filesToInject.push({
-          entryPath: sinfPath,
-          data: Buffer.from(sinfs[0].sinf, "base64"),
-        });
-      }
-    } else {
-      throw new Error("Could not read manifest or info plist");
+  } else if (info) {
+    if (sinfs.length > 0) {
+      const sinfPath = `Payload/${bundleName}.app/SC_Info/${info.bundleExecutable}.sinf`;
+      filesToInject.push({
+        entryPath: sinfPath,
+        data: Buffer.from(sinfs[0].sinf, "base64"),
+      });
     }
+  } else {
+    throw new Error("Could not read manifest or info plist");
   }
 
   // Inject iTunesMetadata.plist at the archive root if provided
@@ -71,36 +74,88 @@ export async function inject(
   }
 }
 
-async function listEntries(ipaPath: string): Promise<string[]> {
-  const { stdout } = await execFile("unzip", ["-l", "--", ipaPath], {
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  // unzip -l output format:
-  //   Length      Date    Time    Name
-  //   ---------  ---------- -----   ----
-  //        1234  2024-01-01 00:00   Payload/App.app/file
-  //   ---------                     -------
-  const lines = stdout.split("\n");
-  const entries: string[] = [];
-  for (const line of lines) {
-    // Match lines with file entries (has length, date, time, name)
-    const match = line.match(
-      /^\s*\d+\s+\d{2}-\d{2}-\d{2,4}\s+\d{2}:\d{2}\s+(.+)$/,
-    );
-    if (match) {
-      entries.push(match[1].trim());
-    }
+async function streamToBuffer(stream: Readable): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk as Buffer);
   }
-  return entries;
+  return Buffer.concat(chunks);
 }
 
-async function readEntry(ipaPath: string, entryPath: string): Promise<Buffer> {
-  // "--" prevents entryPath from being interpreted as flags
-  const { stdout } = await execFile("unzip", ["-p", "--", ipaPath, entryPath], {
-    encoding: "buffer",
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  return stdout;
+async function readIpaMetadata(ipaPath: string): Promise<IpaMetadata> {
+  const zip = await openZip(ipaPath);
+  try {
+    let bundleName: string | null = null;
+    let manifestData: Buffer | null = null;
+    let infoPlistData: Buffer | null = null;
+
+    for await (const entry of zip) {
+      const filename = entry.filename;
+
+      // Find bundle name from .app directory
+      if (
+        !bundleName &&
+        filename.includes(".app/Info.plist") &&
+        !filename.includes("/Watch/")
+      ) {
+        const components = filename.split("/");
+        for (const component of components) {
+          if (component.endsWith(".app")) {
+            bundleName = component.slice(0, -4);
+            break;
+          }
+        }
+      }
+
+      // Read Manifest.plist
+      if (!manifestData && filename.endsWith(".app/SC_Info/Manifest.plist")) {
+        const stream = await entry.openReadStream();
+        manifestData = await streamToBuffer(stream);
+      }
+
+      // Read Info.plist (non-Watch)
+      if (
+        !infoPlistData &&
+        filename.includes(".app/Info.plist") &&
+        !filename.includes("/Watch/")
+      ) {
+        const stream = await entry.openReadStream();
+        infoPlistData = await streamToBuffer(stream);
+      }
+    }
+
+    if (!bundleName) {
+      throw new Error("Could not read bundle name");
+    }
+
+    // Parse manifest
+    let manifest: { sinfPaths: string[] } | null = null;
+    if (manifestData) {
+      const parsed = parsePlistBuffer(manifestData);
+      if (parsed) {
+        const sinfPaths = parsed["SinfPaths"];
+        if (Array.isArray(sinfPaths)) {
+          manifest = { sinfPaths: sinfPaths as string[] };
+        }
+      }
+    }
+
+    // Parse info plist
+    let info: { bundleExecutable: string } | null = null;
+    if (infoPlistData) {
+      const parsed = parsePlistBuffer(infoPlistData);
+      if (parsed) {
+        const executable = parsed["CFBundleExecutable"];
+        if (typeof executable === "string") {
+          info = { bundleExecutable: executable };
+        }
+      }
+    }
+
+    return { bundleName, manifest, info };
+  } finally {
+    await zip.close();
+  }
 }
 
 async function addFilesToZip(
@@ -135,23 +190,6 @@ async function addFilesToZip(
   }
 }
 
-function readBundleName(entries: string[]): string {
-  for (const entryPath of entries) {
-    if (
-      entryPath.includes(".app/Info.plist") &&
-      !entryPath.includes("/Watch/")
-    ) {
-      const components = entryPath.split("/");
-      for (let i = 0; i < components.length; i++) {
-        if (components[i].endsWith(".app")) {
-          return components[i].replace(".app", "");
-        }
-      }
-    }
-  }
-  throw new Error("Could not read bundle name");
-}
-
 function parsePlistBuffer(data: Buffer): Record<string, unknown> | null {
   // Try binary plist first
   try {
@@ -176,48 +214,5 @@ function parsePlistBuffer(data: Buffer): Record<string, unknown> | null {
     // Not valid XML plist either
   }
 
-  return null;
-}
-
-async function readManifestPlist(
-  ipaPath: string,
-  entries: string[],
-): Promise<{ sinfPaths: string[] } | null> {
-  for (const entryPath of entries) {
-    if (entryPath.endsWith(".app/SC_Info/Manifest.plist")) {
-      const data = await readEntry(ipaPath, entryPath);
-      const parsed = parsePlistBuffer(data);
-      if (parsed) {
-        const sinfPaths = parsed["SinfPaths"];
-        if (Array.isArray(sinfPaths)) {
-          return { sinfPaths: sinfPaths as string[] };
-        }
-      }
-      return null;
-    }
-  }
-  return null;
-}
-
-async function readInfoPlist(
-  ipaPath: string,
-  entries: string[],
-): Promise<{ bundleExecutable: string } | null> {
-  for (const entryPath of entries) {
-    if (
-      entryPath.includes(".app/Info.plist") &&
-      !entryPath.includes("/Watch/")
-    ) {
-      const data = await readEntry(ipaPath, entryPath);
-      const parsed = parsePlistBuffer(data);
-      if (parsed) {
-        const executable = parsed["CFBundleExecutable"];
-        if (typeof executable === "string") {
-          return { bundleExecutable: executable };
-        }
-      }
-      return null;
-    }
-  }
   return null;
 }

@@ -17,7 +17,7 @@ RUN npm run build
 
 # Stage 3: Runtime
 FROM node:20-alpine
-RUN apk add --no-cache zip unzip
+RUN apk add --no-cache zip
 WORKDIR /app
 COPY --from=backend-build /app/backend/dist ./dist
 COPY --from=backend-build /app/backend/node_modules ./node_modules
