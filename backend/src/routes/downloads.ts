@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { config } from "../config.js";
 import {
   createTask,
   getAllTasks,
@@ -40,6 +41,16 @@ router.post("/downloads", (req: Request, res: Response) => {
       error: err instanceof Error ? err.message : "Invalid download URL",
     });
     return;
+  }
+
+  if (config.maxDownloadMB > 0 && software.fileSizeBytes) {
+    const sizeMB = parseInt(software.fileSizeBytes, 10) / (1024 * 1024);
+    if (sizeMB > config.maxDownloadMB) {
+      res.status(413).json({
+        error: `File size exceeds the maximum limit of ${config.maxDownloadMB} MB`,
+      });
+      return;
+    }
   }
 
   try {

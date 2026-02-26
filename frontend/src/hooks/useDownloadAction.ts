@@ -5,7 +5,7 @@ import { useDownloadsStore } from "../store/downloads";
 import { getDownloadInfo } from "../apple/download";
 import { purchaseApp } from "../apple/purchase";
 import { authenticate } from "../apple/authenticate";
-import { apiPost } from "../api/client";
+import { apiPost, apiGet } from "../api/client";
 import { accountHash } from "../utils/account";
 import { getErrorMessage } from "../utils/error";
 import { getAccountContext } from "../utils/toast";
@@ -28,6 +28,27 @@ export function useDownloadAction() {
   ) {
     const ctx = getAccountContext(account, t);
     const appName = app.name;
+
+    try {
+      const settings = await apiGet<{ maxDownloadMB: number }>("/api/settings");
+      if (settings.maxDownloadMB > 0 && app.fileSizeBytes) {
+        const sizeMB = parseInt(app.fileSizeBytes, 10) / (1024 * 1024);
+        if (sizeMB > settings.maxDownloadMB) {
+          addToast(
+            t("toast.downloadLimit.message", {
+              appName,
+              size: sizeMB.toFixed(2),
+              limit: settings.maxDownloadMB,
+            }),
+            "error",
+            t("toast.title.downloadLimit"),
+          );
+          return;
+        }
+      }
+    } catch {
+      // Settings fetch failed — backend will still enforce the limit
+    }
 
     const { output, updatedCookies } = await getDownloadInfo(
       account,

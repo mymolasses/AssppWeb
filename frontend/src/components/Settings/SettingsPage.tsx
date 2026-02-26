@@ -18,6 +18,7 @@ interface ServerInfo {
   disableHttpsRedirect?: boolean;
   autoCleanupDays?: number;
   autoCleanupMaxMB?: number;
+  maxDownloadMB?: number;
 }
 
 const entityTypes = [
@@ -337,6 +338,15 @@ export default function SettingsPage() {
                     </dt>
                     <dd className="text-sm text-gray-900 dark:text-gray-200 font-mono">
                       {serverInfo.autoCleanupMaxMB ||
+                        t("settings.server.disabled")}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      MAX_DOWNLOAD_MB
+                    </dt>
+                    <dd className="text-sm text-gray-900 dark:text-gray-200 font-mono">
+                      {serverInfo.maxDownloadMB ||
                         t("settings.server.disabled")}
                     </dd>
                   </div>

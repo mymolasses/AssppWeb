@@ -15,6 +15,7 @@ router.get("/settings", (_req: Request, res: Response) => {
     disableHttpsRedirect: config.disableHttpsRedirect,
     autoCleanupDays: config.autoCleanupDays,
     autoCleanupMaxMB: config.autoCleanupMaxMB,
+    maxDownloadMB: config.maxDownloadMB,
   });
 });
 
