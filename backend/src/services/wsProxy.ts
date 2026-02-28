@@ -22,7 +22,9 @@ export function setupWsProxy(server: HttpServer) {
     if (req.url?.startsWith("/wisp")) {
       if (accessPasswordHash) {
         const url = new URL(req.url, "http://localhost");
-        const token = url.searchParams.get("token") || "";
+        // Cloudflare URL normalization may append a trailing slash to the query
+        // string (e.g. ?token=abc/ instead of ?token=abc), so strip it.
+        const token = (url.searchParams.get("token") || "").replace(/\/+$/, "");
         if (!verifyAccessToken(token)) {
           socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
           socket.destroy();
