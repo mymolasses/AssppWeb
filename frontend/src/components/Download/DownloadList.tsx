@@ -13,6 +13,7 @@ import { useToastStore } from '../../store/toast';
 import { lookupApp } from '../../api/search';
 import { storeIdToCountry } from '../../apple/config';
 import { getAccountContext } from '../../utils/toast';
+import { isNewerVersion } from '../../utils/version';
 import type { DownloadTask } from '../../types';
 
 type StatusFilter = 'all' | DownloadTask['status'];
@@ -107,7 +108,7 @@ export default function DownloadList() {
         const country = storeIdToCountry(account.store) ?? 'US';
         const latestApp = await lookupApp(task.software.bundleID, country);
 
-        if (latestApp && latestApp.version !== task.software.version) {
+        if (latestApp && isNewerVersion(latestApp.version, task.software.version)) {
           await startDownload(account, latestApp);
           await deleteDownload(task.id);
           count++;

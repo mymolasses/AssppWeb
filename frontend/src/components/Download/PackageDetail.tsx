@@ -16,6 +16,7 @@ import { lookupApp } from '../../api/search';
 import { storeIdToCountry } from '../../apple/config';
 import { listVersions } from '../../apple/versionFinder';
 import { getAccountContext } from '../../utils/toast';
+import { isNewerVersion } from '../../utils/version';
 import type { Software } from '../../types';
 
 export default function PackageDetail() {
@@ -116,7 +117,7 @@ export default function PackageDetail() {
       const country = storeIdToCountry(account.store) ?? 'US';
       const app = await lookupApp(task.software.bundleID, country);
 
-      if (app && app.version !== task.software.version) {
+      if (app && isNewerVersion(app.version, task.software.version)) {
         setLatestApp(app);
         const result = await listVersions(account, app);
         setAvailableVersions(result.versions);
