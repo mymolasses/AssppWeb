@@ -1,15 +1,22 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { QRCodeSVG } from "qrcode.react";
-import PageContainer from "../Layout/PageContainer";
-import AppIcon from "../common/AppIcon";
-import Badge from "../common/Badge";
-import ProgressBar from "../common/ProgressBar";
-import { useDownloads } from "../../hooks/useDownloads";
-import { useAccounts } from "../../hooks/useAccounts";
-import { useToastStore } from "../../store/toast";
-import { getInstallInfo } from "../../api/install";
-import { getAccountContext } from "../../utils/toast";
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { QRCodeSVG } from 'qrcode.react';
+import PageContainer from '../Layout/PageContainer';
+import AppIcon from '../common/AppIcon';
+import Badge from '../common/Badge';
+import ProgressBar from '../common/ProgressBar';
+import Modal from '../common/Modal';
+import { useDownloads } from '../../hooks/useDownloads';
+import { useAccounts } from '../../hooks/useAccounts';
+import { useDownloadAction } from '../../hooks/useDownloadAction';
+import { useToastStore } from '../../store/toast';
+import { getInstallInfo } from '../../api/install';
+import { lookupApp } from '../../api/search';
+import { storeIdToCountry } from '../../apple/config';
+import { listVersions } from '../../apple/versionFinder';
+import { getAccountContext } from '../../utils/toast';
+import type { Software } from '../../types';
 
 export default function PackageDetail() {
   const { id } = useParams<{ id: string }>();
@@ -19,22 +26,29 @@ export default function PackageDetail() {
   const { t } = useTranslation();
   const addToast = useToastStore((s) => s.addToast);
   const { accounts } = useAccounts();
+  const { startDownload } = useDownloadAction();
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [latestApp, setLatestApp] = useState<Software | null>(null);
+  const [availableVersions, setAvailableVersions] = useState<string[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<string>('');
 
   const task = tasks.find((t) => t.id === id);
 
   if (!task) {
     return (
-      <PageContainer title={t("downloads.package.title")}>
+      <PageContainer title={t('downloads.package.title')}>
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          {tasks.length === 0 ? t("loading") : t("downloads.package.notFound")}
+          {tasks.length === 0 ? t('loading') : t('downloads.package.notFound')}
         </div>
       </PageContainer>
     );
   }
 
-  const isActive = task.status === "downloading" || task.status === "injecting";
-  const isPaused = task.status === "paused";
-  const isCompleted = task.status === "completed";
+  const isActive = task.status === 'downloading' || task.status === 'injecting';
+  const isPaused = task.status === 'paused';
+  const isCompleted = task.status === 'completed';
   const installInfo = isCompleted ? getInstallInfo(task.id) : null;
 
   const accountEmail = hashToEmail[task.accountHash];
@@ -42,15 +56,15 @@ export default function PackageDetail() {
   const ctx = getAccountContext(account, t);
   const appName = task.software.name;
 
-  function toastAction(titleKey: string, type: "success" | "info" = "info") {
-    addToast(t("toast.msg", { appName, ...ctx }), type, t(titleKey));
+  function toastAction(titleKey: string, type: 'success' | 'info' = 'info') {
+    addToast(t('toast.msg', { appName, ...ctx }), type, t(titleKey));
   }
 
   async function handleDelete() {
-    if (!confirm(t("downloads.package.deleteConfirm"))) return;
+    if (!confirm(t('downloads.package.deleteConfirm'))) return;
     await deleteDownload(task!.id);
-    toastAction("toast.title.deleteSuccess", "success");
-    navigate("/downloads");
+    toastAction('toast.title.deleteSuccess', 'success');
+    navigate('/downloads');
   }
 
   async function handleShare(e: React.MouseEvent) {
@@ -63,40 +77,76 @@ export default function PackageDetail() {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(urlToShare);
       } else {
-        const textArea = document.createElement("textarea");
+        const textArea = document.createElement('textarea');
         textArea.value = urlToShare;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-999999px";
-        textArea.style.top = "-999999px";
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        document.execCommand("copy");
+        document.execCommand('copy');
         document.body.removeChild(textArea);
       }
     } catch (err) {
-      console.warn("Clipboard fallback failed:", err);
+      console.warn('Clipboard fallback failed:', err);
     }
 
     addToast(
-      t("toast.msgShare", { appName, ...ctx }),
-      "success",
-      t("toast.title.shareAcquired"),
+      t('toast.msgShare', { appName, ...ctx }),
+      'success',
+      t('toast.title.shareAcquired'),
     );
 
     if (navigator.share) {
       try {
         await navigator.share({ text: urlToShare });
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError")
+        if (error instanceof DOMException && error.name === 'AbortError')
           return;
-        console.warn("Native share failed or aborted by user:", error);
+        console.warn('Native share failed or aborted by user:', error);
       }
     }
   }
 
+  async function handleCheckUpdate() {
+    if (!task || !account) return;
+    setCheckingUpdate(true);
+    try {
+      const country = storeIdToCountry(account.store) ?? 'US';
+      const app = await lookupApp(task.software.bundleID, country);
+
+      if (app && app.version !== task.software.version) {
+        setLatestApp(app);
+        const result = await listVersions(account, app);
+        setAvailableVersions(result.versions);
+        setSelectedVersion(result.versions[0] || '');
+        setShowUpdateModal(true);
+      } else {
+        addToast(t('downloads.package.noUpdate'), 'info');
+      }
+    } catch {
+      addToast(t('downloads.package.checkUpdateFailed'), 'error');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }
+
+  async function handleConfirmUpdate() {
+    if (!task || !account || !latestApp) return;
+    setShowUpdateModal(false);
+    try {
+      const isLatest = availableVersions.length > 0 && selectedVersion === availableVersions[0];
+      await startDownload(account, latestApp, isLatest ? undefined : selectedVersion);
+      await deleteDownload(task.id);
+      navigate('/downloads');
+    } catch {
+      addToast(t('downloads.package.updateFailed'), 'error');
+    }
+  }
+
   return (
-    <PageContainer title={t("downloads.package.title")}>
+    <PageContainer title={t('downloads.package.title')}>
       <div className="space-y-6">
         <div className="flex items-start gap-4">
           <AppIcon
@@ -138,7 +188,7 @@ export default function PackageDetail() {
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
               <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
-                {t("downloads.package.bundleId")}
+                {t('downloads.package.bundleId')}
               </dt>
               <dd className="text-gray-900 dark:text-gray-200 min-w-0 truncate ml-4">
                 {task.software.bundleID}
@@ -146,7 +196,7 @@ export default function PackageDetail() {
             </div>
             <div className="flex justify-between">
               <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
-                {t("downloads.package.version")}
+                {t('downloads.package.version')}
               </dt>
               <dd className="text-gray-900 dark:text-gray-200">
                 {task.software.version}
@@ -154,7 +204,7 @@ export default function PackageDetail() {
             </div>
             <div className="flex justify-between">
               <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
-                {t("downloads.package.account")}
+                {t('downloads.package.account')}
               </dt>
               <dd className="text-gray-900 dark:text-gray-200 min-w-0 truncate ml-4">
                 {accountEmail || task.accountHash}
@@ -162,7 +212,7 @@ export default function PackageDetail() {
             </div>
             <div className="flex justify-between">
               <dt className="text-gray-500 dark:text-gray-400 flex-shrink-0">
-                {t("downloads.package.created")}
+                {t('downloads.package.created')}
               </dt>
               <dd className="text-gray-900 dark:text-gray-200">
                 {new Date(task.createdAt).toLocaleString()}
@@ -175,14 +225,23 @@ export default function PackageDetail() {
           <div className="flex flex-wrap gap-3">
             {isCompleted && (
               <>
+                <button
+                  onClick={handleCheckUpdate}
+                  disabled={checkingUpdate}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                >
+                  {checkingUpdate
+                    ? t('downloads.package.checkingUpdate')
+                    : t('downloads.package.checkUpdate')}
+                </button>
                 {installInfo && (
                   <>
                     <a
                       href={installInfo.installUrl}
-                      onClick={() => toastAction("toast.title.installStarted")}
+                      onClick={() => toastAction('toast.title.installStarted')}
                       className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                     >
-                      {t("downloads.package.install")}
+                      {t('downloads.package.install')}
                     </a>
 
                     <div className="relative group flex items-center">
@@ -190,7 +249,7 @@ export default function PackageDetail() {
                         onClick={handleShare}
                         className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors cursor-pointer"
                       >
-                        {t("downloads.package.share")}
+                        {t('downloads.package.share')}
                       </button>
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none">
                         <div className="bg-white p-2 rounded-lg shadow-xl border border-gray-200 flex flex-col items-center">
@@ -200,7 +259,7 @@ export default function PackageDetail() {
                             className="mb-1"
                           />
                           <span className="text-xs text-gray-500 mt-1 whitespace-nowrap">
-                            {t("downloads.package.scan")}
+                            {t('downloads.package.scan')}
                           </span>
                           <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-gray-200 transform rotate-45"></div>
                         </div>
@@ -211,10 +270,10 @@ export default function PackageDetail() {
                 <a
                   href={`/api/packages/${task.id}/file?accountHash=${encodeURIComponent(task.accountHash)}`}
                   download
-                  onClick={() => toastAction("toast.title.downloadIpaStarted")}
+                  onClick={() => toastAction('toast.title.downloadIpaStarted')}
                   className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {t("downloads.package.downloadIpa")}
+                  {t('downloads.package.downloadIpa')}
                 </a>
               </>
             )}
@@ -223,7 +282,7 @@ export default function PackageDetail() {
                 onClick={() => pauseDownload(task.id)}
                 className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                {t("downloads.package.pause")}
+                {t('downloads.package.pause')}
               </button>
             )}
             {isPaused && (
@@ -231,18 +290,66 @@ export default function PackageDetail() {
                 onClick={() => resumeDownload(task.id)}
                 className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {t("downloads.package.resume")}
+                {t('downloads.package.resume')}
               </button>
             )}
             <button
               onClick={handleDelete}
               className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
             >
-              {t("downloads.package.delete")}
+              {t('downloads.package.delete')}
             </button>
           </div>
         </div>
       </div>
+
+      <Modal
+        open={showUpdateModal}
+        onClose={() => setShowUpdateModal(false)}
+        title={t('downloads.package.updateAvailable')}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            {t('downloads.package.updatePrompt', {
+              version: latestApp?.version,
+            })}
+          </p>
+          {availableVersions.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('downloads.package.selectVersion')}
+              </label>
+              <select
+                value={selectedVersion}
+                onChange={(e) => setSelectedVersion(e.target.value)}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-white"
+              >
+                {availableVersions.map((v, i) => (
+                  <option key={v} value={v}>
+                    {i === 0
+                      ? t('downloads.package.latestVersion', { id: v })
+                      : v}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              onClick={() => setShowUpdateModal(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              {t('settings.data.cancel')}
+            </button>
+            <button
+              onClick={handleConfirmUpdate}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {t('downloads.package.update')}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </PageContainer>
   );
 }
