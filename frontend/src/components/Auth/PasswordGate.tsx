@@ -26,12 +26,34 @@ export default function PasswordGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetch("/api/auth/status")
       .then((r) => r.json())
-      .then((data: { required: boolean }) => {
-        if (!data.required || sessionStorage.getItem(SESSION_KEY)) {
+      .then(async (data: { required: boolean }) => {
+        if (!data.required) {
+          sessionStorage.removeItem(SESSION_KEY);
           setStatus("verified");
-        } else {
-          setStatus("required");
+          return;
         }
+
+        const storedToken = sessionStorage.getItem(SESSION_KEY);
+        if (storedToken) {
+          // Validate stored token — it may be stale after a password change
+          try {
+            const res = await fetch("/api/auth/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: storedToken }),
+            });
+            const result = (await res.json()) as { ok: boolean };
+            if (result.ok) {
+              setStatus("verified");
+              return;
+            }
+          } catch {
+            // Validation failed — fall through to show password form
+          }
+          sessionStorage.removeItem(SESSION_KEY);
+        }
+
+        setStatus("required");
       })
       .catch(() => {
         // If we can't reach the server, let the app load normally
