@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import { useAccounts } from "../../hooks/useAccounts";
+import { apiGet } from "../../api/client";
 import { accountHash } from "../../utils/account";
 
 interface Stats {
@@ -39,12 +40,8 @@ export default function HomePage() {
       });
 
       const [downloads, packages] = await Promise.all([
-        fetch(`/api/downloads?${params}`)
-          .then((r) => (r.ok ? r.json() : []))
-          .catch(() => []),
-        fetch(`/api/packages?${params}`)
-          .then((r) => (r.ok ? r.json() : []))
-          .catch(() => []),
+        apiGet<any[]>(`/api/downloads?${params}`).catch(() => []),
+        apiGet<any[]>(`/api/packages?${params}`).catch(() => []),
       ]);
 
       if (cancelled) return;

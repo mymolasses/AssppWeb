@@ -2,7 +2,7 @@ import { getAccessToken } from "../components/Auth/PasswordGate";
 
 const BASE_URL = "";
 
-function authHeaders(): Record<string, string> {
+export function authHeaders(): Record<string, string> {
   const token = getAccessToken();
   return token ? { "X-Access-Token": token } : {};
 }

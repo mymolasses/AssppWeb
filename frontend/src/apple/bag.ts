@@ -1,3 +1,4 @@
+import { authHeaders } from "../api/client";
 import { parsePlist } from "./plist";
 
 export interface BagOutput {
@@ -12,7 +13,9 @@ export const defaultAuthURL =
 // The bag response is public data (Apple service URLs, no credentials).
 export async function fetchBag(deviceId: string): Promise<BagOutput> {
   try {
-    const resp = await fetch(`/api/bag?guid=${encodeURIComponent(deviceId)}`);
+    const resp = await fetch(`/api/bag?guid=${encodeURIComponent(deviceId)}`, {
+      headers: authHeaders(),
+    });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({ error: resp.statusText }));
       console.warn(
