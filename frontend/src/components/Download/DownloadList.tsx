@@ -1,22 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import PageContainer from '../Layout/PageContainer';
-import DownloadItem from './DownloadItem';
-import Modal from '../common/Modal';
-import ProgressBar from '../common/ProgressBar';
-import Spinner from '../common/Spinner';
-import { useDownloads } from '../../hooks/useDownloads';
-import { useAccounts } from '../../hooks/useAccounts';
-import { useDownloadAction } from '../../hooks/useDownloadAction';
-import { useToastStore } from '../../store/toast';
-import { lookupApp } from '../../api/search';
-import { storeIdToCountry } from '../../apple/config';
-import { getAccountContext } from '../../utils/toast';
-import { isNewerVersion } from '../../utils/version';
-import type { DownloadTask } from '../../types';
+import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import PageContainer from "../Layout/PageContainer";
+import DownloadItem from "./DownloadItem";
+import Modal from "../common/Modal";
+import ProgressBar from "../common/ProgressBar";
+import Spinner from "../common/Spinner";
+import { useDownloads } from "../../hooks/useDownloads";
+import { useAccounts } from "../../hooks/useAccounts";
+import { useDownloadAction } from "../../hooks/useDownloadAction";
+import { useToastStore } from "../../store/toast";
+import { lookupApp } from "../../api/search";
+import { storeIdToCountry } from "../../apple/config";
+import { getAccountContext } from "../../utils/toast";
+import { isNewerVersion } from "../../utils/version";
+import type { DownloadTask } from "../../types";
 
-type StatusFilter = 'all' | DownloadTask['status'];
+type StatusFilter = "all" | DownloadTask["status"];
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -30,14 +30,18 @@ export default function DownloadList() {
     deleteDownload,
     hashToEmail,
   } = useDownloads();
-  const [filter, setFilter] = useState<StatusFilter>('all');
+  const [filter, setFilter] = useState<StatusFilter>("all");
   const addToast = useToastStore((s) => s.addToast);
   const { accounts } = useAccounts();
   const { startDownload } = useDownloadAction();
 
   const [checkingAll, setCheckingAll] = useState(false);
   const cancelCheckRef = useRef(false);
-  const [checkProgress, setCheckProgress] = useState({ current: 0, total: 0, appName: '' });
+  const [checkProgress, setCheckProgress] = useState({
+    current: 0,
+    total: 0,
+    appName: "",
+  });
 
   useEffect(() => {
     return () => {
@@ -46,7 +50,7 @@ export default function DownloadList() {
   }, []);
 
   const filtered =
-    filter === 'all' ? tasks : tasks.filter((t) => t.status === filter);
+    filter === "all" ? tasks : tasks.filter((t) => t.status === filter);
 
   const sortedTasks = [...filtered].sort((a, b) => {
     const timeA = new Date(a.createdAt || 0).getTime();
@@ -55,7 +59,7 @@ export default function DownloadList() {
   });
 
   function handleDelete(id: string) {
-    if (!confirm(t('downloads.deleteConfirm'))) return;
+    if (!confirm(t("downloads.deleteConfirm"))) return;
 
     const task = tasks.find((t) => t.id === id);
     if (task) {
@@ -64,9 +68,9 @@ export default function DownloadList() {
       const ctx = getAccountContext(account, t);
 
       addToast(
-        t('toast.msg', { appName: task.software.name, ...ctx }),
-        'success',
-        t('toast.title.deleteSuccess'),
+        t("toast.msg", { appName: task.software.name, ...ctx }),
+        "success",
+        t("toast.title.deleteSuccess"),
       );
     }
 
@@ -81,11 +85,11 @@ export default function DownloadList() {
   async function handleCheckAllUpdates() {
     cancelCheckRef.current = false;
     setCheckingAll(true);
-    addToast(t('downloads.checkUpdatesStarted'), 'info');
+    addToast(t("downloads.checkUpdatesStarted"), "info");
     let count = 0;
-    const completedTasks = tasks.filter((t) => t.status === 'completed');
+    const completedTasks = tasks.filter((t) => t.status === "completed");
 
-    setCheckProgress({ current: 0, total: completedTasks.length, appName: '' });
+    setCheckProgress({ current: 0, total: completedTasks.length, appName: "" });
 
     for (let i = 0; i < completedTasks.length; i++) {
       if (cancelCheckRef.current) break;
@@ -105,10 +109,13 @@ export default function DownloadList() {
         await delay(1500);
         if (cancelCheckRef.current) break;
 
-        const country = storeIdToCountry(account.store) ?? 'US';
+        const country = storeIdToCountry(account.store) ?? "US";
         const latestApp = await lookupApp(task.software.bundleID, country);
 
-        if (latestApp && isNewerVersion(latestApp.version, task.software.version)) {
+        if (
+          latestApp &&
+          isNewerVersion(latestApp.version, task.software.version)
+        ) {
           await startDownload(account, latestApp);
           await deleteDownload(task.id);
           count++;
@@ -124,14 +131,14 @@ export default function DownloadList() {
       await delay(500);
       if (!cancelCheckRef.current) {
         setCheckingAll(false);
-        addToast(t('downloads.checkUpdatesCompleted', { count }), 'success');
+        addToast(t("downloads.checkUpdatesCompleted", { count }), "success");
       }
     }
   }
 
   return (
     <PageContainer
-      title={t('downloads.title')}
+      title={t("downloads.title")}
       action={
         <div className="flex gap-2">
           <button
@@ -140,14 +147,14 @@ export default function DownloadList() {
             className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
           >
             {checkingAll
-              ? t('downloads.checkingUpdates')
-              : t('downloads.checkUpdates')}
+              ? t("downloads.checkingUpdates")
+              : t("downloads.checkUpdates")}
           </button>
           <Link
             to="/downloads/add"
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {t('downloads.new')}
+            {t("downloads.new")}
           </Link>
         </div>
       }
@@ -155,12 +162,12 @@ export default function DownloadList() {
       <div className="mb-4 flex gap-2 flex-wrap">
         {(
           [
-            'all',
-            'downloading',
-            'pending',
-            'paused',
-            'completed',
-            'failed',
+            "all",
+            "downloading",
+            "pending",
+            "paused",
+            "completed",
+            "failed",
           ] as StatusFilter[]
         ).map((status) => (
           <button
@@ -168,12 +175,12 @@ export default function DownloadList() {
             onClick={() => setFilter(status)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               filter === status
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
             }`}
           >
             {t(`downloads.status.${status}`)}
-            {status !== 'all' && (
+            {status !== "all" && (
               <span className="ml-1">
                 ({tasks.filter((t) => t.status === status).length})
               </span>
@@ -183,12 +190,12 @@ export default function DownloadList() {
       </div>
 
       <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-400">
-        {t('downloads.warning')}
+        {t("downloads.warning")}
       </div>
 
       {loading && tasks.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400 py-12">
-          {t('downloads.loading')}
+          {t("downloads.loading")}
         </div>
       ) : sortedTasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 my-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
@@ -208,18 +215,18 @@ export default function DownloadList() {
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
-            {filter === 'all'
-              ? t('downloads.emptyAll')
-              : t('downloads.emptyFilter', {
+            {filter === "all"
+              ? t("downloads.emptyAll")
+              : t("downloads.emptyFilter", {
                   status: t(`downloads.status.${filter}`),
                 })}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-sm">
-            {filter === 'all'
-              ? t('downloads.emptyAllDesc')
-              : t('downloads.emptyFilterDesc')}
+            {filter === "all"
+              ? t("downloads.emptyAllDesc")
+              : t("downloads.emptyFilterDesc")}
           </p>
-          {filter === 'all' && (
+          {filter === "all" && (
             <Link
               to="/search"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
@@ -237,7 +244,7 @@ export default function DownloadList() {
                   d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
                 />
               </svg>
-              {t('downloads.searchApps')}
+              {t("downloads.searchApps")}
             </Link>
           )}
         </div>
@@ -258,7 +265,7 @@ export default function DownloadList() {
       <Modal
         open={checkingAll && checkProgress.total > 0}
         onClose={handleCancelCheck}
-        title={t('downloads.checkingUpdates')}
+        title={t("downloads.checkingUpdates")}
       >
         <div className="space-y-4">
           <div className="flex justify-center text-blue-600 dark:text-blue-400">
@@ -267,8 +274,8 @@ export default function DownloadList() {
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
               {checkProgress.appName
-                ? `${t('downloads.checkingApp')}${checkProgress.appName}`
-                : '...'}
+                ? `${t("downloads.checkingApp")}${checkProgress.appName}`
+                : "..."}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono">
               {checkProgress.current} / {checkProgress.total}
@@ -282,14 +289,14 @@ export default function DownloadList() {
             }
           />
           <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-            {t('downloads.checkUpdatesDesc')}
+            {t("downloads.checkUpdatesDesc")}
           </p>
           <div className="flex justify-center">
             <button
               onClick={handleCancelCheck}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              {t('settings.data.cancel')}
+              {t("settings.data.cancel")}
             </button>
           </div>
         </div>

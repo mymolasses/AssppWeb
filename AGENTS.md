@@ -397,3 +397,22 @@ When the same UI pattern appears in 3+ components, extract it to `components/com
 - `Alert`, `Modal`, `Spinner`, `CountrySelect`, `AppIcon`, `Badge`, `ProgressBar`, `icons`
 
 When adding new common components, update this AGENTS.md file accordingly.
+
+### Authenticated API Downloads
+
+**Problem**: Plain `<a href="/api/...">` tags and `window.open("/api/...")` make regular browser navigations that cannot carry custom HTTP headers. When `ACCESS_PASSWORD` is set, the `accessAuth` middleware requires an `X-Access-Token` header, so these requests fail with 401.
+
+**Rule**: Never use `<a href>` or `window.open` for `/api/` endpoints that require authentication. Instead, use `fetch()` with `authHeaders()` from `api/client.ts`, then trigger a download via blob URL:
+
+```tsx
+const res = await fetch(url, { headers: authHeaders() });
+const blob = await res.blob();
+const blobUrl = URL.createObjectURL(blob);
+const a = document.createElement("a");
+a.href = blobUrl;
+a.download = filename;
+a.click();
+URL.revokeObjectURL(blobUrl);
+```
+
+**Exceptions**: Routes that the backend explicitly skips auth for (`/auth/*`, `/install/*`) may use plain links — e.g., `itms-services://` install URLs are fine since `/install/*` is public.
