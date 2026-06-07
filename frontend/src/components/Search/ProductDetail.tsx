@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
@@ -6,7 +6,6 @@ import AppIcon from "../common/AppIcon";
 import { useAccounts } from "../../hooks/useAccounts";
 import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { lookupApp } from "../../api/search";
-import { storeIdToCountry } from "../../apple/config";
 import type { Software } from "../../types";
 
 export default function ProductDetail() {
@@ -32,12 +31,7 @@ export default function ProductDetail() {
     "purchase" | "download" | null
   >(null);
 
-  const filteredAccounts = useMemo(
-    () => accounts.filter((a) => storeIdToCountry(a.store) === country),
-    [accounts, country],
-  );
-
-  const account = filteredAccounts.find((a) => a.email === selectedAccount);
+  const account = accounts.find((a) => a.email === selectedAccount);
 
   useEffect(() => {
     if (!stateApp && appId) {
@@ -55,12 +49,12 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (
-      filteredAccounts.length > 0 &&
-      !filteredAccounts.some((a) => a.email === selectedAccount)
+      accounts.length > 0 &&
+      !accounts.some((a) => a.email === selectedAccount)
     ) {
-      setSelectedAccount(filteredAccounts[0].email);
+      setSelectedAccount(accounts[0].email);
     }
-  }, [filteredAccounts, selectedAccount]);
+  }, [accounts, selectedAccount]);
 
   if (loading) {
     return (
@@ -131,10 +125,6 @@ export default function ProductDetail() {
             </Link>{" "}
             {t("search.product.addAccountPrompt")}
           </div>
-        ) : filteredAccounts.length === 0 ? (
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
-            {t("search.product.noAccountsForRegion")}
-          </div>
         ) : (
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-4">
             <div>
@@ -147,7 +137,7 @@ export default function ProductDetail() {
                 className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                 disabled={loadingAction !== null}
               >
-                {filteredAccounts.map((a) => (
+                {accounts.map((a) => (
                   <option key={a.email} value={a.email}>
                     {a.firstName} {a.lastName} ({a.email})
                   </option>
