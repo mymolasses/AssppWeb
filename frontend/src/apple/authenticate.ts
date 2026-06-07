@@ -42,7 +42,6 @@ export async function authenticate(
   requestHost = authEndpoint.hostname;
   requestPath = `${authEndpoint.pathname}${authEndpoint.search}`;
 
-  let redirectAttempt = 0;
   let pod: string | undefined;
 
   for (
@@ -63,7 +62,7 @@ export async function authenticate(
       const plistBody = buildPlist(body);
 
       const headers: Record<string, string> = {
-        "Content-Type": "application/x-apple-plist",
+        "Content-Type": "application/x-www-form-urlencoded",
       };
 
       const response = await appleRequest({
@@ -99,8 +98,13 @@ export async function authenticate(
         const url = new URL(location);
         requestHost = url.hostname;
         requestPath = url.pathname + url.search;
-        redirectAttempt++;
         continue;
+      }
+
+      if (response.status === 429) {
+        throw new AuthenticationError(
+          `Apple auth rate limit exceeded. Stop retrying and wait before trying again. Body starts with ${previewResponseBody(response.body)}`,
+        );
       }
 
       // Handle non-plist responses (e.g. 403 with empty body)
@@ -110,7 +114,34 @@ export async function authenticate(
         );
       }
 
-      const dict = parsePlist(response.body) as Record<string, any>;
+      const trimmedBody = response.body.trim();
+      if (!trimmedBody.startsWith("<")) {
+        try {
+          const json = JSON.parse(trimmedBody) as Record<string, any>;
+          const message =
+            (json.customerMessage as string) ||
+            (json.error as string) ||
+            (json.message as string) ||
+            JSON.stringify(json);
+          throw new AuthenticationError(message);
+        } catch (error) {
+          if (error instanceof AuthenticationError) throw error;
+          throw new AuthenticationError(
+            `Unexpected Apple auth response: HTTP ${response.status}, content-type ${response.headers["content-type"] || "unknown"}, body starts with ${previewResponseBody(response.body)}`,
+          );
+        }
+      }
+
+      let dict: Record<string, any>;
+      try {
+        dict = parsePlist(response.body) as Record<string, any>;
+      } catch (error) {
+        throw new AuthenticationError(
+          `Unexpected Apple auth response: HTTP ${response.status}, content-type ${response.headers["content-type"] || "unknown"}, body starts with ${previewResponseBody(response.body)}; ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
 
       if (
         currentAttempt === 1 &&
@@ -219,4 +250,9 @@ export async function authenticate(
       }),
     )
   );
+}
+
+function previewResponseBody(body: string): string {
+  const cleaned = body.replace(/\s+/g, " ").trim().slice(0, 120);
+  return JSON.stringify(cleaned);
 }

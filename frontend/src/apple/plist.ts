@@ -45,16 +45,54 @@ function escapeXml(s: string): string {
 
 // Native browser plist parser — avoids @xmldom/xmldom bundling issues
 export function parsePlist(xml: string): any {
-  const doc = new DOMParser().parseFromString(xml, "text/xml");
+  const doc = new DOMParser().parseFromString(
+    normalizePlistXML(xml),
+    "text/xml",
+  );
   const root = doc.documentElement;
-  if (root.nodeName !== "plist") {
-    throw new Error("Invalid plist: root element is not <plist>");
+  if (root.nodeName === "parsererror") {
+    throw new Error("Invalid plist: XML parse error");
   }
-  const firstChild = root.firstElementChild;
-  if (!firstChild) {
-    throw new Error("Invalid plist: empty <plist> element");
+  if (root.nodeName === "plist") {
+    const firstChild = root.firstElementChild;
+    if (!firstChild) {
+      throw new Error("Invalid plist: empty <plist> element");
+    }
+    return parseNode(firstChild);
   }
-  return parseNode(firstChild);
+  if (root.nodeName === "dict" || root.nodeName === "array") {
+    return parseNode(root);
+  }
+  throw new Error(
+    `Invalid plist: root element is not <plist> (${root.nodeName})`,
+  );
+}
+
+function normalizePlistXML(xml: string): string {
+  let normalized = xml.trim();
+
+  const documentMatch = normalized.match(
+    /<Document\b[^>]*>([\s\S]*)<\/Document>/i,
+  );
+  if (documentMatch?.[1]?.trim()) {
+    normalized = documentMatch[1].trim();
+  }
+
+  const plistMatch = normalized.match(/<plist\b[^>]*>[\s\S]*?<\/plist>/i);
+  if (plistMatch?.[0]?.trim()) {
+    normalized = plistMatch[0].trim();
+  }
+
+  const dictMatch = normalized.match(/<dict\b[^>]*>[\s\S]*<\/dict>/i);
+  if (dictMatch?.[0]?.trim()) {
+    return dictMatch[0].trim();
+  }
+
+  if (normalized.includes("<key>")) {
+    return `<dict>${normalized}</dict>`;
+  }
+
+  return normalized;
 }
 
 function parseNode(node: Element): any {

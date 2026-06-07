@@ -166,22 +166,26 @@ export default function ProductDetail() {
                     : t("search.product.getLicense")}
                 </button>
               )}
-              <button
-                onClick={handleDownload}
-                disabled={loadingAction !== null}
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {loadingAction === "download"
-                  ? t("search.product.processing")
-                  : t("search.product.download")}
-              </button>
-              <Link
-                to={`/search/${app.id}/versions`}
-                state={{ app, country }}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                {t("search.product.versionHistory")}
-              </Link>
+              {app.kind !== "mac-software" && (
+                <>
+                  <button
+                    onClick={handleDownload}
+                    disabled={loadingAction !== null}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {loadingAction === "download"
+                      ? t("search.product.processing")
+                      : t("search.product.download")}
+                  </button>
+                  <Link
+                    to={`/search/${app.id}/versions`}
+                    state={{ app, country }}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    {t("search.product.versionHistory")}
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

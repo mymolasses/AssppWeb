@@ -97,6 +97,7 @@ export default function SearchPage() {
           >
             <option value="iPhone">iPhone</option>
             <option value="iPad">iPad</option>
+            <option value="macSoftware">Mac</option>
           </select>
         </div>
       </form>
