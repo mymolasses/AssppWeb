@@ -10,8 +10,7 @@ vi.mock("../../src/apple/request", () => ({
 
 vi.mock("../../src/apple/bag", () => ({
   fetchBag: vi.fn(),
-  defaultAuthURL:
-    "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate",
+  defaultAuthURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
 }));
 
 describe("apple/authenticate", () => {
