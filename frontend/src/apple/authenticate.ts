@@ -74,7 +74,11 @@ export async function authenticate(
         cookies,
       });
 
-      cookies = extractAndMergeCookies(response.rawHeaders, cookies);
+      cookies = extractAndMergeCookies(
+        response.rawHeaders,
+        cookies,
+        requestHost,
+      );
 
       // Read store front
       const storeHeader = response.headers["x-set-apple-store-front"];
@@ -103,7 +107,10 @@ export async function authenticate(
 
       if (response.status === 429) {
         throw new AuthenticationError(
-          `Apple auth rate limit exceeded. Stop retrying and wait before trying again. Body starts with ${previewResponseBody(response.body)}`,
+          i18n.t("errors.auth.rateLimited", {
+            defaultValue:
+              "Apple authentication is temporarily rate limited. Stop retrying and wait before trying again.",
+          }),
         );
       }
 
