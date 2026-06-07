@@ -29,6 +29,48 @@ describe("apple/bag", () => {
     );
   });
 
+  it("prefers root-level authenticateAccount over urlBag", async () => {
+    const xml = buildPlist({
+      authenticateAccount: "https://auth.itunes.apple.com/auth/v1/native/fast",
+      urlBag: {
+        authenticateAccount:
+          "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate",
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () => xml,
+      }),
+    );
+
+    const result = await fetchBag("aabbccddeeff");
+
+    expect(result.authURL).toBe(
+      "https://auth.itunes.apple.com/auth/v1/native/fast",
+    );
+  });
+
+  it("adds fast path for new auth endpoint base", async () => {
+    const xml = buildPlist({
+      authenticateAccount: "https://auth.itunes.apple.com/auth/v1/native",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () => xml,
+      }),
+    );
+
+    const result = await fetchBag("aabbccddeeff");
+
+    expect(result.authURL).toBe(
+      "https://auth.itunes.apple.com/auth/v1/native/fast",
+    );
+  });
+
   it("falls back when authenticateAccount is missing", async () => {
     const xml = buildPlist({
       urlBag: {
