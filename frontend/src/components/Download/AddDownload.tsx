@@ -277,7 +277,7 @@ export default function AddDownload() {
                     : t("downloads.add.getLicense")}
                 </button>
               )}
-              {step !== "versions" && (
+              {app.kind !== "mac-software" && step !== "versions" && (
                 <button
                   onClick={handleLoadVersions}
                   disabled={isLoading || !account}
@@ -288,15 +288,17 @@ export default function AddDownload() {
                     : t("downloads.add.selectVersion")}
                 </button>
               )}
-              <button
-                onClick={handleDownload}
-                disabled={isLoading || !account}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {loadingAction === "download"
-                  ? t("downloads.add.processing")
-                  : t("downloads.add.download")}
-              </button>
+              {app.kind !== "mac-software" && (
+                <button
+                  onClick={handleDownload}
+                  disabled={isLoading || !account}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loadingAction === "download"
+                    ? t("downloads.add.processing")
+                    : t("downloads.add.download")}
+                </button>
+              )}
             </div>
           </div>
         )}

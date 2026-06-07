@@ -9,6 +9,7 @@ function mapSoftware(item: Record<string, any>) {
     bundleID: item.bundleId,
     name: item.trackName,
     version: item.version,
+    kind: item.kind,
     price: item.price,
     artistName: item.artistName,
     sellerName: item.sellerName,
