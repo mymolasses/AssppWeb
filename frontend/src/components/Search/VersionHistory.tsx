@@ -1,12 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
 import AppIcon from "../common/AppIcon";
 import { useAccounts } from "../../hooks/useAccounts";
 import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { listVersions } from "../../apple/versionFinder";
-import { storeIdToCountry } from "../../apple/config";
 import { getVersionMetadata } from "../../apple/versionLookup";
 import { getErrorMessage } from "../../utils/error";
 import { useToastStore } from "../../store/toast";
@@ -14,7 +13,6 @@ import { useUiPreferencesStore } from "../../store/uiPreferences";
 import type { Software, VersionMetadata } from "../../types";
 
 export default function VersionHistory() {
-  const { appId } = useParams<{ appId: string }>();
   const location = useLocation();
   const { accounts, updateAccount } = useAccounts();
   const { selectedAccountEmail, setSelectedAccountEmail } =
@@ -23,18 +21,10 @@ export default function VersionHistory() {
   const addToast = useToastStore((s) => s.addToast);
   const { startDownload, toastDownloadError } = useDownloadAction();
 
-  const stateApp = (location.state as { app?: Software; country?: string })
-    ?.app;
-  const stateCountry = (location.state as { country?: string })?.country;
-  const country = stateCountry ?? "US";
+  const stateApp = (location.state as { app?: Software })?.app;
 
   const [app] = useState<Software | null>(stateApp ?? null);
   const [selectedAccount, setSelectedAccount] = useState(selectedAccountEmail);
-
-  const filteredAccounts = useMemo(
-    () => accounts.filter((a) => storeIdToCountry(a.store) === country),
-    [accounts, country],
-  );
   const [versions, setVersions] = useState<string[]>([]);
   const [versionMeta, setVersionMeta] = useState<
     Record<string, VersionMetadata>
@@ -44,30 +34,30 @@ export default function VersionHistory() {
   const [downloadingVersion, setDownloadingVersion] = useState<string | null>(
     null,
   );
+  const lastAutoLoadedKey = useRef("");
+  const requestedMetadata = useRef(new Set<string>());
+
+  const account = accounts.find((a) => a.email === selectedAccount);
 
   useEffect(() => {
     if (
-      filteredAccounts.length > 0 &&
-      !filteredAccounts.some((a) => a.email === selectedAccount)
+      accounts.length > 0 &&
+      !accounts.some((a) => a.email === selectedAccount)
     ) {
-      const nextAccount = filteredAccounts.some(
-        (a) => a.email === selectedAccountEmail,
-      )
+      const nextAccount = accounts.some((a) => a.email === selectedAccountEmail)
         ? selectedAccountEmail
-        : filteredAccounts[0].email;
+        : accounts[0].email;
       setSelectedAccount(nextAccount);
       setSelectedAccountEmail(nextAccount);
     }
   }, [
-    filteredAccounts,
+    accounts,
     selectedAccount,
     selectedAccountEmail,
     setSelectedAccountEmail,
   ]);
 
-  const account = filteredAccounts.find((a) => a.email === selectedAccount);
-
-  async function handleLoadVersions() {
+  const loadVersions = useCallback(async () => {
     if (!account || !app) return;
     setLoading(true);
     try {
@@ -79,21 +69,63 @@ export default function VersionHistory() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [account, addToast, app, t, updateAccount]);
 
-  async function handleLoadMeta(versionId: string) {
-    if (!account || !app || versionMeta[versionId]) return;
-    setLoadingMeta((prev) => ({ ...prev, [versionId]: true }));
-    try {
-      const result = await getVersionMetadata(account, app, versionId);
-      setVersionMeta((prev) => ({ ...prev, [versionId]: result.metadata }));
-      await updateAccount({ ...account, cookies: result.updatedCookies });
-    } catch {
-      // Silently fail for individual version metadata
-    } finally {
-      setLoadingMeta((prev) => ({ ...prev, [versionId]: false }));
+  useEffect(() => {
+    if (!account || !app) return;
+    const key = `${account.email}:${app.id}`;
+    if (lastAutoLoadedKey.current === key) return;
+    lastAutoLoadedKey.current = key;
+    setVersions([]);
+    setVersionMeta({});
+    requestedMetadata.current = new Set();
+    loadVersions();
+  }, [account, app, loadVersions]);
+
+  useEffect(() => {
+    if (!account || !app || versions.length === 0) return;
+    let cancelled = false;
+
+    async function loadAllMetadata() {
+      let currentAccount = account;
+      for (const versionId of versions) {
+        if (cancelled || requestedMetadata.current.has(versionId)) {
+          continue;
+        }
+        requestedMetadata.current.add(versionId);
+        setLoadingMeta((prev) => ({ ...prev, [versionId]: true }));
+        try {
+          const result = await getVersionMetadata(
+            currentAccount,
+            app,
+            versionId,
+          );
+          if (cancelled) return;
+          setVersionMeta((prev) => ({
+            ...prev,
+            [versionId]: result.metadata,
+          }));
+          currentAccount = {
+            ...currentAccount,
+            cookies: result.updatedCookies,
+          };
+          await updateAccount(currentAccount);
+        } catch {
+          // Keep the version ID visible if Apple does not return metadata.
+        } finally {
+          if (!cancelled) {
+            setLoadingMeta((prev) => ({ ...prev, [versionId]: false }));
+          }
+        }
+      }
     }
-  }
+
+    loadAllMetadata();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [account?.email, app, updateAccount, versions]);
 
   async function handleDownloadVersion(versionId: string) {
     if (!account || !app) return;
@@ -130,43 +162,37 @@ export default function VersionHistory() {
           </div>
         </div>
 
-        {accounts.length > 0 && filteredAccounts.length === 0 ? (
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
-            {t("search.product.noAccountsForRegion")}
-          </div>
-        ) : (
-          filteredAccounts.length > 0 && (
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t("search.versions.account")}
-                </label>
-                <select
-                  value={selectedAccount}
-                  onChange={(e) => {
-                    setSelectedAccount(e.target.value);
-                    setSelectedAccountEmail(e.target.value);
-                  }}
-                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                >
-                  {filteredAccounts.map((a) => (
-                    <option key={a.email} value={a.email}>
-                      {a.firstName} {a.lastName} ({a.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                onClick={handleLoadVersions}
-                disabled={loading || !account}
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+        {accounts.length > 0 && (
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t("search.versions.account")}
+              </label>
+              <select
+                value={selectedAccount}
+                onChange={(e) => {
+                  setSelectedAccount(e.target.value);
+                  setSelectedAccountEmail(e.target.value);
+                }}
+                className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
-                {loading
-                  ? t("search.versions.loading")
-                  : t("search.versions.load")}
-              </button>
+                {accounts.map((a) => (
+                  <option key={a.email} value={a.email}>
+                    {a.firstName} {a.lastName} ({a.email})
+                  </option>
+                ))}
+              </select>
             </div>
-          )
+            <button
+              onClick={loadVersions}
+              disabled={loading || !account}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+            >
+              {loading
+                ? t("search.versions.loading")
+                : t("search.versions.load")}
+            </button>
+          </div>
         )}
 
         {versions.length > 0 && (
@@ -190,15 +216,7 @@ export default function VersionHistory() {
                         {new Date(meta.releaseDate).toLocaleDateString()}
                       </p>
                     )}
-                    {!meta && !isLoadingMeta && (
-                      <button
-                        onClick={() => handleLoadMeta(versionId)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 py-1 transition-colors"
-                      >
-                        {t("search.versions.loadDetails")}
-                      </button>
-                    )}
-                    {isLoadingMeta && (
+                    {!meta && isLoadingMeta && (
                       <span className="text-xs text-gray-400 dark:text-gray-500">
                         {t("search.versions.loading")}
                       </span>
