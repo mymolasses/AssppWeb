@@ -250,7 +250,7 @@ describe("apple/authenticate", () => {
         undefined,
         "aabbccddeeff",
       ),
-    ).rejects.toThrow("Apple auth rate limit exceeded");
+    ).rejects.toThrow("Apple authentication is temporarily rate limited");
 
     expect(appleRequest).toHaveBeenCalledTimes(1);
   });

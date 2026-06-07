@@ -3,6 +3,7 @@ import type { Cookie } from "../types";
 export function extractAndMergeCookies(
   rawHeaders: Iterable<[string, string]>,
   existingCookies: Cookie[],
+  originHost?: string,
 ): Cookie[] {
   const setCookies: string[] = [];
   for (const [key, value] of rawHeaders) {
@@ -11,7 +12,10 @@ export function extractAndMergeCookies(
     }
   }
   if (setCookies.length > 0) {
-    return mergeCookies(existingCookies, parseCookieHeaders(setCookies));
+    return mergeCookies(
+      existingCookies,
+      parseCookieHeaders(setCookies, originHost),
+    );
   }
   return existingCookies;
 }
@@ -22,12 +26,20 @@ export function mergeCookies(
 ): Cookie[] {
   const dict = new Map<string, Cookie>();
   for (const cookie of existing) {
-    dict.set(cookie.name, cookie);
+    dict.set(cookieKey(cookie), cookie);
   }
   for (const cookie of newCookies) {
-    dict.set(cookie.name, cookie);
+    dict.set(cookieKey(cookie), cookie);
   }
   return Array.from(dict.values());
+}
+
+function cookieKey(cookie: Cookie): string {
+  return [
+    cookie.name,
+    cookie.domain?.toLowerCase() ?? "",
+    cookie.path || "/",
+  ].join("|");
 }
 
 export function buildCookieHeader(cookies: Cookie[], url: string): string {
@@ -65,7 +77,10 @@ export function buildCookieHeader(cookies: Cookie[], url: string): string {
   return valid.join("; ");
 }
 
-export function parseCookieHeaders(setCookieHeaders: string[]): Cookie[] {
+export function parseCookieHeaders(
+  setCookieHeaders: string[],
+  originHost?: string,
+): Cookie[] {
   const cookies: Cookie[] = [];
 
   for (const header of setCookieHeaders) {
@@ -81,7 +96,7 @@ export function parseCookieHeaders(setCookieHeaders: string[]): Cookie[] {
     if (!name) continue;
 
     let path = "/";
-    let domain: string | undefined;
+    let domain: string | undefined = originHost?.toLowerCase();
     let expiresAt: number | undefined;
     let httpOnly = false;
     let secure = false;
