@@ -10,12 +10,15 @@ import { storeIdToCountry } from "../../apple/config";
 import { getVersionMetadata } from "../../apple/versionLookup";
 import { getErrorMessage } from "../../utils/error";
 import { useToastStore } from "../../store/toast";
+import { useUiPreferencesStore } from "../../store/uiPreferences";
 import type { Software, VersionMetadata } from "../../types";
 
 export default function VersionHistory() {
   const { appId } = useParams<{ appId: string }>();
   const location = useLocation();
   const { accounts, updateAccount } = useAccounts();
+  const { selectedAccountEmail, setSelectedAccountEmail } =
+    useUiPreferencesStore();
   const { t } = useTranslation();
   const addToast = useToastStore((s) => s.addToast);
   const { startDownload, toastDownloadError } = useDownloadAction();
@@ -26,7 +29,7 @@ export default function VersionHistory() {
   const country = stateCountry ?? "US";
 
   const [app] = useState<Software | null>(stateApp ?? null);
-  const [selectedAccount, setSelectedAccount] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState(selectedAccountEmail);
 
   const filteredAccounts = useMemo(
     () => accounts.filter((a) => storeIdToCountry(a.store) === country),
@@ -47,9 +50,20 @@ export default function VersionHistory() {
       filteredAccounts.length > 0 &&
       !filteredAccounts.some((a) => a.email === selectedAccount)
     ) {
-      setSelectedAccount(filteredAccounts[0].email);
+      const nextAccount = filteredAccounts.some(
+        (a) => a.email === selectedAccountEmail,
+      )
+        ? selectedAccountEmail
+        : filteredAccounts[0].email;
+      setSelectedAccount(nextAccount);
+      setSelectedAccountEmail(nextAccount);
     }
-  }, [filteredAccounts, selectedAccount]);
+  }, [
+    filteredAccounts,
+    selectedAccount,
+    selectedAccountEmail,
+    setSelectedAccountEmail,
+  ]);
 
   const account = filteredAccounts.find((a) => a.email === selectedAccount);
 
@@ -129,7 +143,10 @@ export default function VersionHistory() {
                 </label>
                 <select
                   value={selectedAccount}
-                  onChange={(e) => setSelectedAccount(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedAccount(e.target.value);
+                    setSelectedAccountEmail(e.target.value);
+                  }}
                   className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                 >
                   {filteredAccounts.map((a) => (

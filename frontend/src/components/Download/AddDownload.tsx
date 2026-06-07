@@ -7,6 +7,7 @@ import { useAccounts } from "../../hooks/useAccounts";
 import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { useSettingsStore } from "../../store/settings";
 import { useToastStore } from "../../store/toast";
+import { useUiPreferencesStore } from "../../store/uiPreferences";
 import { lookupApp } from "../../api/search";
 import { listVersions } from "../../apple/versionFinder";
 import { countryCodeMap, storeIdToCountry } from "../../apple/config";
@@ -17,6 +18,8 @@ import type { Software } from "../../types";
 export default function AddDownload() {
   const { accounts, updateAccount } = useAccounts();
   const { defaultCountry } = useSettingsStore();
+  const { selectedAccountEmail, setSelectedAccountEmail } =
+    useUiPreferencesStore();
   const { t } = useTranslation();
   const addToast = useToastStore((s) => s.addToast);
   const {
@@ -29,7 +32,7 @@ export default function AddDownload() {
   const [bundleId, setBundleId] = useState("");
   const [country, setCountry] = useState(defaultCountry);
   const [countryTouched, setCountryTouched] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState(selectedAccountEmail);
   const [app, setApp] = useState<Software | null>(null);
   const [versions, setVersions] = useState<string[]>([]);
   const [selectedVersion, setSelectedVersion] = useState("");
@@ -64,12 +67,23 @@ export default function AddDownload() {
         !selectedAccount ||
         !filteredAccounts.find((a) => a.email === selectedAccount)
       ) {
-        setSelectedAccount(filteredAccounts[0].email);
+        const nextAccount = filteredAccounts.some(
+          (a) => a.email === selectedAccountEmail,
+        )
+          ? selectedAccountEmail
+          : filteredAccounts[0].email;
+        setSelectedAccount(nextAccount);
+        setSelectedAccountEmail(nextAccount);
       }
     } else if (selectedAccount !== "") {
       setSelectedAccount("");
     }
-  }, [filteredAccounts, selectedAccount]);
+  }, [
+    filteredAccounts,
+    selectedAccount,
+    selectedAccountEmail,
+    setSelectedAccountEmail,
+  ]);
 
   const account = accounts.find((a) => a.email === selectedAccount);
   const autoCountry = firstAccountCountry(accounts);
@@ -182,7 +196,10 @@ export default function AddDownload() {
             />
             <select
               value={selectedAccount}
-              onChange={(e) => setSelectedAccount(e.target.value)}
+              onChange={(e) => {
+                setSelectedAccount(e.target.value);
+                setSelectedAccountEmail(e.target.value);
+              }}
               className="w-1/2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
               disabled={isLoading || filteredAccounts.length === 0}
             >
