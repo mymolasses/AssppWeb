@@ -6,12 +6,15 @@ import AppIcon from "../common/AppIcon";
 import { useAccounts } from "../../hooks/useAccounts";
 import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { lookupApp } from "../../api/search";
+import { useUiPreferencesStore } from "../../store/uiPreferences";
 import type { Software } from "../../types";
 
 export default function ProductDetail() {
   const { appId } = useParams<{ appId: string }>();
   const location = useLocation();
   const { accounts } = useAccounts();
+  const { selectedAccountEmail, setSelectedAccountEmail } =
+    useUiPreferencesStore();
   const { t } = useTranslation();
   const {
     startDownload,
@@ -26,7 +29,7 @@ export default function ProductDetail() {
   const [country] = useState(stateCountry ?? "US");
   const [app, setApp] = useState<Software | null>(stateApp ?? null);
   const [loading, setLoading] = useState(!stateApp);
-  const [selectedAccount, setSelectedAccount] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState(selectedAccountEmail);
   const [loadingAction, setLoadingAction] = useState<
     "purchase" | "download" | null
   >(null);
@@ -52,9 +55,18 @@ export default function ProductDetail() {
       accounts.length > 0 &&
       !accounts.some((a) => a.email === selectedAccount)
     ) {
-      setSelectedAccount(accounts[0].email);
+      const nextAccount = accounts.some((a) => a.email === selectedAccountEmail)
+        ? selectedAccountEmail
+        : accounts[0].email;
+      setSelectedAccount(nextAccount);
+      setSelectedAccountEmail(nextAccount);
     }
-  }, [accounts, selectedAccount]);
+  }, [
+    accounts,
+    selectedAccount,
+    selectedAccountEmail,
+    setSelectedAccountEmail,
+  ]);
 
   if (loading) {
     return (
@@ -133,7 +145,10 @@ export default function ProductDetail() {
               </label>
               <select
                 value={selectedAccount}
-                onChange={(e) => setSelectedAccount(e.target.value)}
+                onChange={(e) => {
+                  setSelectedAccount(e.target.value);
+                  setSelectedAccountEmail(e.target.value);
+                }}
                 className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-base text-gray-900 dark:text-white w-full focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                 disabled={loadingAction !== null}
               >
