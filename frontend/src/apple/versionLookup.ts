@@ -44,7 +44,7 @@ export async function getVersionMetadata(
       cookies,
     });
 
-    cookies = extractAndMergeCookies(response.rawHeaders, cookies);
+    cookies = extractAndMergeCookies(response.rawHeaders, cookies, requestHost);
 
     if (response.status === 302) {
       const location = response.headers["location"];

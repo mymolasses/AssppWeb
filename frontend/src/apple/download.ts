@@ -15,6 +15,16 @@ export class DownloadError extends Error {
   }
 }
 
+export function isDownloadAuthExpired(error: unknown): boolean {
+  return (
+    error instanceof DownloadError &&
+    (error.code === "2034" ||
+      error.code === "2042" ||
+      error.code === "1008" ||
+      error.code === "5002")
+  );
+}
+
 export async function getDownloadInfo(
   account: Account,
   app: Software,
@@ -55,7 +65,7 @@ export async function getDownloadInfo(
       cookies,
     });
 
-    cookies = extractAndMergeCookies(response.rawHeaders, cookies);
+    cookies = extractAndMergeCookies(response.rawHeaders, cookies, requestHost);
 
     if (response.status === 302) {
       const location = response.headers["location"];
@@ -77,6 +87,8 @@ export async function getDownloadInfo(
       switch (failureType) {
         case "2034":
         case "2042":
+        case "1008":
+        case "5002":
           throw new DownloadError(
             i18n.t("errors.download.passwordExpired"),
             failureType,

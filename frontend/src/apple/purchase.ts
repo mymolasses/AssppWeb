@@ -15,6 +15,13 @@ export class PurchaseError extends Error {
   }
 }
 
+export function isPurchaseAuthExpired(error: unknown): boolean {
+  return (
+    error instanceof PurchaseError &&
+    (error.code === "2034" || error.code === "2042" || error.code === "1008")
+  );
+}
+
 export async function purchaseApp(
   account: Account,
   app: Software,
@@ -82,6 +89,7 @@ async function purchaseWithParams(
   const updatedCookies = extractAndMergeCookies(
     response.rawHeaders,
     account.cookies,
+    host,
   );
 
   const dict = parsePlist(response.body) as Record<string, any>;
@@ -94,10 +102,13 @@ async function purchaseWithParams(
         throw new PurchaseError(i18n.t("errors.purchase.unavailable"), "2059");
       case "2034":
       case "2042":
+      case "1008":
         throw new PurchaseError(
           i18n.t("errors.purchase.passwordExpired"),
           failureType,
         );
+      case "5002":
+        return { updatedCookies };
       default: {
         if (customerMessage === "Your password has changed.") {
           throw new PurchaseError(

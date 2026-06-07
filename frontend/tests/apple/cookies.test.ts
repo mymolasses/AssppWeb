@@ -19,7 +19,7 @@ function makeCookie(overrides: Partial<Cookie> = {}): Cookie {
 
 describe("apple/cookies", () => {
   describe("mergeCookies", () => {
-    it("should merge cookies by name", () => {
+    it("should merge cookies by name, domain, and path", () => {
       const existing = [makeCookie({ name: "a", value: "1" })];
       const incoming = [makeCookie({ name: "b", value: "2" })];
 
@@ -29,13 +29,60 @@ describe("apple/cookies", () => {
       expect(result.find((c) => c.name === "b")?.value).toBe("2");
     });
 
-    it("should override existing cookies with same name", () => {
-      const existing = [makeCookie({ name: "token", value: "old" })];
-      const incoming = [makeCookie({ name: "token", value: "new" })];
+    it("should override existing cookies with same name, domain, and path", () => {
+      const existing = [
+        makeCookie({
+          name: "token",
+          value: "old",
+          domain: "itunes.apple.com",
+          path: "/",
+        }),
+      ];
+      const incoming = [
+        makeCookie({
+          name: "token",
+          value: "new",
+          domain: "itunes.apple.com",
+          path: "/",
+        }),
+      ];
 
       const result = mergeCookies(existing, incoming);
       expect(result).toHaveLength(1);
       expect(result[0].value).toBe("new");
+    });
+
+    it("should preserve cookies with the same name on different domains or paths", () => {
+      const existing = [
+        makeCookie({
+          name: "token",
+          value: "auth",
+          domain: "auth.itunes.apple.com",
+          path: "/",
+        }),
+        makeCookie({
+          name: "token",
+          value: "buy-root",
+          domain: "buy.itunes.apple.com",
+          path: "/",
+        }),
+      ];
+      const incoming = [
+        makeCookie({
+          name: "token",
+          value: "buy-finance",
+          domain: "buy.itunes.apple.com",
+          path: "/WebObjects",
+        }),
+      ];
+
+      const result = mergeCookies(existing, incoming);
+      expect(result).toHaveLength(3);
+      expect(result.map((c) => c.value)).toEqual([
+        "auth",
+        "buy-root",
+        "buy-finance",
+      ]);
     });
 
     it("should handle empty arrays", () => {
@@ -155,6 +202,22 @@ describe("apple/cookies", () => {
       expect(result).toHaveLength(1);
       expect(result[0].domain).toBe("apple.com"); // leading dot stripped
       expect(result[0].secure).toBe(true);
+    });
+
+    it("should bind host-only cookies to the response host", () => {
+      const result = parseCookieHeaders(
+        ["session=abc123; Path=/; Secure"],
+        "auth.itunes.apple.com",
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].domain).toBe("auth.itunes.apple.com");
+      expect(buildCookieHeader(result, "https://auth.itunes.apple.com/")).toBe(
+        "session=abc123",
+      );
+      expect(buildCookieHeader(result, "https://buy.itunes.apple.com/")).toBe(
+        "",
+      );
     });
 
     it("should parse max-age attribute", () => {
