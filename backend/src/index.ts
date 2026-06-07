@@ -33,7 +33,17 @@ app.use("/api", bagRoutes);
 
 // Serve static frontend files
 const publicDir = path.resolve(import.meta.dirname, "../public");
-app.use(express.static(publicDir));
+function setNoStoreForHtml(res: express.Response, filePath: string) {
+  if (path.extname(filePath) === ".html") {
+    res.setHeader("Cache-Control", "no-store");
+  }
+}
+
+app.use(
+  express.static(publicDir, {
+    setHeaders: setNoStoreForHtml,
+  }),
+);
 
 // SPA fallback: serve index.html for non-API routes
 app.get("*", (req, res, next) => {
@@ -42,6 +52,7 @@ app.get("*", (req, res, next) => {
   }
   const indexPath = path.join(publicDir, "index.html");
   if (fs.existsSync(indexPath)) {
+    res.setHeader("Cache-Control", "no-store");
     res.sendFile(indexPath);
   } else {
     next();

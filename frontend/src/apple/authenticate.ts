@@ -5,6 +5,11 @@ import { extractAndMergeCookies } from "./cookies";
 import { fetchBag, defaultAuthURL } from "./bag";
 import i18n from "../i18n";
 
+const failureTypeInvalidCredentials = "-5000";
+const customerMessageBadLogin = "MZFinance.BadLogin.Configurator_message";
+const customerMessageAccountDisabled = "Your account is disabled.";
+const maxLoginAttempts = 4;
+
 export class AuthenticationError extends Error {
   constructor(
     message: string,
@@ -37,18 +42,19 @@ export async function authenticate(
   requestHost = authEndpoint.hostname;
   requestPath = `${authEndpoint.pathname}${authEndpoint.search}`;
 
-  let currentAttempt = 0;
-  let redirectAttempt = 0;
+  let pod: string | undefined;
 
-  while (currentAttempt < 2 && redirectAttempt <= 3) {
-    currentAttempt++;
-
+  for (
+    let currentAttempt = 1;
+    currentAttempt <= maxLoginAttempts;
+    currentAttempt++
+  ) {
     try {
       const body: Record<string, string> = {
         appleId: email,
-        attempt: code ? "2" : "4",
+        attempt: String(currentAttempt),
         guid: deviceId,
-        password: code ? `${password}${code}` : password,
+        password: code ? `${password}${code.replace(/ /g, "")}` : password,
         rmp: "0",
         why: "signIn",
       };
@@ -56,7 +62,7 @@ export async function authenticate(
       const plistBody = buildPlist(body);
 
       const headers: Record<string, string> = {
-        "Content-Type": "application/x-apple-plist",
+        "Content-Type": "application/x-www-form-urlencoded",
       };
 
       const response = await appleRequest({
@@ -81,7 +87,7 @@ export async function authenticate(
 
       // Read pod
       const podHeader = response.headers["pod"];
-      const pod = podHeader || undefined;
+      pod = podHeader || undefined;
 
       // Handle redirect
       if (response.status === 302) {
@@ -92,25 +98,63 @@ export async function authenticate(
         const url = new URL(location);
         requestHost = url.hostname;
         requestPath = url.pathname + url.search;
-        currentAttempt--;
-        redirectAttempt++;
         continue;
+      }
+
+      if (response.status === 429) {
+        throw new AuthenticationError(
+          `Apple auth rate limit exceeded. Stop retrying and wait before trying again. Body starts with ${previewResponseBody(response.body)}`,
+        );
       }
 
       // Handle non-plist responses (e.g. 403 with empty body)
       if (!response.body.trim()) {
-        throw new Error(
+        throw new AuthenticationError(
           i18n.t("errors.auth.emptyBody", { status: response.status }),
         );
       }
 
-      const dict = parsePlist(response.body) as Record<string, any>;
+      const trimmedBody = response.body.trim();
+      if (!trimmedBody.startsWith("<")) {
+        try {
+          const json = JSON.parse(trimmedBody) as Record<string, any>;
+          const message =
+            (json.customerMessage as string) ||
+            (json.error as string) ||
+            (json.message as string) ||
+            JSON.stringify(json);
+          throw new AuthenticationError(message);
+        } catch (error) {
+          if (error instanceof AuthenticationError) throw error;
+          throw new AuthenticationError(
+            `Unexpected Apple auth response: HTTP ${response.status}, content-type ${response.headers["content-type"] || "unknown"}, body starts with ${previewResponseBody(response.body)}`,
+          );
+        }
+      }
+
+      let dict: Record<string, any>;
+      try {
+        dict = parsePlist(response.body) as Record<string, any>;
+      } catch (error) {
+        throw new AuthenticationError(
+          `Unexpected Apple auth response: HTTP ${response.status}, content-type ${response.headers["content-type"] || "unknown"}, body starts with ${previewResponseBody(response.body)}; ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+
+      if (
+        currentAttempt === 1 &&
+        dict.failureType === failureTypeInvalidCredentials
+      ) {
+        continue;
+      }
 
       // Check for 2FA requirement
       if (
         dict.failureType === "" &&
         !code &&
-        dict.customerMessage === "MZFinance.BadLogin.Configurator_message"
+        dict.customerMessage === customerMessageBadLogin
       ) {
         throw new AuthenticationError(
           i18n.t("errors.auth.requiresVerification"),
@@ -118,20 +162,63 @@ export async function authenticate(
         );
       }
 
+      if (
+        dict.failureType === "" &&
+        dict.customerMessage === customerMessageAccountDisabled
+      ) {
+        throw new AuthenticationError(
+          i18n.t("errors.auth.accountDisabled", {
+            defaultValue: "Account is disabled",
+          }),
+        );
+      }
+
       const failureMessage =
         (dict.dialog as Record<string, any>)?.explanation ??
         dict.customerMessage;
 
+      if (dict.failureType) {
+        throw new AuthenticationError(
+          failureMessage ?? i18n.t("errors.auth.unknownReason"),
+        );
+      }
+
+      if (response.status !== 200) {
+        throw new AuthenticationError(
+          failureMessage ?? i18n.t("errors.auth.unknownReason"),
+        );
+      }
+
+      if (!dict.passwordToken) {
+        throw new AuthenticationError(
+          failureMessage ??
+            i18n.t("errors.auth.missingPasswordToken", {
+              defaultValue: "Missing passwordToken in response",
+            }),
+        );
+      }
+
+      if (!dict.dsPersonId) {
+        throw new AuthenticationError(
+          failureMessage ??
+            i18n.t("errors.auth.missingDsid", {
+              defaultValue: "Missing dsPersonId in response",
+            }),
+        );
+      }
+
       const accountInfo = dict.accountInfo as Record<string, any>;
       if (!accountInfo) {
-        throw new Error(
+        throw new AuthenticationError(
           failureMessage ?? i18n.t("errors.auth.missingAccountInfo"),
         );
       }
 
       const address = accountInfo.address as Record<string, any>;
       if (!address) {
-        throw new Error(failureMessage ?? i18n.t("errors.auth.missingAddress"));
+        throw new AuthenticationError(
+          failureMessage ?? i18n.t("errors.auth.missingAddress"),
+        );
       }
 
       const account: Account = {
@@ -155,5 +242,17 @@ export async function authenticate(
     }
   }
 
-  throw lastError ?? new Error(i18n.t("errors.auth.unknownReason"));
+  throw (
+    lastError ??
+    new Error(
+      i18n.t("errors.auth.tooManyAttempts", {
+        defaultValue: "Too many login attempts",
+      }),
+    )
+  );
+}
+
+function previewResponseBody(body: string): string {
+  const cleaned = body.replace(/\s+/g, " ").trim().slice(0, 120);
+  return JSON.stringify(cleaned);
 }

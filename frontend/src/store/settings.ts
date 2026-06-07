@@ -2,13 +2,14 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 type ThemeType = "light" | "dark" | "system";
+type EntityType = "iPhone" | "iPad" | "macSoftware";
 
 interface SettingsState {
   defaultCountry: string;
-  defaultEntity: "iPhone" | "iPad";
+  defaultEntity: EntityType;
   theme: ThemeType;
   setDefaultCountry: (country: string) => void;
-  setDefaultEntity: (entity: "iPhone" | "iPad") => void;
+  setDefaultEntity: (entity: EntityType) => void;
   setTheme: (theme: ThemeType) => void;
 }
 

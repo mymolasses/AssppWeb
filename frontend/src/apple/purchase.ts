@@ -64,7 +64,9 @@ async function purchaseWithParams(
     "Content-Type": "application/x-apple-plist",
     "iCloud-DSID": account.directoryServicesIdentifier,
     "X-Dsid": account.directoryServicesIdentifier,
-    "X-Apple-Store-Front": `${account.store}-1`,
+    "X-Apple-Store-Front": `${account.store}-${
+      app.kind === "mac-software" ? "6" : "1"
+    }`,
     "X-Token": account.passwordToken,
   };
 

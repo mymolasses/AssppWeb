@@ -26,6 +26,7 @@ interface ServerInfo {
 const entityTypes = [
   { value: "software", label: "iPhone" },
   { value: "iPadSoftware", label: "iPad" },
+  { value: "macSoftware", label: "Mac" },
 ];
 
 export default function SettingsPage() {
