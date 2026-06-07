@@ -10,6 +10,7 @@ import { getVersionMetadata } from "../../apple/versionLookup";
 import { getErrorMessage } from "../../utils/error";
 import { useToastStore } from "../../store/toast";
 import { useUiPreferencesStore } from "../../store/uiPreferences";
+import { preferredAccountEmail } from "../../utils/accountSelection";
 import type { Software, VersionMetadata } from "../../types";
 
 export default function VersionHistory() {
@@ -21,7 +22,9 @@ export default function VersionHistory() {
   const addToast = useToastStore((s) => s.addToast);
   const { startDownload, toastDownloadError } = useDownloadAction();
 
-  const stateApp = (location.state as { app?: Software })?.app;
+  const state = location.state as { app?: Software; country?: string };
+  const stateApp = state?.app;
+  const country = state?.country;
 
   const [app] = useState<Software | null>(stateApp ?? null);
   const [selectedAccount, setSelectedAccount] = useState(selectedAccountEmail);
@@ -35,23 +38,30 @@ export default function VersionHistory() {
     null,
   );
   const lastAutoLoadedKey = useRef("");
-  const requestedMetadata = useRef(new Set<string>());
+  const appliedInitialAccount = useRef(false);
 
   const account = accounts.find((a) => a.email === selectedAccount);
 
   useEffect(() => {
-    if (
-      accounts.length > 0 &&
-      !accounts.some((a) => a.email === selectedAccount)
-    ) {
-      const nextAccount = accounts.some((a) => a.email === selectedAccountEmail)
-        ? selectedAccountEmail
-        : accounts[0].email;
+    if (accounts.length > 0) {
+      const selectedStillExists = accounts.some(
+        (a) => a.email === selectedAccount,
+      );
+      if (appliedInitialAccount.current && selectedStillExists) return;
+
+      const nextAccount = preferredAccountEmail(
+        accounts,
+        selectedAccountEmail,
+        country,
+      );
+      appliedInitialAccount.current = true;
+      if (nextAccount === selectedAccount) return;
       setSelectedAccount(nextAccount);
       setSelectedAccountEmail(nextAccount);
     }
   }, [
     accounts,
+    country,
     selectedAccount,
     selectedAccountEmail,
     setSelectedAccountEmail,
@@ -78,54 +88,22 @@ export default function VersionHistory() {
     lastAutoLoadedKey.current = key;
     setVersions([]);
     setVersionMeta({});
-    requestedMetadata.current = new Set();
     loadVersions();
   }, [account, app, loadVersions]);
 
-  useEffect(() => {
-    if (!account || !app || versions.length === 0) return;
-    let cancelled = false;
-
-    async function loadAllMetadata() {
-      let currentAccount = account;
-      for (const versionId of versions) {
-        if (cancelled || requestedMetadata.current.has(versionId)) {
-          continue;
-        }
-        requestedMetadata.current.add(versionId);
-        setLoadingMeta((prev) => ({ ...prev, [versionId]: true }));
-        try {
-          const result = await getVersionMetadata(
-            currentAccount,
-            app,
-            versionId,
-          );
-          if (cancelled) return;
-          setVersionMeta((prev) => ({
-            ...prev,
-            [versionId]: result.metadata,
-          }));
-          currentAccount = {
-            ...currentAccount,
-            cookies: result.updatedCookies,
-          };
-          await updateAccount(currentAccount);
-        } catch {
-          // Keep the version ID visible if Apple does not return metadata.
-        } finally {
-          if (!cancelled) {
-            setLoadingMeta((prev) => ({ ...prev, [versionId]: false }));
-          }
-        }
-      }
+  async function handleLoadMeta(versionId: string) {
+    if (!account || !app || versionMeta[versionId]) return;
+    setLoadingMeta((prev) => ({ ...prev, [versionId]: true }));
+    try {
+      const result = await getVersionMetadata(account, app, versionId);
+      setVersionMeta((prev) => ({ ...prev, [versionId]: result.metadata }));
+      await updateAccount({ ...account, cookies: result.updatedCookies });
+    } catch {
+      // Keep the version ID visible if Apple does not return metadata.
+    } finally {
+      setLoadingMeta((prev) => ({ ...prev, [versionId]: false }));
     }
-
-    loadAllMetadata();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [account?.email, app, updateAccount, versions]);
+  }
 
   async function handleDownloadVersion(versionId: string) {
     if (!account || !app) return;
@@ -215,6 +193,14 @@ export default function VersionHistory() {
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {new Date(meta.releaseDate).toLocaleDateString()}
                       </p>
+                    )}
+                    {!meta && !isLoadingMeta && (
+                      <button
+                        onClick={() => handleLoadMeta(versionId)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 py-1 transition-colors"
+                      >
+                        {t("search.versions.loadDetails")}
+                      </button>
                     )}
                     {!meta && isLoadingMeta && (
                       <span className="text-xs text-gray-400 dark:text-gray-500">
