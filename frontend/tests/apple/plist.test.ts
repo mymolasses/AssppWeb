@@ -68,5 +68,23 @@ describe("apple/plist", () => {
       expect(parsed.email).toBe("test@test.com");
       expect(parsed.value).toBe("hello world");
     });
+
+    it("should parse plist embedded in a Document wrapper", () => {
+      const xml = `<Document><Protocol>${buildPlist({
+        name: "wrapped",
+      })}</Protocol></Document>`;
+
+      const parsed = parsePlist(xml);
+
+      expect(parsed.name).toBe("wrapped");
+    });
+
+    it("should parse bare dict XML", () => {
+      const xml = "<dict><key>name</key><string>bare</string></dict>";
+
+      const parsed = parsePlist(xml);
+
+      expect(parsed.name).toBe("bare");
+    });
   });
 });

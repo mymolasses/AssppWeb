@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildPlist } from "../../src/apple/plist";
+import { buildPlist, parsePlist } from "../../src/apple/plist";
 import { authenticate } from "../../src/apple/authenticate";
 import { appleRequest } from "../../src/apple/request";
 import { fetchBag } from "../../src/apple/bag";
@@ -59,6 +59,34 @@ describe("apple/authenticate", () => {
     expect(endpoint.searchParams.get("guid")).toBe("aabbccddeeff");
     expect(endpoint.searchParams.getAll("guid")).toHaveLength(1);
     expect(endpoint.searchParams.get("foo")).toBe("1");
+  });
+
+  it("uses native auth endpoint request headers", async () => {
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
+    });
+    mockSuccessfulLogin();
+
+    await authenticate(
+      "test@example.com",
+      "password",
+      undefined,
+      undefined,
+      "aabbccddeeff",
+    );
+
+    const requestCall = vi.mocked(appleRequest).mock.calls[0][0];
+    const parsedBody = parsePlist(requestCall.body || "") as Record<
+      string,
+      any
+    >;
+
+    expect(requestCall.host).toBe("auth.itunes.apple.com");
+    expect(requestCall.path).toBe("/auth/v1/native/fast?guid=aabbccddeeff");
+    expect(requestCall.headers?.["Content-Type"]).toBe(
+      "application/x-www-form-urlencoded",
+    );
+    expect(parsedBody.attempt).toBe("1");
   });
 
   it("increments login attempt values", async () => {
@@ -200,5 +228,76 @@ describe("apple/authenticate", () => {
         "aabbccddeeff",
       ),
     ).rejects.toThrow("Account is disabled");
+  });
+
+  it("does not retry when Apple returns rate limit response", async () => {
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
+    });
+    vi.mocked(appleRequest).mockResolvedValue({
+      status: 429,
+      statusText: "Too Many Requests",
+      headers: { "content-type": "text/html" },
+      rawHeaders: [],
+      body: "Rate limit has been exceeded for: mzauth|global|all",
+    });
+
+    await expect(
+      authenticate(
+        "test@example.com",
+        "password",
+        undefined,
+        undefined,
+        "aabbccddeeff",
+      ),
+    ).rejects.toThrow("Apple auth rate limit exceeded");
+
+    expect(appleRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports unexpected non-plist Apple auth responses", async () => {
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
+    });
+    vi.mocked(appleRequest).mockResolvedValue({
+      status: 403,
+      statusText: "Forbidden",
+      headers: { "content-type": "text/html" },
+      rawHeaders: [],
+      body: "<html><body>Forbidden</body></html>",
+    });
+
+    await expect(
+      authenticate(
+        "test@example.com",
+        "password",
+        undefined,
+        undefined,
+        "aabbccddeeff",
+      ),
+    ).rejects.toThrow("Unexpected Apple auth response");
+  });
+
+  it("uses customerMessage from JSON Apple auth responses", async () => {
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
+    });
+    vi.mocked(appleRequest).mockResolvedValue({
+      status: 403,
+      statusText: "Forbidden",
+      headers: { "content-type": "application/json" },
+      rawHeaders: [],
+      body: JSON.stringify({ customerMessage: "Apple JSON auth error" }),
+    });
+
+    await expect(
+      authenticate(
+        "test@example.com",
+        "password",
+        undefined,
+        undefined,
+        "aabbccddeeff",
+      ),
+    ).rejects.toThrow("Apple JSON auth error");
   });
 });
