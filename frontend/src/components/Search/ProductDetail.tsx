@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../Layout/PageContainer";
@@ -7,6 +7,7 @@ import { useAccounts } from "../../hooks/useAccounts";
 import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { lookupApp } from "../../api/search";
 import { useUiPreferencesStore } from "../../store/uiPreferences";
+import { preferredAccountEmail } from "../../utils/accountSelection";
 import type { Software } from "../../types";
 
 export default function ProductDetail() {
@@ -33,6 +34,7 @@ export default function ProductDetail() {
   const [loadingAction, setLoadingAction] = useState<
     "purchase" | "download" | null
   >(null);
+  const appliedInitialAccount = useRef(false);
 
   const account = accounts.find((a) => a.email === selectedAccount);
 
@@ -51,18 +53,25 @@ export default function ProductDetail() {
   }, [appId, stateApp, country]);
 
   useEffect(() => {
-    if (
-      accounts.length > 0 &&
-      !accounts.some((a) => a.email === selectedAccount)
-    ) {
-      const nextAccount = accounts.some((a) => a.email === selectedAccountEmail)
-        ? selectedAccountEmail
-        : accounts[0].email;
+    if (accounts.length > 0) {
+      const selectedStillExists = accounts.some(
+        (a) => a.email === selectedAccount,
+      );
+      if (appliedInitialAccount.current && selectedStillExists) return;
+
+      const nextAccount = preferredAccountEmail(
+        accounts,
+        selectedAccountEmail,
+        country,
+      );
+      appliedInitialAccount.current = true;
+      if (nextAccount === selectedAccount) return;
       setSelectedAccount(nextAccount);
       setSelectedAccountEmail(nextAccount);
     }
   }, [
     accounts,
+    country,
     selectedAccount,
     selectedAccountEmail,
     setSelectedAccountEmail,
