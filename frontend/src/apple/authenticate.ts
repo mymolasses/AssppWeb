@@ -188,11 +188,8 @@ export async function authenticate(
         );
       }
 
-      if (
-        currentAttempt === 1 &&
-        dict.failureType === failureTypeInvalidCredentials
-      ) {
-        continue;
+      if (dict.failureType === failureTypeInvalidCredentials) {
+        throw new AuthenticationError(invalidCredentialsMessage(dict));
       }
 
       // Check for 2FA requirement
@@ -218,9 +215,7 @@ export async function authenticate(
         );
       }
 
-      const failureMessage =
-        (dict.dialog as Record<string, any>)?.explanation ??
-        dict.customerMessage;
+      const failureMessage = authFailureMessage(dict) ?? dict.customerMessage;
 
       if (dict.failureType) {
         throw new AuthenticationError(
@@ -298,4 +293,17 @@ export async function authenticate(
 function previewResponseBody(body: string): string {
   const cleaned = body.replace(/\s+/g, " ").trim().slice(0, 120);
   return JSON.stringify(cleaned);
+}
+
+function authFailureMessage(dict: Record<string, any>): string | undefined {
+  return (dict.dialog as Record<string, any> | undefined)?.explanation;
+}
+
+function invalidCredentialsMessage(dict: Record<string, any>): string {
+  return (
+    authFailureMessage(dict) ||
+    i18n.t("errors.auth.invalidCredentials", {
+      defaultValue: "Apple ID or password is incorrect",
+    })
+  );
 }

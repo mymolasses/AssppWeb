@@ -89,52 +89,37 @@ describe("apple/authenticate", () => {
     expect(parsedBody.attempt).toBe("1");
   });
 
-  it("increments login attempt values", async () => {
+  it("does not request verification when Apple reports invalid credentials", async () => {
     vi.mocked(fetchBag).mockResolvedValue({
       authURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
     });
-    vi.mocked(appleRequest)
-      .mockResolvedValueOnce({
-        status: 200,
-        statusText: "OK",
-        headers: {},
-        rawHeaders: [],
-        body: buildPlist({
-          failureType: "-5000",
-          customerMessage: "retry",
-        }),
-      })
-      .mockResolvedValueOnce({
-        status: 200,
-        statusText: "OK",
-        headers: {},
-        rawHeaders: [],
-        body: buildPlist({
-          accountInfo: {
-            appleId: "test@example.com",
-            address: {
-              firstName: "Test",
-              lastName: "User",
-            },
-          },
-          passwordToken: "token",
-          dsPersonId: "123",
-        }),
-      });
+    vi.mocked(appleRequest).mockResolvedValue({
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      rawHeaders: [],
+      body: buildPlist({
+        failureType: "-5000",
+        dialog: {
+          explanation: "Your Apple ID or password was entered incorrectly.",
+        },
+      }),
+    });
 
-    await authenticate(
-      "test@example.com",
-      "password",
-      undefined,
-      undefined,
-      "aabbccddeeff",
-    );
+    await expect(
+      authenticate(
+        "test@example.com",
+        "wrong-password",
+        undefined,
+        undefined,
+        "aabbccddeeff",
+      ),
+    ).rejects.toMatchObject({
+      codeRequired: false,
+      message: "Your Apple ID or password was entered incorrectly.",
+    });
 
-    const firstBody = vi.mocked(appleRequest).mock.calls[0][0].body ?? "";
-    const secondBody = vi.mocked(appleRequest).mock.calls[1][0].body ?? "";
-
-    expect(firstBody).toContain("<string>1</string>");
-    expect(secondBody).toContain("<string>2</string>");
+    expect(appleRequest).toHaveBeenCalledTimes(1);
   });
 
   it("requests verification when Apple returns OK without a session token before 2FA", async () => {
