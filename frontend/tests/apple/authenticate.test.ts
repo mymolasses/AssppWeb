@@ -10,7 +10,7 @@ vi.mock("../../src/apple/request", () => ({
 
 vi.mock("../../src/apple/bag", () => ({
   fetchBag: vi.fn(),
-  defaultAuthURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
+  defaultAuthURL: "https://auth.itunes.apple.com/auth/v1/native/fast/",
 }));
 
 describe("apple/authenticate", () => {
@@ -63,7 +63,7 @@ describe("apple/authenticate", () => {
 
   it("uses native auth endpoint request headers", async () => {
     vi.mocked(fetchBag).mockResolvedValue({
-      authURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
+      authURL: "https://auth.itunes.apple.com/auth/v1/native/fast/",
     });
     mockSuccessfulLogin();
 
@@ -82,7 +82,7 @@ describe("apple/authenticate", () => {
     >;
 
     expect(requestCall.host).toBe("auth.itunes.apple.com");
-    expect(requestCall.path).toBe("/auth/v1/native/fast?guid=aabbccddeeff");
+    expect(requestCall.path).toBe("/auth/v1/native/fast/?guid=aabbccddeeff");
     expect(requestCall.headers?.["Content-Type"]).toBe(
       "application/x-www-form-urlencoded",
     );
@@ -135,6 +135,98 @@ describe("apple/authenticate", () => {
 
     expect(firstBody).toContain("<string>1</string>");
     expect(secondBody).toContain("<string>2</string>");
+  });
+
+  it("requests verification when Apple returns OK without a session token before 2FA", async () => {
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
+    });
+    vi.mocked(appleRequest).mockResolvedValue({
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      rawHeaders: [],
+      body: "",
+    });
+
+    await expect(
+      authenticate(
+        "test@example.com",
+        "password",
+        undefined,
+        undefined,
+        "aabbccddeeff",
+      ),
+    ).rejects.toMatchObject({ codeRequired: true });
+  });
+
+  it("reports missing session token when Apple returns OK without a token after 2FA", async () => {
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL: "https://auth.itunes.apple.com/auth/v1/native/fast",
+    });
+    vi.mocked(appleRequest).mockResolvedValue({
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      rawHeaders: [],
+      body: buildPlist({}),
+    });
+
+    await expect(
+      authenticate(
+        "test@example.com",
+        "password",
+        "123456",
+        undefined,
+        "aabbccddeeff",
+      ),
+    ).rejects.toThrow(
+      "Login response did not include an App Store session token",
+    );
+  });
+
+  it("retries with a native auth endpoint discovered in a non-plist response", async () => {
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL:
+        "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate",
+    });
+    vi.mocked(appleRequest)
+      .mockResolvedValueOnce({
+        status: 200,
+        statusText: "OK",
+        headers: { "content-type": "text/html" },
+        rawHeaders: [],
+        body: `{"authenticateAccount":"https:\\/\\/auth.itunes.apple.com\\/auth\\/v1\\/native"}`,
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        rawHeaders: [],
+        body: buildPlist({
+          accountInfo: {
+            appleId: "test@example.com",
+            address: {
+              firstName: "Test",
+              lastName: "User",
+            },
+          },
+          passwordToken: "token",
+          dsPersonId: "123",
+        }),
+      });
+
+    await authenticate(
+      "test@example.com",
+      "password",
+      undefined,
+      undefined,
+      "aabbccddeeff",
+    );
+
+    const retryCall = vi.mocked(appleRequest).mock.calls[1][0];
+    expect(retryCall.host).toBe("auth.itunes.apple.com");
+    expect(retryCall.path).toBe("/auth/v1/native/fast/?guid=aabbccddeeff");
   });
 
   it("follows redirects while advancing attempt", async () => {
