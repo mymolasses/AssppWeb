@@ -425,7 +425,7 @@
       "unknownError": "不明なエラーが発生しました"
     },
     "auth": {
-      "requiresVerification": "2ファクタ認証コードが必要です。ポップアップが出ない場合は、https://account.apple.com でサインインしてアラートをトリガーし、コード欄に入力してください。",
+      "requiresVerification": "Apple のサインインを完了できませんでした。2ファクタ認証コードが必要な場合、または Apple ID/パスワードが正しくない場合があります。パスワードが正しいのにコードが表示されない場合は、https://account.apple.com でサインインしてアラートを表示し、2FA コード欄に入力してください。",
       "redirectLocation": "リダイレクト先を取得できませんでした",
       "emptyBody": "認証失敗: サーバーが空のボディでHTTP {{status}}を返しました",
       "missingAccountInfo": "レスポンスに accountInfo がありません",

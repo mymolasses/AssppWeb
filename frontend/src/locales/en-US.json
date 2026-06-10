@@ -425,7 +425,7 @@
       "unknownError": "An unknown error has occurred"
     },
     "auth": {
-      "requiresVerification": "Authentication requires verification code. If no verification code was prompted, try logging in at https://account.apple.com to trigger the alert and fill the code in the 2FA Code field.",
+      "requiresVerification": "Apple could not complete sign-in yet. The account may need a 2FA verification code, or the Apple ID/password may be incorrect. If the password is correct and no code was prompted, try logging in at https://account.apple.com to trigger the alert, then enter the code in the 2FA Code field.",
       "rateLimited": "Apple authentication is temporarily rate limited. Stop retrying and wait before trying again.",
       "invalidCredentials": "Apple ID or password is incorrect",
       "redirectLocation": "Failed to retrieve redirect location",
