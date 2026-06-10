@@ -427,6 +427,7 @@
     "auth": {
       "requiresVerification": "验证需要双重认证代码。如果没有弹出验证码，请尝试在 https://account.apple.com 登录以触发提示，然后在双重认证代码字段中填写该代码。",
       "rateLimited": "Apple 登录接口暂时限流。请停止重复尝试，等待一段时间后再登录。",
+      "invalidCredentials": "Apple ID 或密码不正确",
       "redirectLocation": "无法获取重定向地址",
       "emptyBody": "认证失败：服务器返回 HTTP {{status}} 且响应体为空",
       "missingAccountInfo": "响应中缺少 accountInfo",
