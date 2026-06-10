@@ -10,6 +10,7 @@ import { getVersionMetadata } from "../../apple/versionLookup";
 import { getErrorMessage } from "../../utils/error";
 import { useToastStore } from "../../store/toast";
 import { useUiPreferencesStore } from "../../store/uiPreferences";
+import { useSettingsStore } from "../../store/settings";
 import { preferredAccountEmail } from "../../utils/accountSelection";
 import type { Software, VersionMetadata } from "../../types";
 
@@ -18,13 +19,14 @@ export default function VersionHistory() {
   const { accounts, updateAccount } = useAccounts();
   const { selectedAccountEmail, setSelectedAccountEmail } =
     useUiPreferencesStore();
+  const { defaultCountry } = useSettingsStore();
   const { t } = useTranslation();
   const addToast = useToastStore((s) => s.addToast);
   const { startDownload, toastDownloadError } = useDownloadAction();
 
   const state = location.state as { app?: Software; country?: string };
   const stateApp = state?.app;
-  const country = state?.country;
+  const country = state?.country ?? defaultCountry ?? "US";
 
   const [app] = useState<Software | null>(stateApp ?? null);
   const [selectedAccount, setSelectedAccount] = useState(selectedAccountEmail);

@@ -11,7 +11,6 @@ import { useUiPreferencesStore } from "../../store/uiPreferences";
 import { lookupApp } from "../../api/search";
 import { listVersions } from "../../apple/versionFinder";
 import { countryCodeMap, storeIdToCountry } from "../../apple/config";
-import { firstAccountCountry } from "../../utils/account";
 import { getErrorMessage } from "../../utils/error";
 import type { Software } from "../../types";
 
@@ -86,15 +85,14 @@ export default function AddDownload() {
   ]);
 
   const account = accounts.find((a) => a.email === selectedAccount);
-  const autoCountry = firstAccountCountry(accounts);
 
   useEffect(() => {
     if (countryTouched) return;
-    const nextCountry = autoCountry ?? defaultCountry;
+    const nextCountry = defaultCountry || "US";
     if (nextCountry && nextCountry !== country) {
       setCountry(nextCountry);
     }
-  }, [autoCountry, country, countryTouched, defaultCountry]);
+  }, [country, countryTouched, defaultCountry]);
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
