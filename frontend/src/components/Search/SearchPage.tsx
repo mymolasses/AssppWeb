@@ -9,13 +9,12 @@ import { useAccounts } from "../../hooks/useAccounts";
 import { useSettingsStore } from "../../store/settings";
 import { useToastStore } from "../../store/toast";
 import { countryCodeMap, storeIdToCountry } from "../../apple/config";
-import { firstAccountCountry } from "../../utils/account";
 
 export default function SearchPage() {
   const { t } = useTranslation();
   const { defaultCountry, defaultEntity } = useSettingsStore();
   const { accounts } = useAccounts();
-  const initialCountry = firstAccountCountry(accounts) ?? defaultCountry;
+  const initialCountry = defaultCountry || "US";
   const addToast = useToastStore((s) => s.addToast);
 
   const {
@@ -27,6 +26,7 @@ export default function SearchPage() {
     error,
     search,
     setSearchParam,
+    setSearchDefaults,
   } = useSearch();
 
   useEffect(() => {
@@ -36,9 +36,8 @@ export default function SearchPage() {
   }, [error, addToast]);
 
   useEffect(() => {
-    if (!country && initialCountry) setSearchParam({ country: initialCountry });
-    if (!entity && defaultEntity) setSearchParam({ entity: defaultEntity });
-  }, [country, initialCountry, entity, defaultEntity, setSearchParam]);
+    setSearchDefaults({ country: initialCountry, entity: defaultEntity });
+  }, [initialCountry, defaultEntity, setSearchDefaults]);
 
   const activeCountry = country || initialCountry;
   const activeEntity = entity || defaultEntity;

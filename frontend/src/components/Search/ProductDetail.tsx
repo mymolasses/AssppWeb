@@ -7,6 +7,7 @@ import { useAccounts } from "../../hooks/useAccounts";
 import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { lookupApp } from "../../api/search";
 import { useUiPreferencesStore } from "../../store/uiPreferences";
+import { useSettingsStore } from "../../store/settings";
 import { preferredAccountEmail } from "../../utils/accountSelection";
 import type { Software } from "../../types";
 
@@ -16,6 +17,7 @@ export default function ProductDetail() {
   const { accounts } = useAccounts();
   const { selectedAccountEmail, setSelectedAccountEmail } =
     useUiPreferencesStore();
+  const { defaultCountry } = useSettingsStore();
   const { t } = useTranslation();
   const {
     startDownload,
@@ -27,7 +29,7 @@ export default function ProductDetail() {
   const stateApp = (location.state as { app?: Software; country?: string })
     ?.app;
   const stateCountry = (location.state as { country?: string })?.country;
-  const [country] = useState(stateCountry ?? "US");
+  const [country] = useState(stateCountry ?? defaultCountry ?? "US");
   const [app, setApp] = useState<Software | null>(stateApp ?? null);
   const [loading, setLoading] = useState(!stateApp);
   const [selectedAccount, setSelectedAccount] = useState(selectedAccountEmail);

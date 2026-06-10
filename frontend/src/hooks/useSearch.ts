@@ -6,12 +6,17 @@ import { searchApps, lookupApp } from "../api/search";
 interface SearchState {
   term: string;
   country: string;
+  countrySource: "manual" | "default" | "";
   entity: string;
+  entitySource: "manual" | "default" | "";
   results: Software[];
   loading: boolean;
   error: string | null;
   setSearchParam: (
     param: Partial<Pick<SearchState, "term" | "country" | "entity">>,
+  ) => void;
+  setSearchDefaults: (
+    param: Partial<Pick<SearchState, "country" | "entity">>,
   ) => void;
   search: (term: string, country: string, entity: string) => Promise<void>;
   lookup: (bundleId: string, country: string) => Promise<void>;
@@ -23,11 +28,41 @@ export const useSearch = create<SearchState>()(
     (set) => ({
       term: "",
       country: "",
+      countrySource: "",
       entity: "",
+      entitySource: "",
       results: [],
       loading: false,
       error: null,
-      setSearchParam: (param) => set((state) => ({ ...state, ...param })),
+      setSearchParam: (param) =>
+        set((state) => ({
+          ...state,
+          ...param,
+          countrySource:
+            param.country === undefined ? state.countrySource : "manual",
+          entitySource:
+            param.entity === undefined ? state.entitySource : "manual",
+        })),
+      setSearchDefaults: (param) =>
+        set((state) => ({
+          ...state,
+          country:
+            param.country !== undefined && state.countrySource !== "manual"
+              ? param.country
+              : state.country,
+          countrySource:
+            param.country !== undefined && state.countrySource !== "manual"
+              ? "default"
+              : state.countrySource,
+          entity:
+            param.entity !== undefined && state.entitySource !== "manual"
+              ? param.entity
+              : state.entity,
+          entitySource:
+            param.entity !== undefined && state.entitySource !== "manual"
+              ? "default"
+              : state.entitySource,
+        })),
       search: async (term, country, entity) => {
         set({ loading: true, error: null, term, country, entity });
         try {
@@ -61,10 +96,19 @@ export const useSearch = create<SearchState>()(
     {
       name: "asspp-search-cache",
       storage: createJSONStorage(() => sessionStorage),
-      partialize: ({ term, country, entity, results }) => ({
+      partialize: ({
         term,
         country,
+        countrySource,
         entity,
+        entitySource,
+        results,
+      }) => ({
+        term,
+        country,
+        countrySource,
+        entity,
+        entitySource,
         results,
         loading: false,
         error: null,
