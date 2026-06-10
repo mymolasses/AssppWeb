@@ -3,6 +3,7 @@ import { appleRequest } from "./request";
 import { buildPlist, parsePlist } from "./plist";
 import { extractAndMergeCookies } from "./cookies";
 import { fetchBag, defaultAuthURL } from "./bag";
+import { authURLFromText, normalizeAuthURL } from "./authEndpoint";
 import i18n from "../i18n";
 
 const failureTypeInvalidCredentials = "-5000";
@@ -33,12 +34,14 @@ export async function authenticate(
 
   const defaultAuthEndpoint = new URL(defaultAuthURL);
   defaultAuthEndpoint.searchParams.set("guid", deviceId);
+  let currentAuthBaseURL = normalizeAuthURL(defaultAuthURL);
   let requestHost = defaultAuthEndpoint.hostname;
   let requestPath = `${defaultAuthEndpoint.pathname}${defaultAuthEndpoint.search}`;
 
   const bag = await fetchBag(deviceId);
-  const authEndpoint = new URL(bag.authURL);
+  const authEndpoint = new URL(normalizeAuthURL(bag.authURL));
   authEndpoint.searchParams.set("guid", deviceId);
+  currentAuthBaseURL = normalizeAuthURL(bag.authURL);
   requestHost = authEndpoint.hostname;
   requestPath = `${authEndpoint.pathname}${authEndpoint.search}`;
 
@@ -116,6 +119,21 @@ export async function authenticate(
 
       // Handle non-plist responses (e.g. 403 with empty body)
       if (!response.body.trim()) {
+        if (response.status === 200) {
+          if (!code) {
+            throw new AuthenticationError(
+              i18n.t("errors.auth.requiresVerification"),
+              true,
+            );
+          }
+          throw new AuthenticationError(
+            i18n.t("errors.auth.missingSessionToken", {
+              defaultValue:
+                "Login response did not include an App Store session token",
+            }),
+          );
+        }
+
         throw new AuthenticationError(
           i18n.t("errors.auth.emptyBody", { status: response.status }),
         );
@@ -123,6 +141,16 @@ export async function authenticate(
 
       const trimmedBody = response.body.trim();
       if (!trimmedBody.startsWith("<")) {
+        const discoveredAuthURL = authURLFromText(trimmedBody);
+        if (discoveredAuthURL && discoveredAuthURL !== currentAuthBaseURL) {
+          const endpoint = new URL(discoveredAuthURL);
+          endpoint.searchParams.set("guid", deviceId);
+          currentAuthBaseURL = discoveredAuthURL;
+          requestHost = endpoint.hostname;
+          requestPath = `${endpoint.pathname}${endpoint.search}`;
+          continue;
+        }
+
         try {
           const json = JSON.parse(trimmedBody) as Record<string, any>;
           const message =
@@ -143,6 +171,16 @@ export async function authenticate(
       try {
         dict = parsePlist(response.body) as Record<string, any>;
       } catch (error) {
+        const discoveredAuthURL = authURLFromText(response.body);
+        if (discoveredAuthURL && discoveredAuthURL !== currentAuthBaseURL) {
+          const endpoint = new URL(discoveredAuthURL);
+          endpoint.searchParams.set("guid", deviceId);
+          currentAuthBaseURL = discoveredAuthURL;
+          requestHost = endpoint.hostname;
+          requestPath = `${endpoint.pathname}${endpoint.search}`;
+          continue;
+        }
+
         throw new AuthenticationError(
           `Unexpected Apple auth response: HTTP ${response.status}, content-type ${response.headers["content-type"] || "unknown"}, body starts with ${previewResponseBody(response.body)}; ${
             error instanceof Error ? error.message : String(error)
@@ -196,20 +234,18 @@ export async function authenticate(
         );
       }
 
-      if (!dict.passwordToken) {
+      if (!dict.passwordToken || !dict.dsPersonId) {
+        if (!code) {
+          throw new AuthenticationError(
+            i18n.t("errors.auth.requiresVerification"),
+            true,
+          );
+        }
         throw new AuthenticationError(
           failureMessage ??
-            i18n.t("errors.auth.missingPasswordToken", {
-              defaultValue: "Missing passwordToken in response",
-            }),
-        );
-      }
-
-      if (!dict.dsPersonId) {
-        throw new AuthenticationError(
-          failureMessage ??
-            i18n.t("errors.auth.missingDsid", {
-              defaultValue: "Missing dsPersonId in response",
+            i18n.t("errors.auth.missingSessionToken", {
+              defaultValue:
+                "Login response did not include an App Store session token",
             }),
         );
       }

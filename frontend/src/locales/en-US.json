@@ -431,6 +431,7 @@
       "emptyBody": "Authentication failed: server returned HTTP {{status}} with empty body",
       "missingAccountInfo": "Missing accountInfo in response",
       "missingAddress": "Missing address in response",
+      "missingSessionToken": "Login response did not include an App Store session token",
       "unknownReason": "Authentication failed for an unknown reason"
     }
   },

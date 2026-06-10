@@ -48,7 +48,7 @@ describe("apple/bag", () => {
     const result = await fetchBag("aabbccddeeff");
 
     expect(result.authURL).toBe(
-      "https://auth.itunes.apple.com/auth/v1/native/fast",
+      "https://auth.itunes.apple.com/auth/v1/native/fast/",
     );
   });
 
@@ -67,7 +67,7 @@ describe("apple/bag", () => {
     const result = await fetchBag("aabbccddeeff");
 
     expect(result.authURL).toBe(
-      "https://auth.itunes.apple.com/auth/v1/native/fast",
+      "https://auth.itunes.apple.com/auth/v1/native/fast/",
     );
   });
 

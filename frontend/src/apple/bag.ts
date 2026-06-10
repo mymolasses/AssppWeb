@@ -1,22 +1,11 @@
 import { authHeaders } from "../api/client";
 import { parsePlist } from "./plist";
+import { defaultAuthURL, normalizeAuthURL } from "./authEndpoint";
+
+export { defaultAuthURL };
 
 export interface BagOutput {
   authURL: string;
-}
-
-export const defaultAuthURL =
-  "https://auth.itunes.apple.com/auth/v1/native/fast";
-
-function normalizeAuthURL(authURL: string): string {
-  if (
-    authURL.includes("auth.itunes.apple.com") &&
-    !authURL.endsWith("/fast")
-  ) {
-    return `${authURL}/fast`;
-  }
-
-  return authURL;
 }
 
 // Fetches the bag via the backend proxy.

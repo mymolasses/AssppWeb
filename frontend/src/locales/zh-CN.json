@@ -431,6 +431,7 @@
       "emptyBody": "认证失败：服务器返回 HTTP {{status}} 且响应体为空",
       "missingAccountInfo": "响应中缺少 accountInfo",
       "missingAddress": "响应中缺少 address",
+      "missingSessionToken": "登录响应中缺少 App Store 会话令牌",
       "unknownReason": "未知原因导致认证失败"
     }
   },
