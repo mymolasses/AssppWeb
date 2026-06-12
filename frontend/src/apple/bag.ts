@@ -2,7 +2,7 @@ import { authHeaders } from "../api/client";
 import { parsePlist } from "./plist";
 import { defaultAuthURL, normalizeAuthURL } from "./authEndpoint";
 
-export { defaultAuthURL };
+export { defaultAuthURL, normalizeAuthURL };
 
 export interface BagOutput {
   authURL: string;
@@ -27,12 +27,12 @@ export async function fetchBag(deviceId: string): Promise<BagOutput> {
     const xml = await resp.text();
     const dict = parsePlist(xml) as Record<string, any>;
 
-    // authenticateAccount may be at top level or inside a urlBag dict.
-    let authURL = dict.authenticateAccount as string | undefined;
+    // authenticateAccount used to live inside the urlBag dict; newer bag
+    // responses move it to the plist root, so prefer the root and fall back.
     const urlBag = dict.urlBag as Record<string, any> | undefined;
-    if (!authURL && urlBag) {
-      authURL = urlBag.authenticateAccount as string | undefined;
-    }
+    const authURL =
+      (dict.authenticateAccount as string | undefined) ??
+      (urlBag?.authenticateAccount as string | undefined);
 
     if (!authURL) {
       console.warn(

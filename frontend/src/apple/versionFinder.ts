@@ -66,6 +66,8 @@ export async function listVersions(
       if (dict.failureType) {
         const failureType = String(dict.failureType);
 
+        // volumeStore intermittently returns 5002; retry once via the
+        // redownload dispatch endpoint, which serves the same payload.
         if (failureType === RETRYABLE_FAILURE_TYPE && !triedRedownload) {
           triedRedownload = true;
           endpoint = redownloadEndpoint(deviceId);
