@@ -151,6 +151,36 @@ export function storeAPIHost(pod?: string): string {
   return "p25-buy.itunes.apple.com";
 }
 
+// volumeStore can intermittently reject product requests with 5002. ApplePackage
+// 1.2.7 falls back to the legacy redownload dispatch endpoint for the same
+// payload; the endpoints use different external version id keys.
+export const RETRYABLE_FAILURE_TYPE = "5002";
+
+export interface StoreDownloadEndpoint {
+  host: string;
+  path: string;
+  externalVersionIdKey: string;
+}
+
+export function volumeStoreEndpoint(
+  pod: string | undefined,
+  deviceId: string,
+): StoreDownloadEndpoint {
+  return {
+    host: storeAPIHost(pod),
+    path: `/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct?guid=${deviceId}`,
+    externalVersionIdKey: "externalVersionId",
+  };
+}
+
+export function redownloadEndpoint(deviceId: string): StoreDownloadEndpoint {
+  return {
+    host: "downloaddispatch.itunes.apple.com",
+    path: `/r/redownload?guid=${deviceId}`,
+    externalVersionIdKey: "appExtVrsId",
+  };
+}
+
 export function purchaseAPIHost(pod?: string): string {
   if (pod) return `p${pod}-buy.itunes.apple.com`;
   return "buy.itunes.apple.com";
