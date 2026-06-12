@@ -7,6 +7,9 @@ import {
   purchaseAPIHost,
   countryToStoreId,
   storeIdToCountry,
+  RETRYABLE_FAILURE_TYPE,
+  volumeStoreEndpoint,
+  redownloadEndpoint,
 } from "../../src/apple/config";
 
 describe("apple/config", () => {
@@ -123,6 +126,28 @@ describe("apple/config", () => {
 
     it("should return undefined for unknown store ID", () => {
       expect(storeIdToCountry("999999")).toBeUndefined();
+    });
+  });
+
+  describe("store download endpoints", () => {
+    it("volumeStore targets MZFinance with the externalVersionId key", () => {
+      const ep = volumeStoreEndpoint("42", "aabbccddeeff");
+      expect(ep.host).toBe("p42-buy.itunes.apple.com");
+      expect(ep.path).toBe(
+        "/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct?guid=aabbccddeeff",
+      );
+      expect(ep.externalVersionIdKey).toBe("externalVersionId");
+    });
+
+    it("redownload targets downloaddispatch with the appExtVrsId key", () => {
+      const ep = redownloadEndpoint("aabbccddeeff");
+      expect(ep.host).toBe("downloaddispatch.itunes.apple.com");
+      expect(ep.path).toBe("/r/redownload?guid=aabbccddeeff");
+      expect(ep.externalVersionIdKey).toBe("appExtVrsId");
+    });
+
+    it("exposes the retryable failure type used for fallback", () => {
+      expect(RETRYABLE_FAILURE_TYPE).toBe("5002");
     });
   });
 });

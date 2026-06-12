@@ -2,7 +2,11 @@ import type { Account, Software } from "../types";
 import { appleRequest } from "./request";
 import { buildPlist, parsePlist } from "./plist";
 import { extractAndMergeCookies } from "./cookies";
-import { storeAPIHost } from "./config";
+import {
+  RETRYABLE_FAILURE_TYPE,
+  redownloadEndpoint,
+  volumeStoreEndpoint,
+} from "./config";
 
 export async function listVersions(
   account: Account,
@@ -10,8 +14,10 @@ export async function listVersions(
 ): Promise<{ versions: string[]; updatedCookies: typeof account.cookies }> {
   const deviceId = account.deviceIdentifier;
 
-  let requestHost = storeAPIHost(account.pod);
-  let requestPath = `/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct?guid=${deviceId}`;
+  let endpoint = volumeStoreEndpoint(account.pod, deviceId);
+  let requestHost = endpoint.host;
+  let requestPath = endpoint.path;
+  let triedRedownload = false;
   let cookies = [...account.cookies];
   let redirectAttempt = 0;
 
@@ -59,6 +65,18 @@ export async function listVersions(
     if (!songList || songList.length === 0) {
       if (dict.failureType) {
         const failureType = String(dict.failureType);
+
+        // volumeStore intermittently returns 5002; retry once via the
+        // redownload dispatch endpoint, which serves the same payload.
+        if (failureType === RETRYABLE_FAILURE_TYPE && !triedRedownload) {
+          triedRedownload = true;
+          endpoint = redownloadEndpoint(deviceId);
+          requestHost = endpoint.host;
+          requestPath = endpoint.path;
+          redirectAttempt = 0;
+          continue;
+        }
+
         switch (failureType) {
           case "2034":
             throw new Error("Password token is expired");

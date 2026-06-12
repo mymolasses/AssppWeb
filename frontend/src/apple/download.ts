@@ -2,7 +2,11 @@ import type { Account, Software, DownloadOutput, Sinf } from "../types";
 import { appleRequest } from "./request";
 import { buildPlist, parsePlist } from "./plist";
 import { extractAndMergeCookies } from "./cookies";
-import { storeAPIHost } from "./config";
+import {
+  RETRYABLE_FAILURE_TYPE,
+  redownloadEndpoint,
+  volumeStoreEndpoint,
+} from "./config";
 import i18n from "../i18n";
 
 export class DownloadError extends Error {
@@ -22,8 +26,10 @@ export async function getDownloadInfo(
 ): Promise<{ output: DownloadOutput; updatedCookies: typeof account.cookies }> {
   const deviceId = account.deviceIdentifier;
 
-  let requestHost = storeAPIHost(account.pod);
-  let requestPath = `/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct?guid=${deviceId}`;
+  let endpoint = volumeStoreEndpoint(account.pod, deviceId);
+  let requestHost = endpoint.host;
+  let requestPath = endpoint.path;
+  let triedRedownload = false;
   let cookies = [...account.cookies];
   let redirectAttempt = 0;
 
@@ -35,7 +41,7 @@ export async function getDownloadInfo(
     };
 
     if (externalVersionId) {
-      payload.externalVersionId = externalVersionId;
+      payload[endpoint.externalVersionIdKey] = externalVersionId;
     }
 
     const plistBody = buildPlist(payload);
@@ -73,6 +79,18 @@ export async function getDownloadInfo(
 
     if (dict.failureType) {
       const failureType = String(dict.failureType);
+
+      // volumeStore intermittently returns 5002; retry once via the
+      // redownload dispatch endpoint, which serves the same payload.
+      if (failureType === RETRYABLE_FAILURE_TYPE && !triedRedownload) {
+        triedRedownload = true;
+        endpoint = redownloadEndpoint(deviceId);
+        requestHost = endpoint.host;
+        requestPath = endpoint.path;
+        redirectAttempt = 0;
+        continue;
+      }
+
       const customerMessage = dict.customerMessage as string | undefined;
       switch (failureType) {
         case "2034":

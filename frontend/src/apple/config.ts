@@ -151,6 +151,37 @@ export function storeAPIHost(pod?: string): string {
   return "p25-buy.itunes.apple.com";
 }
 
+// The volumeStore endpoint intermittently rejects requests with failureType
+// 5002. The legacy redownload dispatch endpoint serves the same payload and is
+// used as a fallback. The two endpoints name the external version id
+// differently in the request payload.
+export const RETRYABLE_FAILURE_TYPE = "5002";
+
+export interface StoreDownloadEndpoint {
+  host: string;
+  path: string;
+  externalVersionIdKey: string;
+}
+
+export function volumeStoreEndpoint(
+  pod: string | undefined,
+  deviceId: string,
+): StoreDownloadEndpoint {
+  return {
+    host: storeAPIHost(pod),
+    path: `/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct?guid=${deviceId}`,
+    externalVersionIdKey: "externalVersionId",
+  };
+}
+
+export function redownloadEndpoint(deviceId: string): StoreDownloadEndpoint {
+  return {
+    host: "downloaddispatch.itunes.apple.com",
+    path: `/r/redownload?guid=${deviceId}`,
+    externalVersionIdKey: "appExtVrsId",
+  };
+}
+
 export function purchaseAPIHost(pod?: string): string {
   if (pod) return `p${pod}-buy.itunes.apple.com`;
   return "buy.itunes.apple.com";
