@@ -96,8 +96,8 @@ export async function authenticate(
       const podHeader = response.headers["pod"];
       pod = podHeader || undefined;
 
-      // Handle redirect
-      if (response.status === 302) {
+      // Native auth can return permanent or method-preserving redirects.
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers["location"];
         if (!location) {
           throw new Error(i18n.t("errors.auth.redirectLocation"));

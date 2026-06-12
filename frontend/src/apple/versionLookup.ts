@@ -2,7 +2,11 @@ import type { Account, Software, VersionMetadata } from "../types";
 import { appleRequest } from "./request";
 import { buildPlist, parsePlist } from "./plist";
 import { extractAndMergeCookies } from "./cookies";
-import { storeAPIHost } from "./config";
+import {
+  RETRYABLE_FAILURE_TYPE,
+  redownloadEndpoint,
+  volumeStoreEndpoint,
+} from "./config";
 
 export async function getVersionMetadata(
   account: Account,
@@ -14,8 +18,10 @@ export async function getVersionMetadata(
 }> {
   const deviceId = account.deviceIdentifier;
 
-  let requestHost = storeAPIHost(account.pod);
-  let requestPath = `/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct?guid=${deviceId}`;
+  let endpoint = volumeStoreEndpoint(account.pod, deviceId);
+  let requestHost = endpoint.host;
+  let requestPath = endpoint.path;
+  let triedRedownload = false;
   let cookies = [...account.cookies];
   let redirectAttempt = 0;
 
@@ -24,7 +30,7 @@ export async function getVersionMetadata(
       creditDisplay: "",
       guid: deviceId,
       salableAdamId: app.id,
-      externalVersionId: versionId,
+      [endpoint.externalVersionIdKey]: versionId,
     };
 
     const plistBody = buildPlist(payload);
@@ -59,6 +65,18 @@ export async function getVersionMetadata(
     }
 
     const dict = parsePlist(response.body) as Record<string, any>;
+
+    if (
+      String(dict.failureType ?? "") === RETRYABLE_FAILURE_TYPE &&
+      !triedRedownload
+    ) {
+      triedRedownload = true;
+      endpoint = redownloadEndpoint(deviceId);
+      requestHost = endpoint.host;
+      requestPath = endpoint.path;
+      redirectAttempt = 0;
+      continue;
+    }
 
     const songList = dict.songList as Record<string, any>[] | undefined;
     if (!songList || songList.length === 0) {
