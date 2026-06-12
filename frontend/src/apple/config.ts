@@ -151,9 +151,10 @@ export function storeAPIHost(pod?: string): string {
   return "p25-buy.itunes.apple.com";
 }
 
-// volumeStore can intermittently reject product requests with 5002. ApplePackage
-// 1.2.7 falls back to the legacy redownload dispatch endpoint for the same
-// payload; the endpoints use different external version id keys.
+// The volumeStore endpoint intermittently rejects requests with failureType
+// 5002. The legacy redownload dispatch endpoint serves the same payload and is
+// used as a fallback. The two endpoints name the external version id
+// differently in the request payload.
 export const RETRYABLE_FAILURE_TYPE = "5002";
 
 export interface StoreDownloadEndpoint {

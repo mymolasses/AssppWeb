@@ -96,7 +96,8 @@ export async function authenticate(
       const podHeader = response.headers["pod"];
       pod = podHeader || undefined;
 
-      // Native auth can return permanent or method-preserving redirects.
+      // Handle redirect. The native /fast auth host can answer with 301 as
+      // well as the usual 302, so follow the full set of redirect statuses.
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers["location"];
         if (!location) {
