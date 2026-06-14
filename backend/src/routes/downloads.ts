@@ -25,6 +25,7 @@ import {
   verifyTaskOwnership,
 } from "../utils/route.js";
 import { buildUploadedSoftware, readIpaInfo } from "../services/ipaMetadata.js";
+import { analyzeIpaSigning } from "../services/ipaSigning.js";
 
 const router = Router();
 
@@ -236,10 +237,12 @@ router.post("/downloads/upload", async (req: Request, res: Response) => {
       path.basename(fileName, path.extname(fileName)),
     );
     const software = buildUploadedSoftware(info, fileName, stats.size);
+    const signingInfo = await analyzeIpaSigning(tempPath, software.bundleID);
     const task = createUploadedTask(
       software,
       LOCAL_UPLOAD_ACCOUNT_HASH,
       tempPath,
+      signingInfo,
     );
     res.status(201).json(sanitizeTaskForResponse(task));
   } catch (err) {

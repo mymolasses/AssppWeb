@@ -49,6 +49,34 @@ export interface Sinf {
   sinf: string; // base64
 }
 
+export interface IpaSigningInfo {
+  profileType: "enterprise" | "ad-hoc" | "development" | "app-store" | "missing";
+  likelyOtaInstallable: boolean;
+  hasEmbeddedProvision: boolean;
+  hasCodeSignature: boolean;
+  profileName?: string;
+  teamName?: string;
+  teamIdentifiers: string[];
+  appIdName?: string;
+  provisionedDeviceCount?: number;
+  provisionBundleID?: string;
+  createdAt?: string;
+  expiresAt?: string;
+  entitlements: {
+    applicationIdentifier?: string;
+    teamIdentifier?: string;
+    getTaskAllow: boolean;
+  };
+  certificates: {
+    subject: string;
+    issuer: string;
+    validFrom: string;
+    validTo: string;
+    fingerprint256: string;
+  }[];
+  warnings: string[];
+}
+
 export interface DownloadOutput {
   downloadURL: string;
   sinfs: Sinf[];
@@ -77,6 +105,7 @@ export interface DownloadTask {
   speed: string;
   error?: string;
   hasFile?: boolean;
+  signingInfo?: IpaSigningInfo;
   createdAt: string;
 }
 

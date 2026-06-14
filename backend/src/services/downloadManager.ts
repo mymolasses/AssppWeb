@@ -4,7 +4,12 @@ import { v4 as uuidv4 } from "uuid";
 import { config, DOWNLOAD_TIMEOUT_MS } from "../config.js";
 import { inject } from "./sinfInjector.js";
 import { ChunkedDownloader } from "./chunkedDownloader.js";
-import type { DownloadTask, Software, Sinf } from "../types/index.js";
+import type {
+  DownloadTask,
+  IpaSigningInfo,
+  Software,
+  Sinf,
+} from "../types/index.js";
 
 const tasks = new Map<string, DownloadTask>();
 const abortControllers = new Map<string, AbortController>();
@@ -87,6 +92,7 @@ function persistTasks() {
       progress: t.progress,
       speed: t.speed,
       filePath: t.filePath,
+      signingInfo: t.signingInfo,
       createdAt: t.createdAt,
     }));
   fs.writeFileSync(TASKS_FILE, JSON.stringify(completed, null, 2));
@@ -214,6 +220,7 @@ function initOnStartup() {
               progress: 100,
               speed: "0 B/s",
               filePath: item.filePath,
+              signingInfo: item.signingInfo,
               createdAt: item.createdAt,
             };
             tasks.set(task.id, task);
@@ -424,6 +431,7 @@ export function createUploadedTask(
   software: Software,
   accountHash: string,
   sourceFilePath: string,
+  signingInfo?: IpaSigningInfo,
 ): DownloadTask {
   safePathSegment(accountHash, "accountHash");
   safePathSegment(software.bundleID, "bundleID");
@@ -438,6 +446,7 @@ export function createUploadedTask(
     status: "completed",
     progress: 100,
     speed: "0 B/s",
+    signingInfo,
     createdAt: new Date().toISOString(),
   };
 

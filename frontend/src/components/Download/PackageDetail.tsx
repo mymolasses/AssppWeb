@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
@@ -19,7 +19,20 @@ import { listVersions } from "../../apple/versionFinder";
 import { getAccountContext } from "../../utils/toast";
 import { isNewerVersion } from "../../utils/version";
 import { LOCAL_UPLOAD_ACCOUNT_HASH } from "../../constants/downloads";
-import type { Software } from "../../types";
+import type { IpaSigningInfo, Software } from "../../types";
+
+function formatDate(value?: string) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
+}
+
+function certLabel(subject: string) {
+  const cn = subject
+    .split("\n")
+    .find((part) => part.startsWith("CN="))
+    ?.slice(3);
+  return cn || subject;
+}
 
 export default function PackageDetail() {
   const { id } = useParams<{ id: string }>();
@@ -239,6 +252,10 @@ export default function PackageDetail() {
           </dl>
         </div>
 
+        {task.signingInfo && (
+          <SigningInfoPanel signingInfo={task.signingInfo} />
+        )}
+
         <div className="space-y-3">
           <div className="flex flex-wrap gap-3">
             {isCompleted && (
@@ -389,5 +406,119 @@ export default function PackageDetail() {
         </div>
       </Modal>
     </PageContainer>
+  );
+}
+
+function SigningInfoPanel({
+  signingInfo,
+}: {
+  signingInfo: IpaSigningInfo;
+}) {
+  const { t } = useTranslation();
+  const statusClass = signingInfo.likelyOtaInstallable
+    ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-300"
+    : "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300";
+
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+            {t("downloads.signing.title")}
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {t("downloads.signing.profileType", {
+              type: t(`downloads.signing.types.${signingInfo.profileType}`),
+            })}
+          </p>
+        </div>
+        <span
+          className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${statusClass}`}
+        >
+          {signingInfo.likelyOtaInstallable
+            ? t("downloads.signing.otaLikely")
+            : t("downloads.signing.otaRisk")}
+        </span>
+      </div>
+
+      {signingInfo.warnings.length > 0 && (
+        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+          <ul className="space-y-1">
+            {signingInfo.warnings.map((warning) => (
+              <li key={warning}>
+                {t(`downloads.signing.warnings.${warning}`)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <dl className="grid gap-3 text-sm sm:grid-cols-2">
+        <InfoItem label={t("downloads.signing.hasProfile")}>
+          {signingInfo.hasEmbeddedProvision
+            ? t("downloads.signing.yes")
+            : t("downloads.signing.no")}
+        </InfoItem>
+        <InfoItem label={t("downloads.signing.hasSignature")}>
+          {signingInfo.hasCodeSignature
+            ? t("downloads.signing.yes")
+            : t("downloads.signing.no")}
+        </InfoItem>
+        <InfoItem label={t("downloads.signing.team")}>
+          {signingInfo.teamName ||
+            signingInfo.teamIdentifiers.join(", ") ||
+            "-"}
+        </InfoItem>
+        <InfoItem label={t("downloads.signing.profileName")}>
+          {signingInfo.profileName || "-"}
+        </InfoItem>
+        <InfoItem label={t("downloads.signing.bundleId")}>
+          {signingInfo.provisionBundleID || "-"}
+        </InfoItem>
+        <InfoItem label={t("downloads.signing.expires")}>
+          {formatDate(signingInfo.expiresAt)}
+        </InfoItem>
+      </dl>
+
+      {signingInfo.certificates.length > 0 && (
+        <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+          <p className="mb-2 text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+            {t("downloads.signing.certificates")}
+          </p>
+          <div className="space-y-2">
+            {signingInfo.certificates.map((cert) => (
+              <div
+                key={cert.fingerprint256}
+                className="rounded-md bg-gray-50 p-3 text-xs dark:bg-gray-800/60"
+              >
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {certLabel(cert.subject)}
+                </p>
+                <p className="mt-1 text-gray-500 dark:text-gray-400">
+                  {formatDate(cert.validFrom)} - {formatDate(cert.validTo)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InfoItem({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <dt className="text-xs text-gray-500 dark:text-gray-400">{label}</dt>
+      <dd className="mt-1 truncate text-gray-900 dark:text-gray-200">
+        {children}
+      </dd>
+    </div>
   );
 }

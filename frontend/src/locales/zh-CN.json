@@ -176,6 +176,38 @@
       "failed": "上传失败",
       "localSource": "本地 IPA"
     },
+    "signing": {
+      "title": "IPA 签名检测",
+      "profileType": "描述文件：{{type}}",
+      "otaLikely": "网页安装可用",
+      "otaRisk": "网页安装有风险",
+      "hasProfile": "内置描述文件",
+      "hasSignature": "代码签名",
+      "yes": "是",
+      "no": "否",
+      "team": "团队",
+      "profileName": "描述文件名称",
+      "bundleId": "描述文件 Bundle ID",
+      "expires": "描述文件过期时间",
+      "certificates": "证书",
+      "types": {
+        "enterprise": "企业分发",
+        "ad-hoc": "Ad Hoc",
+        "development": "开发调试",
+        "app-store": "App Store",
+        "missing": "缺失"
+      },
+      "warnings": {
+        "missingCodeSignature": "IPA 中未找到主 App 的代码签名记录。",
+        "missingProvisioningProfile": "未找到 embedded.mobileprovision。Safari 网页安装通常无法信任这种安装包。",
+        "expiredProvisioningProfile": "内置描述文件已经过期。",
+        "notEnterpriseProfile": "这不是企业内部分发描述文件。即使 USB 工具能安装，网页安装也可能失败。",
+        "developmentProfile": "这看起来是开发调试描述文件。",
+        "adHocProfileRequiresDevice": "这看起来是 Ad Hoc 描述文件，目标 iPhone 的 UDID 必须包含在描述文件里。",
+        "bundleIdMismatch": "描述文件里的 Bundle ID 与 App 的 Bundle ID 不匹配。",
+        "expiredCertificate": "至少有一个签名证书已经过期。"
+      }
+    },
     "add": {
       "title": "新建下载",
       "emptyTitle": "准备新建",
