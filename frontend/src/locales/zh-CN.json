@@ -178,6 +178,10 @@
     },
     "signing": {
       "title": "IPA 签名检测",
+      "check": "检测 IPA 签名",
+      "checking": "正在检测签名...",
+      "checkSuccess": "IPA 签名检测完成。",
+      "checkFailed": "IPA 签名检测失败。",
       "profileType": "描述文件：{{type}}",
       "otaLikely": "网页安装可用",
       "otaRisk": "网页安装有风险",

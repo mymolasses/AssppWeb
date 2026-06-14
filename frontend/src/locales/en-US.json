@@ -178,6 +178,10 @@
     },
     "signing": {
       "title": "IPA Signing Check",
+      "check": "Check IPA Signing",
+      "checking": "Checking Signing...",
+      "checkSuccess": "IPA signing check complete.",
+      "checkFailed": "Failed to check IPA signing.",
       "profileType": "Profile: {{type}}",
       "otaLikely": "OTA ready",
       "otaRisk": "OTA risk",

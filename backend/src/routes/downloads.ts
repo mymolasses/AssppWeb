@@ -17,6 +17,7 @@ import {
   addProgressListener,
   removeProgressListener,
   sanitizeTaskForResponse,
+  updateTaskSigningInfo,
   validateDownloadURL,
 } from "../services/downloadManager.js";
 import {
@@ -326,6 +327,56 @@ router.get("/downloads/:id/progress", (req: Request, res: Response) => {
   req.on("close", () => {
     removeProgressListener(id, listener);
   });
+});
+
+// Re-run IPA signing diagnostics for an existing completed package.
+router.post("/downloads/:id/signing", async (req: Request, res: Response) => {
+  const accountHash = requireAccountHash(req, res);
+  if (!accountHash) return;
+
+  const id = getIdParam(req);
+  const task = getTask(id);
+  if (!task) {
+    res.status(404).json({ error: "Download not found" });
+    return;
+  }
+
+  if (!verifyTaskOwnership(task, accountHash, res)) return;
+
+  if (task.status !== "completed" || !task.filePath) {
+    res.status(400).json({ error: "Package is not ready for signing check" });
+    return;
+  }
+
+  const packagesBase = path.resolve(PACKAGES_DIR);
+  const resolvedPath = path.resolve(task.filePath);
+  if (
+    !resolvedPath.startsWith(packagesBase + path.sep) ||
+    !fs.existsSync(resolvedPath)
+  ) {
+    res.status(404).json({ error: "Package file not found" });
+    return;
+  }
+
+  try {
+    const signingInfo = await analyzeIpaSigning(
+      resolvedPath,
+      task.software.bundleID,
+    );
+    const updated = updateTaskSigningInfo(id, signingInfo);
+    res.json(updated ? sanitizeTaskForResponse(updated) : { signingInfo });
+  } catch (err) {
+    console.error(
+      "IPA signing check error:",
+      err instanceof Error ? err.message : err,
+    );
+    res.status(400).json({
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to analyze IPA signing",
+    });
+  }
 });
 
 // Pause download (requires accountHash)

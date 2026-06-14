@@ -320,6 +320,19 @@ export function getTask(id: string): DownloadTask | undefined {
   return tasks.get(id);
 }
 
+export function updateTaskSigningInfo(
+  id: string,
+  signingInfo: IpaSigningInfo,
+): DownloadTask | undefined {
+  const task = tasks.get(id);
+  if (!task) return undefined;
+
+  task.signingInfo = signingInfo;
+  persistTasks();
+  notifyProgress(task);
+  return task;
+}
+
 export function deleteTask(id: string): boolean {
   const task = tasks.get(id);
   if (!task) return false;
