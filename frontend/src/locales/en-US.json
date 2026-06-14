@@ -176,6 +176,38 @@
       "failed": "Upload failed",
       "localSource": "Local IPA"
     },
+    "signing": {
+      "title": "IPA Signing Check",
+      "profileType": "Profile: {{type}}",
+      "otaLikely": "OTA ready",
+      "otaRisk": "OTA risk",
+      "hasProfile": "Embedded profile",
+      "hasSignature": "Code signature",
+      "yes": "Yes",
+      "no": "No",
+      "team": "Team",
+      "profileName": "Profile name",
+      "bundleId": "Profile Bundle ID",
+      "expires": "Profile expires",
+      "certificates": "Certificates",
+      "types": {
+        "enterprise": "Enterprise",
+        "ad-hoc": "Ad Hoc",
+        "development": "Development",
+        "app-store": "App Store",
+        "missing": "Missing"
+      },
+      "warnings": {
+        "missingCodeSignature": "The IPA does not contain a main app code signature record.",
+        "missingProvisioningProfile": "No embedded.mobileprovision was found. Safari OTA installs usually cannot trust this package.",
+        "expiredProvisioningProfile": "The embedded provisioning profile has expired.",
+        "notEnterpriseProfile": "This is not an enterprise in-house profile. Web install may fail even if USB tools can install it.",
+        "developmentProfile": "This appears to be a development profile.",
+        "adHocProfileRequiresDevice": "This appears to be an Ad Hoc profile, so the iPhone UDID must be included in the profile.",
+        "bundleIdMismatch": "The profile Bundle ID does not match the app Bundle ID.",
+        "expiredCertificate": "At least one signing certificate has expired."
+      }
+    },
     "add": {
       "title": "New Download",
       "emptyTitle": "Ready to Create",
