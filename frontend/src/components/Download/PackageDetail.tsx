@@ -18,6 +18,7 @@ import { storeIdToCountry } from "../../apple/config";
 import { listVersions } from "../../apple/versionFinder";
 import { getAccountContext } from "../../utils/toast";
 import { isNewerVersion } from "../../utils/version";
+import { LOCAL_UPLOAD_ACCOUNT_HASH } from "../../constants/downloads";
 import type { Software } from "../../types";
 
 export default function PackageDetail() {
@@ -51,11 +52,20 @@ export default function PackageDetail() {
   const isActive = task.status === "downloading" || task.status === "injecting";
   const isPaused = task.status === "paused";
   const isCompleted = task.status === "completed";
+  const isLocalUpload = task.accountHash === LOCAL_UPLOAD_ACCOUNT_HASH;
   const installInfo = isCompleted ? getInstallInfo(task.id) : null;
 
-  const accountEmail = hashToEmail[task.accountHash];
+  const accountEmail = isLocalUpload
+    ? t("downloads.upload.localSource")
+    : hashToEmail[task.accountHash];
   const account = accounts.find((a) => a.email === accountEmail);
-  const ctx = getAccountContext(account, t);
+  const ctx = isLocalUpload
+    ? {
+        userName: t("downloads.upload.localSource"),
+        appleId: "-",
+        country: "-",
+      }
+    : getAccountContext(account, t);
   const appName = task.software.name;
 
   function toastAction(titleKey: string, type: "success" | "info" = "info") {
@@ -233,15 +243,17 @@ export default function PackageDetail() {
           <div className="flex flex-wrap gap-3">
             {isCompleted && (
               <>
-                <button
-                  onClick={handleCheckUpdate}
-                  disabled={checkingUpdate}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                >
-                  {checkingUpdate
-                    ? t("downloads.package.checkingUpdate")
-                    : t("downloads.package.checkUpdate")}
-                </button>
+                {!isLocalUpload && (
+                  <button
+                    onClick={handleCheckUpdate}
+                    disabled={checkingUpdate}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                  >
+                    {checkingUpdate
+                      ? t("downloads.package.checkingUpdate")
+                      : t("downloads.package.checkUpdate")}
+                  </button>
+                )}
                 {installInfo && (
                   <>
                     <a

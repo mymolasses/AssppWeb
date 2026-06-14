@@ -1,7 +1,14 @@
 import { Router, Request, Response } from "express";
 import { config } from "../config.js";
+import fs from "fs";
+import path from "path";
+import { randomUUID } from "crypto";
+import { pipeline } from "stream/promises";
+import { MAX_DOWNLOAD_SIZE } from "../config.js";
+import { LOCAL_UPLOAD_ACCOUNT_HASH } from "../constants.js";
 import {
   createTask,
+  createUploadedTask,
   getAllTasks,
   getTask,
   deleteTask,
@@ -17,8 +24,39 @@ import {
   requireAccountHash,
   verifyTaskOwnership,
 } from "../utils/route.js";
+import { buildUploadedSoftware, readIpaInfo } from "../services/ipaMetadata.js";
 
 const router = Router();
+
+const PACKAGES_DIR = path.join(config.dataDir, "packages");
+
+function sanitizeUploadName(value: string): string {
+  const base = path.basename(value || "uploaded.ipa");
+  return base.replace(/[^\w .()-]/g, "_").slice(0, 200) || "uploaded.ipa";
+}
+
+function decodeUploadName(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function parseContentLength(req: Request): number | null {
+  const value = req.headers["content-length"];
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+async function removeFileIfExists(filePath: string) {
+  try {
+    await fs.promises.rm(filePath, { force: true });
+  } catch {
+    // best-effort cleanup
+  }
+}
 
 async function fetchDownloadSizeBytes(
   downloadURL: string,
@@ -140,6 +178,79 @@ router.post("/downloads", async (req: Request, res: Response) => {
       err instanceof Error ? err.message : err,
     );
     res.status(400).json({ error: "Failed to create download" });
+  }
+});
+
+// Upload an already-signed local IPA and expose it through the existing install flow.
+router.post("/downloads/upload", async (req: Request, res: Response) => {
+  const contentLength = parseContentLength(req);
+  if (contentLength === null || contentLength <= 0) {
+    res.status(400).json({ error: "Missing upload size" });
+    return;
+  }
+
+  if (contentLength > MAX_DOWNLOAD_SIZE) {
+    res.status(413).json({ error: "IPA is too large" });
+    return;
+  }
+
+  if (config.maxDownloadMB > 0) {
+    const sizeMB = contentLength / (1024 * 1024);
+    if (sizeMB > config.maxDownloadMB) {
+      res.status(413).json({
+        error: `File size exceeds the maximum limit of ${config.maxDownloadMB} MB`,
+      });
+      return;
+    }
+  }
+
+  const fileName = sanitizeUploadName(
+    typeof req.headers["x-file-name"] === "string"
+      ? decodeUploadName(req.headers["x-file-name"])
+      : "uploaded.ipa",
+  );
+  if (!fileName.toLowerCase().endsWith(".ipa")) {
+    res.status(400).json({ error: "Only .ipa files can be uploaded" });
+    return;
+  }
+
+  const incomingDir = path.join(
+    PACKAGES_DIR,
+    LOCAL_UPLOAD_ACCOUNT_HASH,
+    "_incoming",
+  );
+  const packagesBase = path.resolve(PACKAGES_DIR);
+  const resolvedIncomingDir = path.resolve(incomingDir);
+  if (!resolvedIncomingDir.startsWith(packagesBase + path.sep)) {
+    res.status(500).json({ error: "Invalid upload path" });
+    return;
+  }
+  await fs.promises.mkdir(incomingDir, { recursive: true });
+
+  const tempPath = path.join(incomingDir, `${randomUUID()}.ipa`);
+  try {
+    await pipeline(req, fs.createWriteStream(tempPath, { flags: "wx" }));
+    const stats = await fs.promises.stat(tempPath);
+    const info = await readIpaInfo(
+      tempPath,
+      path.basename(fileName, path.extname(fileName)),
+    );
+    const software = buildUploadedSoftware(info, fileName, stats.size);
+    const task = createUploadedTask(
+      software,
+      LOCAL_UPLOAD_ACCOUNT_HASH,
+      tempPath,
+    );
+    res.status(201).json(sanitizeTaskForResponse(task));
+  } catch (err) {
+    await removeFileIfExists(tempPath);
+    console.error(
+      "Upload IPA error:",
+      err instanceof Error ? err.message : err,
+    );
+    res.status(400).json({
+      error: err instanceof Error ? err.message : "Failed to upload IPA",
+    });
   }
 });
 

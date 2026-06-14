@@ -14,6 +14,7 @@ import { lookupApp } from "../../api/search";
 import { storeIdToCountry } from "../../apple/config";
 import { getAccountContext } from "../../utils/toast";
 import { isNewerVersion } from "../../utils/version";
+import { LOCAL_UPLOAD_ACCOUNT_HASH } from "../../constants/downloads";
 import type { DownloadTask } from "../../types";
 
 type StatusFilter = "all" | DownloadTask["status"];
@@ -87,7 +88,11 @@ export default function DownloadList() {
     setCheckingAll(true);
     addToast(t("downloads.checkUpdatesStarted"), "info");
     let count = 0;
-    const completedTasks = tasks.filter((t) => t.status === "completed");
+    const completedTasks = tasks.filter(
+      (t) =>
+        t.status === "completed" &&
+        t.accountHash !== LOCAL_UPLOAD_ACCOUNT_HASH,
+    );
 
     setCheckProgress({ current: 0, total: completedTasks.length, appName: "" });
 
@@ -155,6 +160,12 @@ export default function DownloadList() {
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             {t("downloads.new")}
+          </Link>
+          <Link
+            to="/downloads/upload"
+            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+          >
+            {t("downloads.upload.button")}
           </Link>
         </div>
       }
