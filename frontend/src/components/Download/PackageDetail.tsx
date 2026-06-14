@@ -12,6 +12,7 @@ import { useAccounts } from "../../hooks/useAccounts";
 import { useDownloadAction } from "../../hooks/useDownloadAction";
 import { useToastStore } from "../../store/toast";
 import { getInstallInfo } from "../../api/install";
+import { analyzeDownloadSigning } from "../../api/downloads";
 import { authHeaders } from "../../api/client";
 import { lookupApp } from "../../api/search";
 import { storeIdToCountry } from "../../apple/config";
@@ -37,8 +38,14 @@ function certLabel(subject: string) {
 export default function PackageDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { tasks, deleteDownload, pauseDownload, resumeDownload, hashToEmail } =
-    useDownloads();
+  const {
+    tasks,
+    deleteDownload,
+    pauseDownload,
+    resumeDownload,
+    hashToEmail,
+    fetchTasks,
+  } = useDownloads();
   const { t } = useTranslation();
   const addToast = useToastStore((s) => s.addToast);
   const { accounts } = useAccounts();
@@ -49,6 +56,7 @@ export default function PackageDetail() {
   const [latestApp, setLatestApp] = useState<Software | null>(null);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string>("");
+  const [checkingSigning, setCheckingSigning] = useState(false);
 
   const task = tasks.find((t) => t.id === id);
 
@@ -176,6 +184,20 @@ export default function PackageDetail() {
     }
   }
 
+  async function handleAnalyzeSigning() {
+    if (!task || checkingSigning) return;
+    setCheckingSigning(true);
+    try {
+      await analyzeDownloadSigning(task.id, task.accountHash);
+      await fetchTasks();
+      addToast(t("downloads.signing.checkSuccess"), "success");
+    } catch {
+      addToast(t("downloads.signing.checkFailed"), "error");
+    } finally {
+      setCheckingSigning(false);
+    }
+  }
+
   return (
     <PageContainer title={t("downloads.package.title")}>
       <div className="space-y-6">
@@ -271,6 +293,15 @@ export default function PackageDetail() {
                       : t("downloads.package.checkUpdate")}
                   </button>
                 )}
+                <button
+                  onClick={handleAnalyzeSigning}
+                  disabled={checkingSigning}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                >
+                  {checkingSigning
+                    ? t("downloads.signing.checking")
+                    : t("downloads.signing.check")}
+                </button>
                 {installInfo && (
                   <>
                     <a

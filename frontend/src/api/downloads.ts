@@ -58,6 +58,14 @@ export async function uploadIpa(
   });
 }
 
+export async function analyzeDownloadSigning(
+  id: string,
+  accountHash: string,
+): Promise<DownloadTask> {
+  const params = new URLSearchParams({ accountHash });
+  return apiPost<DownloadTask>(`/api/downloads/${id}/signing?${params}`);
+}
+
 export async function pauseDownload(
   id: string,
   accountHash: string,
