@@ -164,6 +164,18 @@
     "item": {
       "viewPackage": "View Package"
     },
+    "upload": {
+      "button": "Upload IPA",
+      "title": "Upload IPA",
+      "choose": "Choose a signed .ipa file",
+      "help": "The uploaded IPA will be added to downloads for installation.",
+      "note": "Only already-signed IPA files can be installed. iOS still requires HTTPS and a trusted signing certificate.",
+      "submit": "Upload",
+      "uploading": "Uploading...",
+      "success": "IPA uploaded.",
+      "failed": "Upload failed",
+      "localSource": "Local IPA"
+    },
     "add": {
       "title": "New Download",
       "emptyTitle": "Ready to Create",

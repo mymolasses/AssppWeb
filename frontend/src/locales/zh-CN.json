@@ -164,6 +164,18 @@
     "item": {
       "viewPackage": "查看安装包"
     },
+    "upload": {
+      "button": "上传 IPA",
+      "title": "上传 IPA",
+      "choose": "选择已签名的 .ipa 文件",
+      "help": "上传后会加入下载列表，可继续安装、分享或扫码。",
+      "note": "这里只负责分发已签名 IPA，不会重新签名。iOS 仍要求 HTTPS，并且手机需要信任对应签名证书。",
+      "submit": "上传",
+      "uploading": "上传中...",
+      "success": "IPA 上传成功。",
+      "failed": "上传失败",
+      "localSource": "本地 IPA"
+    },
     "add": {
       "title": "新建下载",
       "emptyTitle": "准备新建",

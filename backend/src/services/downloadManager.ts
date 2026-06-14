@@ -420,6 +420,54 @@ export function createTask(
   return task;
 }
 
+export function createUploadedTask(
+  software: Software,
+  accountHash: string,
+  sourceFilePath: string,
+): DownloadTask {
+  safePathSegment(accountHash, "accountHash");
+  safePathSegment(software.bundleID, "bundleID");
+  safePathSegment(software.version, "version");
+
+  const task: DownloadTask = {
+    id: uuidv4(),
+    software,
+    accountHash,
+    downloadURL: "",
+    sinfs: [],
+    status: "completed",
+    progress: 100,
+    speed: "0 B/s",
+    createdAt: new Date().toISOString(),
+  };
+
+  const dir = path.join(
+    PACKAGES_DIR,
+    safePathSegment(accountHash, "accountHash"),
+    safePathSegment(software.bundleID, "bundleID"),
+    safePathSegment(software.version, "version"),
+  );
+  const resolvedDir = path.resolve(dir);
+  const packagesBase = path.resolve(PACKAGES_DIR);
+  if (!resolvedDir.startsWith(packagesBase + path.sep)) {
+    throw new Error("Invalid path");
+  }
+
+  fs.mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, `${task.id}.ipa`);
+  const resolvedSource = path.resolve(sourceFilePath);
+  if (!resolvedSource.startsWith(packagesBase + path.sep)) {
+    throw new Error("Invalid source path");
+  }
+
+  fs.renameSync(sourceFilePath, filePath);
+  task.filePath = filePath;
+  tasks.set(task.id, task);
+  persistTasks();
+  notifyProgress(task);
+  return task;
+}
+
 async function startDownload(task: DownloadTask) {
   // Pre-download cleanup: expire old files + enforce space limit
   runTimeCleanup();

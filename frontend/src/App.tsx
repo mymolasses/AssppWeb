@@ -21,6 +21,7 @@ const ProductDetail = lazy(() => import("./components/Search/ProductDetail"));
 const VersionHistory = lazy(() => import("./components/Search/VersionHistory"));
 const DownloadList = lazy(() => import("./components/Download/DownloadList"));
 const AddDownload = lazy(() => import("./components/Download/AddDownload"));
+const UploadIpa = lazy(() => import("./components/Download/UploadIpa"));
 const PackageDetail = lazy(() => import("./components/Download/PackageDetail"));
 const SettingsPage = lazy(() => import("./components/Settings/SettingsPage"));
 
@@ -80,6 +81,7 @@ export default function App() {
               />
               <Route path="/downloads" element={<DownloadList />} />
               <Route path="/downloads/add" element={<AddDownload />} />
+              <Route path="/downloads/upload" element={<UploadIpa />} />
               <Route path="/downloads/:id" element={<PackageDetail />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>
