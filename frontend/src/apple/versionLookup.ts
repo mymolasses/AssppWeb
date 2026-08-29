@@ -30,6 +30,7 @@ export async function getVersionMetadata(
       creditDisplay: "",
       guid: deviceId,
       salableAdamId: app.id,
+      serialNumber: "0",
       [endpoint.externalVersionIdKey]: versionId,
     };
 

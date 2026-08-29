@@ -17,6 +17,10 @@ export const config = {
   buildDate: process.env.BUILD_DATE || "unknown",
   // Access password protection (empty = disabled)
   accessPassword: process.env.ACCESS_PASSWORD || "",
+  sapAuthHelperPath:
+    process.env.SAP_AUTH_HELPER_PATH || "/usr/local/bin/asspp-sap-auth",
+  sapAuthTimeoutMs:
+    parseInt(process.env.SAP_AUTH_TIMEOUT_MS || "300000", 10) || 300000,
 };
 
 export const accessPasswordHash = config.accessPassword

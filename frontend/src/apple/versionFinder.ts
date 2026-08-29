@@ -26,6 +26,7 @@ export async function listVersions(
       creditDisplay: "",
       guid: deviceId,
       salableAdamId: app.id,
+      serialNumber: "0",
     };
 
     const plistBody = buildPlist(payload);

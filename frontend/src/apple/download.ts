@@ -47,6 +47,7 @@ export async function getDownloadInfo(
       creditDisplay: "",
       guid: deviceId,
       salableAdamId: app.id,
+      serialNumber: "0",
     };
 
     if (externalVersionId) {

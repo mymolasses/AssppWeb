@@ -15,7 +15,15 @@ RUN npm ci
 COPY backend/ ./
 RUN npm run build
 
-# Stage 3: Runtime
+# Stage 3: Build the ipatool v2.4.0 SAP authentication helper
+FROM golang:1.25-alpine AS sap-auth-build
+WORKDIR /src
+COPY sap-auth/go.mod ./
+RUN go mod download
+COPY sap-auth/ ./
+RUN CGO_ENABLED=0 go build -trimpath -o /out/asspp-sap-auth .
+
+# Stage 4: Runtime
 FROM node:20-alpine
 RUN apk add --no-cache zip
 WORKDIR /app
@@ -23,9 +31,10 @@ COPY --from=backend-build /app/backend/dist ./dist
 COPY --from=backend-build /app/backend/node_modules ./node_modules
 COPY --from=backend-build /app/backend/package.json ./
 COPY --from=frontend-build /app/frontend/dist ./public
+COPY --from=sap-auth-build /out/asspp-sap-auth /usr/local/bin/asspp-sap-auth
 RUN mkdir -p /data/packages
 EXPOSE 8080
 ARG BUILD_COMMIT=unknown
 ARG BUILD_DATE=unknown
-ENV DATA_DIR=/data PORT=8080 BUILD_COMMIT=$BUILD_COMMIT BUILD_DATE=$BUILD_DATE
+ENV DATA_DIR=/data XDG_CACHE_HOME=/data/cache PORT=8080 BUILD_COMMIT=$BUILD_COMMIT BUILD_DATE=$BUILD_DATE
 CMD ["node", "dist/index.js"]
