@@ -6,7 +6,7 @@ import Spinner from "../common/Spinner";
 import { useAccounts } from "../../hooks/useAccounts";
 import { useToastStore } from "../../store/toast";
 import { authenticate, AuthenticationError } from "../../apple/authenticate";
-import { generateDeviceId } from "../../apple/config";
+import { generateDeviceId, normalizeDeviceId } from "../../apple/config";
 import { getErrorMessage } from "../../utils/error";
 
 export default function AddAccountForm() {
@@ -27,7 +27,7 @@ export default function AddAccountForm() {
     setLoading(true);
 
     try {
-      const cleanedDeviceId = deviceId.replace(/[: ]/g, "");
+      const cleanedDeviceId = normalizeDeviceId(deviceId);
       setDeviceId(cleanedDeviceId);
 
       const account = await authenticate(

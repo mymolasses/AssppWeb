@@ -141,9 +141,20 @@ export const countryCodeMap: Record<string, string> = {
 export function generateDeviceId(): string {
   const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
+  // SAP treats the identifier as a hardware/MAC address. Keep it unicast
+  // (bit 0 clear) and locally administered (bit 1 set), so Apple does not
+  // reject multicast identifiers at the authentication edge.
+  bytes[0] = (bytes[0] & 0xfc) | 0x02;
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+export function normalizeDeviceId(value: string): string {
+  const cleaned = value.replace(/[: ]/g, "").toLowerCase();
+  if (!/^[a-f0-9]{12}$/.test(cleaned)) return cleaned;
+  const first = parseInt(cleaned.slice(0, 2), 16);
+  return ((first & 0xfc) | 0x02).toString(16).padStart(2, "0") + cleaned.slice(2);
 }
 
 export function storeAPIHost(pod?: string): string {

@@ -164,6 +164,7 @@ func isRetryableAppleEdgeError(err error) bool {
 	for _, status := range []string{
 		"HTTP 204",
 		"HTTP 301",
+		"HTTP 403",
 		"HTTP 404",
 		"HTTP 503",
 	} {
