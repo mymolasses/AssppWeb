@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/majd/ipatool/v2/pkg/appstore"
 	apphttp "github.com/majd/ipatool/v2/pkg/http"
@@ -106,11 +107,7 @@ func main() {
 		Machine:         fixedMachine{deviceID: payload.DeviceID},
 	})
 
-	result, err := store.Login(appstore.LoginInput{
-		Email:    payload.Email,
-		Password: payload.Password,
-		AuthCode: strings.ReplaceAll(payload.AuthCode, " ", ""),
-	})
+	result, err := loginWithRetry(store, payload)
 	if err != nil {
 		_ = encoder.Encode(response{
 			Error:        err.Error(),
@@ -134,6 +131,47 @@ func main() {
 		Pod:                         account.Pod,
 	}
 	_ = encoder.Encode(response{Account: &output})
+}
+
+const maxLoginAttempts = 3
+
+// Apple occasionally rejects an otherwise valid SAP-signed request at the
+// edge with an empty 204/301/404/503 response. These responses contain no
+// account-level result and are safe to retry; credential and 2FA failures are
+// returned immediately by ipatool.
+func loginWithRetry(store appstore.AppStore, payload request) (appstore.LoginOutput, error) {
+	input := appstore.LoginInput{
+		Email:    payload.Email,
+		Password: payload.Password,
+		AuthCode: strings.ReplaceAll(payload.AuthCode, " ", ""),
+	}
+
+	var result appstore.LoginOutput
+	var err error
+	for attempt := 1; attempt <= maxLoginAttempts; attempt++ {
+		result, err = store.Login(input)
+		if err == nil || !isRetryableAppleEdgeError(err) || attempt == maxLoginAttempts {
+			return result, err
+		}
+		time.Sleep(time.Duration(attempt) * time.Second)
+	}
+
+	return result, err
+}
+
+func isRetryableAppleEdgeError(err error) bool {
+	message := err.Error()
+	for _, status := range []string{
+		"HTTP 204",
+		"HTTP 301",
+		"HTTP 404",
+		"HTTP 503",
+	} {
+		if strings.Contains(message, status) {
+			return true
+		}
+	}
+	return false
 }
 
 func seedCookies(jar apphttp.CookieJar, cookies []inputCookie) {
