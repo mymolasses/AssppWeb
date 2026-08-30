@@ -127,6 +127,10 @@ describe("apple/config", () => {
     it("should return undefined for unknown store ID", () => {
       expect(storeIdToCountry("999999")).toBeUndefined();
     });
+
+    it("should map Apple storefront descriptors to their country", () => {
+      expect(storeIdToCountry("143463-2,34")).toBe("HK");
+    });
   });
 
   describe("store download endpoints", () => {

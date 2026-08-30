@@ -203,8 +203,11 @@ export function countryToStoreId(country: string): string | undefined {
 }
 
 export function storeIdToCountry(storeId: string): string | undefined {
+  // Apple returns storefronts as either a plain ID (143463) or a storefront
+  // descriptor (143463-2,34). Country mapping only uses the leading ID.
+  const normalizedStoreId = storeId.trim().split(/[,-]/, 1)[0];
   for (const [code, id] of Object.entries(countryCodeMap)) {
-    if (id === storeId) return code;
+    if (id === normalizedStoreId) return code;
   }
   return undefined;
 }

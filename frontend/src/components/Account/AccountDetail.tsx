@@ -6,7 +6,11 @@ import Spinner from "../common/Spinner";
 import { useAccounts } from "../../hooks/useAccounts";
 import { useToastStore } from "../../store/toast";
 import { authenticate, AuthenticationError } from "../../apple/authenticate";
-import { storeIdToCountry } from "../../apple/config";
+import {
+  generateDeviceId,
+  normalizeDeviceId,
+  storeIdToCountry,
+} from "../../apple/config";
 import { getErrorMessage } from "../../utils/error";
 
 export default function AccountDetail() {
@@ -63,12 +67,16 @@ export default function AccountDetail() {
     setReauthing(true);
 
     try {
+      const normalizedDeviceId = normalizeDeviceId(account.deviceIdentifier || "");
+      const deviceId = /^[a-f0-9]{12}$/.test(normalizedDeviceId)
+        ? normalizedDeviceId
+        : generateDeviceId();
       const updated = await authenticate(
         account.email,
         account.password,
         needsCode && reauthCode ? reauthCode : undefined,
         account.cookies,
-        account.deviceIdentifier,
+        deviceId,
       );
       await updateAccount(updated);
       setNeedsCode(false);
