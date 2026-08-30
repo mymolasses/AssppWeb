@@ -18,6 +18,30 @@ interface AuthenticationFailure {
 
 type AuthenticatedAccount = Omit<Account, "password">;
 
+function sanitizeExistingCookies(cookies: Cookie[] | undefined): Cookie[] {
+  if (!Array.isArray(cookies)) return [];
+  return cookies.flatMap((cookie) => {
+    if (!cookie || typeof cookie.name !== "string" || typeof cookie.value !== "string") {
+      return [];
+    }
+    const expiresAt =
+      typeof cookie.expiresAt === "number" && Number.isFinite(cookie.expiresAt)
+        ? cookie.expiresAt
+        : undefined;
+    return [{
+      name: cookie.name,
+      value: cookie.value,
+      path: typeof cookie.path === "string" && cookie.path ? cookie.path : "/",
+      ...(typeof cookie.domain === "string" && cookie.domain
+        ? { domain: cookie.domain }
+        : {}),
+      ...(expiresAt === undefined ? {} : { expiresAt }),
+      httpOnly: cookie.httpOnly === true,
+      secure: cookie.secure === true,
+    }];
+  });
+}
+
 /**
  * Authenticate through the server-side ipatool v2.4 SAP helper. Apple now
  * requires X-Apple-ActionSignature on the login plist; the signer executes
@@ -40,7 +64,7 @@ export async function authenticate(
         password,
         authCode: code?.replace(/ /g, ""),
         deviceId,
-        existingCookies: existingCookies ?? [],
+        existingCookies: sanitizeExistingCookies(existingCookies),
       }),
     });
   } catch (error) {

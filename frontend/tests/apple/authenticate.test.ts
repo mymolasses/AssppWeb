@@ -67,6 +67,23 @@ describe("apple/authenticate", () => {
     });
   });
 
+  it("sanitizes legacy cookies before sending them to the SAP helper", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ passwordToken: "token", directoryServicesIdentifier: "123" }),
+        { status: 200 },
+      ),
+    );
+
+    await authenticate("test@example.com", "password", undefined, [
+      { name: "itspod", value: "pod", path: "/", expiresAt: NaN, httpOnly: false, secure: true },
+    ], "aabbccddeeff");
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).existingCookies).toEqual([
+      { name: "itspod", value: "pod", path: "/", httpOnly: false, secure: true },
+    ]);
+  });
+
   it("rejects a helper response without an App Store token", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
