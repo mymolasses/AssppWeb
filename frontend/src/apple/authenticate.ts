@@ -26,7 +26,7 @@ function sanitizeExistingCookies(cookies: Cookie[] | undefined): Cookie[] {
     }
     const expiresAt =
       typeof cookie.expiresAt === "number" && Number.isFinite(cookie.expiresAt)
-        ? cookie.expiresAt
+        ? Math.trunc(cookie.expiresAt)
         : undefined;
     return [{
       name: cookie.name,

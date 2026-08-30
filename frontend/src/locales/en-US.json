@@ -132,6 +132,7 @@
       "deviceId": "Device Identifier",
       "pod": "Pod",
       "reauthSuccess": "Account re-authenticated successfully.",
+      "reauthRetryFresh": "The saved session is no longer valid. Please enter a new verification code.",
       "reauthFailed": "Re-authentication failed",
       "code": "2FA Verification Code",
       "verify": "Verify",

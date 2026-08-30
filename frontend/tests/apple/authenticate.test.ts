@@ -76,11 +76,11 @@ describe("apple/authenticate", () => {
     );
 
     await authenticate("test@example.com", "password", undefined, [
-      { name: "itspod", value: "pod", path: "/", expiresAt: NaN, httpOnly: false, secure: true },
+      { name: "itspod", value: "pod", path: "/", expiresAt: 1784366249.568, httpOnly: false, secure: true },
     ], "aabbccddeeff");
 
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).existingCookies).toEqual([
-      { name: "itspod", value: "pod", path: "/", httpOnly: false, secure: true },
+      { name: "itspod", value: "pod", path: "/", expiresAt: 1784366249, httpOnly: false, secure: true },
     ]);
   });
 

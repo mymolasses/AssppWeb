@@ -30,6 +30,7 @@ export default function AccountDetail() {
   const [reauthing, setReauthing] = useState(false);
   const [reauthCode, setReauthCode] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
+  const [freshReauth, setFreshReauth] = useState(false);
 
   useEffect(() => {
     loadAccounts();
@@ -75,17 +76,23 @@ export default function AccountDetail() {
         account.email,
         account.password,
         needsCode && reauthCode ? reauthCode : undefined,
-        account.cookies,
+        freshReauth ? [] : account.cookies,
         deviceId,
       );
       await updateAccount(updated);
       setNeedsCode(false);
       setReauthCode("");
+      setFreshReauth(false);
       addToast(t("accounts.detail.reauthSuccess"), "success");
     } catch (err) {
       if (err instanceof AuthenticationError && err.codeRequired) {
         setNeedsCode(true);
         addToast(err.message, "error");
+      } else if (err instanceof AuthenticationError && !freshReauth) {
+        setFreshReauth(true);
+        setNeedsCode(true);
+        setReauthCode("");
+        addToast(t("accounts.detail.reauthRetryFresh"), "error");
       } else {
         addToast(
           getErrorMessage(err, t("accounts.detail.reauthFailed")),

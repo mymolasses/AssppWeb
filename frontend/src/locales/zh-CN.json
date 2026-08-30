@@ -132,6 +132,7 @@
       "deviceId": "设备标识符",
       "pod": "Pod",
       "reauthSuccess": "账号重新认证成功。",
+      "reauthRetryFresh": "保存的登录会话已失效，请重新输入验证码。",
       "reauthFailed": "重新认证失败",
       "code": "双重认证代码",
       "verify": "验证",

@@ -133,7 +133,7 @@ func main() {
 	_ = encoder.Encode(response{Account: &output})
 }
 
-const maxLoginAttempts = 3
+const maxLoginAttempts = 5
 
 // Apple occasionally rejects an otherwise valid SAP-signed request at the
 // edge with an empty 204/301/404/503 response. These responses contain no
@@ -171,6 +171,13 @@ func isRetryableAppleEdgeError(err error) bool {
 		if strings.Contains(message, status) {
 			return true
 		}
+	}
+	// Apple sometimes emits a redirect status without a Location header at
+	// the edge. Treat this as transient as well; ipatool otherwise surfaces
+	// the misleading "header not found" error immediately.
+	if strings.Contains(message, "failed to retrieve redirect location") ||
+		strings.Contains(message, "header not found") {
+		return true
 	}
 	return false
 }
