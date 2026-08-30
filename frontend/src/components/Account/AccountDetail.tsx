@@ -67,16 +67,17 @@ export default function AccountDetail() {
     if (!account) return;
     setReauthing(true);
 
-    try {
-      const normalizedDeviceId = normalizeDeviceId(account.deviceIdentifier || "");
-      const deviceId = /^[a-f0-9]{12}$/.test(normalizedDeviceId)
-        ? normalizedDeviceId
-        : generateDeviceId();
+    const normalizedDeviceId = normalizeDeviceId(account.deviceIdentifier || "");
+    const deviceId = /^[a-f0-9]{12}$/.test(normalizedDeviceId)
+      ? normalizedDeviceId
+      : generateDeviceId();
+
+    async function authenticateAndSave(cookies: typeof account.cookies, code?: string) {
       const updated = await authenticate(
         account.email,
         account.password,
-        needsCode && reauthCode ? reauthCode : undefined,
-        freshReauth ? [] : account.cookies,
+        code,
+        cookies,
         deviceId,
       );
       await updateAccount(updated);
@@ -84,15 +85,32 @@ export default function AccountDetail() {
       setReauthCode("");
       setFreshReauth(false);
       addToast(t("accounts.detail.reauthSuccess"), "success");
+    }
+
+    try {
+      await authenticateAndSave(
+        freshReauth ? [] : account.cookies,
+        needsCode && reauthCode ? reauthCode : undefined,
+      );
     } catch (err) {
       if (err instanceof AuthenticationError && err.codeRequired) {
         setNeedsCode(true);
         addToast(err.message, "error");
       } else if (err instanceof AuthenticationError && !freshReauth) {
-        setFreshReauth(true);
-        setNeedsCode(true);
-        setReauthCode("");
-        addToast(t("accounts.detail.reauthRetryFresh"), "error");
+        try {
+          // Cached-session failure: immediately make one clean-login attempt.
+          addToast(t("accounts.detail.reauthRetrying"), "info");
+          await authenticateAndSave([]);
+        } catch (freshError) {
+          if (freshError instanceof AuthenticationError && freshError.codeRequired) {
+            setFreshReauth(true);
+            setNeedsCode(true);
+            setReauthCode("");
+            addToast(freshError.message, "error");
+          } else {
+            addToast(getErrorMessage(freshError, t("accounts.detail.reauthFailed")), "error");
+          }
+        }
       } else {
         addToast(
           getErrorMessage(err, t("accounts.detail.reauthFailed")),

@@ -133,6 +133,7 @@
       "pod": "Pod",
       "reauthSuccess": "账号重新认证成功。",
       "reauthRetryFresh": "保存的登录会话已失效，请重新输入验证码。",
+      "reauthRetrying": "第一次认证失败，正在进行第二次尝试，请稍候...",
       "reauthFailed": "重新认证失败",
       "code": "双重认证代码",
       "verify": "验证",

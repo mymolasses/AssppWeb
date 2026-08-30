@@ -133,7 +133,10 @@ func main() {
 	_ = encoder.Encode(response{Account: &output})
 }
 
-const maxLoginAttempts = 5
+// Do not retry Apple authentication at the helper layer. The frontend owns
+// the single fallback from a cached session to a fresh login, avoiding bursts
+// of requests that can trigger Apple's rate limits.
+const maxLoginAttempts = 1
 
 // Apple occasionally rejects an otherwise valid SAP-signed request at the
 // edge with an empty 204/301/404/503 response. These responses contain no

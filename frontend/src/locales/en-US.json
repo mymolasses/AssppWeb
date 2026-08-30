@@ -133,6 +133,7 @@
       "pod": "Pod",
       "reauthSuccess": "Account re-authenticated successfully.",
       "reauthRetryFresh": "The saved session is no longer valid. Please enter a new verification code.",
+      "reauthRetrying": "The first authentication attempt failed. Retrying with a fresh session...",
       "reauthFailed": "Re-authentication failed",
       "code": "2FA Verification Code",
       "verify": "Verify",
