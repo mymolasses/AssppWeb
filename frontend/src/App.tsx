@@ -9,6 +9,7 @@ import MobileHeader from "./components/Layout/MobileHeader";
 import ToastContainer from "./components/common/ToastContainer";
 import GlobalDownloadNotifier from "./components/common/GlobalDownloadNotifier";
 import PasswordGate from "./components/Auth/PasswordGate";
+import LocalIpaGate from "./components/Auth/LocalIpaGate";
 
 const HomePage = lazy(() => import("./components/Welcome/HomePage"));
 const AccountList = lazy(() => import("./components/Account/AccountList"));
@@ -81,7 +82,7 @@ export default function App() {
               />
               <Route path="/downloads" element={<DownloadList />} />
               <Route path="/downloads/add" element={<AddDownload />} />
-              <Route path="/downloads/upload" element={<UploadIpa />} />
+              <Route path="/downloads/upload" element={<LocalIpaGate><UploadIpa /></LocalIpaGate>} />
               <Route path="/downloads/:id" element={<PackageDetail />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>

@@ -7,6 +7,14 @@
     "error": "密码错误",
     "verifying": "验证中..."
   },
+  "localIpa": {
+    "title": "本地 IPA 密码",
+    "description": "请输入密码以上传或查看本地 IPA 文件。",
+    "placeholder": "请输入本地 IPA 密码",
+    "submit": "解锁",
+    "error": "密码错误",
+    "verifying": "验证中..."
+  },
   "theme": {
     "light": "日间模式",
     "dark": "夜间模式",

@@ -7,6 +7,14 @@
     "error": "Incorrect password",
     "verifying": "Verifying..."
   },
+  "localIpa": {
+    "title": "Local IPA Password",
+    "description": "Enter the password to upload or view local IPA files.",
+    "placeholder": "Enter local IPA password",
+    "submit": "Unlock",
+    "error": "Incorrect password",
+    "verifying": "Verifying..."
+  },
   "theme": {
     "light": "Light Mode",
     "dark": "Dark Mode",

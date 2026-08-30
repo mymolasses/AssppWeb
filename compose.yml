@@ -10,6 +10,7 @@ services:
       - PORT=8080
       # - DOWNLOAD_THREADS=8
       # - ACCESS_PASSWORD=your_password_here
+      # - LOCAL_IPA_PASSWORD=your_local_ipa_password
     restart: unless-stopped
     logging:
       driver: "json-file"

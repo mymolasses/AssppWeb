@@ -1,5 +1,11 @@
 import { Router, Request, Response } from "express";
-import { config, accessPasswordHash, verifyAccessToken } from "../config.js";
+import {
+  config,
+  accessPasswordHash,
+  verifyAccessToken,
+  verifyLocalIpaPassword,
+  localIpaPasswordHash,
+} from "../config.js";
 
 const router = Router();
 
@@ -21,6 +27,12 @@ router.post("/auth/verify", (req: Request, res: Response) => {
   }
 
   res.json({ ok: verifyAccessToken(token) });
+});
+
+router.post("/local-ipa/verify", (req: Request, res: Response) => {
+  const { password } = req.body as { password?: string };
+  const ok = typeof password === "string" && verifyLocalIpaPassword(password);
+  res.json({ ok, ...(ok ? { token: localIpaPasswordHash } : {}) });
 });
 
 export default router;

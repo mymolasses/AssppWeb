@@ -34,6 +34,8 @@ export async function uploadIpa(
     }
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
     xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
+    const localIpaToken = sessionStorage.getItem("local-ipa-token");
+    if (localIpaToken) xhr.setRequestHeader("X-Local-IPA-Token", localIpaToken);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {

@@ -17,6 +17,7 @@ export const config = {
   buildDate: process.env.BUILD_DATE || "unknown",
   // Access password protection (empty = disabled)
   accessPassword: process.env.ACCESS_PASSWORD || "",
+  localIpaPassword: process.env.LOCAL_IPA_PASSWORD || "1234",
   sapAuthHelperPath:
     process.env.SAP_AUTH_HELPER_PATH || "/usr/local/bin/asspp-sap-auth",
   sapAuthTimeoutMs:
@@ -26,10 +27,24 @@ export const config = {
 export const accessPasswordHash = config.accessPassword
   ? createHash("sha256").update(config.accessPassword).digest("hex")
   : "";
+export const localIpaPasswordHash = createHash("sha256")
+  .update(config.localIpaPassword)
+  .digest("hex");
 
 /** Timing-safe comparison of a client-supplied token against the precomputed hash. */
 export function verifyAccessToken(token: string): boolean {
   const expected = Buffer.from(accessPasswordHash, "utf8");
+  const actual = Buffer.from(token, "utf8");
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+export function verifyLocalIpaPassword(password: string): boolean {
+  const actual = createHash("sha256").update(password).digest("hex");
+  return verifyLocalIpaToken(actual);
+}
+
+export function verifyLocalIpaToken(token: string): boolean {
+  const expected = Buffer.from(localIpaPasswordHash, "utf8");
   const actual = Buffer.from(token, "utf8");
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }

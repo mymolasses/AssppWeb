@@ -20,6 +20,7 @@ import {
   updateTaskSigningInfo,
   validateDownloadURL,
 } from "../services/downloadManager.js";
+import { verifyLocalIpaToken } from "../config.js";
 import {
   getIdParam,
   requireAccountHash,
@@ -185,6 +186,11 @@ router.post("/downloads", async (req: Request, res: Response) => {
 
 // Upload an already-signed local IPA and expose it through the existing install flow.
 router.post("/downloads/upload", async (req: Request, res: Response) => {
+  const localIpaToken = req.headers["x-local-ipa-token"];
+  if (typeof localIpaToken !== "string" || !verifyLocalIpaToken(localIpaToken)) {
+    res.status(403).json({ error: "Local IPA password required" });
+    return;
+  }
   const contentLength = parseContentLength(req);
   if (contentLength === null || contentLength <= 0) {
     res.status(400).json({ error: "Missing upload size" });

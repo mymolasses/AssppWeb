@@ -20,6 +20,7 @@ import { listVersions } from "../../apple/versionFinder";
 import { getAccountContext } from "../../utils/toast";
 import { isNewerVersion } from "../../utils/version";
 import { LOCAL_UPLOAD_ACCOUNT_HASH } from "../../constants/downloads";
+import LocalIpaGate from "../Auth/LocalIpaGate";
 import type { IpaSigningInfo, Software } from "../../types";
 
 function formatDate(value?: string) {
@@ -35,7 +36,7 @@ function certLabel(subject: string) {
   return cn || subject;
 }
 
-export default function PackageDetail() {
+function PackageDetailContent() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
@@ -438,6 +439,16 @@ export default function PackageDetail() {
       </Modal>
     </PageContainer>
   );
+}
+
+export default function PackageDetail() {
+  const { id } = useParams<{ id: string }>();
+  const { tasks } = useDownloads();
+  const task = tasks.find((item) => item.id === id);
+  if (task?.accountHash === LOCAL_UPLOAD_ACCOUNT_HASH) {
+    return <LocalIpaGate><PackageDetailContent /></LocalIpaGate>;
+  }
+  return <PackageDetailContent />;
 }
 
 function SigningInfoPanel({
