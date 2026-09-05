@@ -9,11 +9,11 @@ const IV_LENGTH = 12;
 async function getPasswordKey(password: string): Promise<CryptoKey> {
   const enc = new TextEncoder();
   return await crypto.subtle.importKey(
-    "raw",
+    'raw',
     enc.encode(password),
-    { name: "PBKDF2" },
+    { name: 'PBKDF2' },
     false,
-    ["deriveBits", "deriveKey"],
+    ['deriveBits', 'deriveKey'],
   );
 }
 
@@ -22,19 +22,19 @@ async function getPasswordKey(password: string): Promise<CryptoKey> {
  */
 async function deriveKey(
   passwordKey: CryptoKey,
-  salt: Uint8Array,
+  salt: BufferSource,
 ): Promise<CryptoKey> {
   return await crypto.subtle.deriveKey(
     {
-      name: "PBKDF2",
+      name: 'PBKDF2',
       salt: salt,
       iterations: ITERATIONS,
-      hash: "SHA-256",
+      hash: 'SHA-256',
     },
     passwordKey,
-    { name: "AES-GCM", length: 256 },
+    { name: 'AES-GCM', length: 256 },
     true,
-    ["encrypt", "decrypt"],
+    ['encrypt', 'decrypt'],
   );
 }
 
@@ -56,7 +56,7 @@ export async function encryptData(
   const aesKey = await deriveKey(passwordKey, salt);
 
   const encryptedContent = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: iv },
+    { name: 'AES-GCM', iv: iv },
     aesKey,
     encodedData,
   );
@@ -70,7 +70,7 @@ export async function encryptData(
   combined.set(encryptedBytes, salt.length + iv.length);
 
   // Convert Uint8Array to Base64
-  let binary = "";
+  let binary = '';
   const chunkSize = 0x8000;
   for (let i = 0; i < combined.length; i += chunkSize) {
     binary += String.fromCharCode(...combined.subarray(i, i + chunkSize));
@@ -101,7 +101,7 @@ export async function decryptData(
     const aesKey = await deriveKey(passwordKey, salt);
 
     const decryptedContent = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: iv },
+      { name: 'AES-GCM', iv: iv },
       aesKey,
       encryptedBytes,
     );
@@ -110,6 +110,6 @@ export async function decryptData(
     const jsonStr = dec.decode(decryptedContent);
     return JSON.parse(jsonStr);
   } catch (e) {
-    throw new Error("Decryption failed. Incorrect password or corrupted data.");
+    throw new Error('Decryption failed. Incorrect password or corrupted data.');
   }
 }

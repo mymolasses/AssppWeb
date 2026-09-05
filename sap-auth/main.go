@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/majd/ipatool/v2/pkg/appstore"
 	apphttp "github.com/majd/ipatool/v2/pkg/http"
@@ -107,7 +106,7 @@ func main() {
 		Machine:         fixedMachine{deviceID: payload.DeviceID},
 	})
 
-	result, err := loginWithRetry(store, payload)
+	result, err := login(store, payload)
 	if err != nil {
 		_ = encoder.Encode(response{
 			Error:        err.Error(),
@@ -133,56 +132,19 @@ func main() {
 	_ = encoder.Encode(response{Account: &output})
 }
 
-// Do not retry Apple authentication at the helper layer. The frontend owns
-// the single fallback from a cached session to a fresh login, avoiding bursts
-// of requests that can trigger Apple's rate limits.
-const maxLoginAttempts = 1
+// ipatool retries transient HTTP 204/404/5xx authentication responses itself.
+// Invoke Login once here so we do not multiply its retry budget. The frontend
+// can still retry a cached session once with a fresh cookie jar.
+type loginClient interface {
+	Login(appstore.LoginInput) (appstore.LoginOutput, error)
+}
 
-// Apple occasionally rejects an otherwise valid SAP-signed request at the
-// edge with an empty 204/301/404/503 response. These responses contain no
-// account-level result and are safe to retry; credential and 2FA failures are
-// returned immediately by ipatool.
-func loginWithRetry(store appstore.AppStore, payload request) (appstore.LoginOutput, error) {
-	input := appstore.LoginInput{
+func login(store loginClient, payload request) (appstore.LoginOutput, error) {
+	return store.Login(appstore.LoginInput{
 		Email:    payload.Email,
 		Password: payload.Password,
 		AuthCode: strings.ReplaceAll(payload.AuthCode, " ", ""),
-	}
-
-	var result appstore.LoginOutput
-	var err error
-	for attempt := 1; attempt <= maxLoginAttempts; attempt++ {
-		result, err = store.Login(input)
-		if err == nil || !isRetryableAppleEdgeError(err) || attempt == maxLoginAttempts {
-			return result, err
-		}
-		time.Sleep(time.Duration(attempt) * time.Second)
-	}
-
-	return result, err
-}
-
-func isRetryableAppleEdgeError(err error) bool {
-	message := err.Error()
-	for _, status := range []string{
-		"HTTP 204",
-		"HTTP 301",
-		"HTTP 403",
-		"HTTP 404",
-		"HTTP 503",
-	} {
-		if strings.Contains(message, status) {
-			return true
-		}
-	}
-	// Apple sometimes emits a redirect status without a Location header at
-	// the edge. Treat this as transient as well; ipatool otherwise surfaces
-	// the misleading "header not found" error immediately.
-	if strings.Contains(message, "failed to retrieve redirect location") ||
-		strings.Contains(message, "header not found") {
-		return true
-	}
-	return false
+	})
 }
 
 func seedCookies(jar apphttp.CookieJar, cookies []inputCookie) {

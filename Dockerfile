@@ -15,14 +15,14 @@ RUN npm ci
 COPY backend/ ./
 RUN npm run build
 
-# Stage 3: Build the ipatool v2.4.0 SAP authentication helper
+# Stage 3: Build the SAP helper against the ipatool revision pinned in go.mod
 FROM golang:1.25-alpine AS sap-auth-build
 RUN apk add --no-cache gcc musl-dev
 WORKDIR /src
-COPY sap-auth/go.mod ./
+COPY sap-auth/go.mod sap-auth/go.sum ./
 RUN go mod download
 COPY sap-auth/ ./
-RUN CGO_ENABLED=1 go build -trimpath -o /out/asspp-sap-auth .
+RUN CGO_ENABLED=1 go build -mod=readonly -trimpath -o /out/asspp-sap-auth .
 
 # Stage 4: Runtime
 FROM node:20-alpine

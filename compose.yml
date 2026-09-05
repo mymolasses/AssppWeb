@@ -1,6 +1,7 @@
 services:
   asspp:
-    image: ghcr.io/lakr233/assppweb:latest
+    image: ghcr.io/mymolasses/assppweb:latest
+    build: .
     ports:
       - "8080:8080"
     volumes:

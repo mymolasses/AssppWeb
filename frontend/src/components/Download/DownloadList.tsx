@@ -1,28 +1,34 @@
-import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import PageContainer from "../Layout/PageContainer";
-import DownloadItem from "./DownloadItem";
-import Modal from "../common/Modal";
-import ProgressBar from "../common/ProgressBar";
-import Spinner from "../common/Spinner";
-import { useDownloads } from "../../hooks/useDownloads";
-import { useAccounts } from "../../hooks/useAccounts";
-import { useDownloadAction } from "../../hooks/useDownloadAction";
-import { useToastStore } from "../../store/toast";
-import { lookupApp } from "../../api/search";
-import { storeIdToCountry } from "../../apple/config";
-import { getAccountContext } from "../../utils/toast";
-import { isNewerVersion } from "../../utils/version";
-import { LOCAL_UPLOAD_ACCOUNT_HASH } from "../../constants/downloads";
-import type { DownloadTask } from "../../types";
+import { useState, useRef, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import PageContainer from '../Layout/PageContainer';
+import Modal from '../common/Modal';
+import ProgressBar from '../common/ProgressBar';
+import Spinner from '../common/Spinner';
+import DownloadItem from './DownloadItem';
+import {
+  isDownloadPreviewEnabled,
+  isPreviewDownloadTask,
+  previewDownloadTasks,
+} from './previewTasks';
+import { useDownloads } from '../../hooks/useDownloads';
+import { useAccounts } from '../../hooks/useAccounts';
+import { useDownloadAction } from '../../hooks/useDownloadAction';
+import { useToastStore } from '../../store/toast';
+import { lookupApp } from '../../api/search';
+import { getAccountContext } from '../../utils/toast';
+import { isNewerVersion } from '../../utils/version';
+import { LOCAL_UPLOAD_ACCOUNT_HASH } from '../../constants/downloads';
+import { storeIdToCountry } from '../../apple/config';
+import type { DownloadTask } from '../../types';
 
-type StatusFilter = "all" | DownloadTask["status"];
+type StatusFilter = 'all' | DownloadTask['status'];
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function DownloadList() {
   const { t } = useTranslation();
+  const location = useLocation();
   const {
     tasks,
     loading,
@@ -31,17 +37,19 @@ export default function DownloadList() {
     deleteDownload,
     hashToEmail,
   } = useDownloads();
-  const [filter, setFilter] = useState<StatusFilter>("all");
+  const [filter, setFilter] = useState<StatusFilter>('all');
   const addToast = useToastStore((s) => s.addToast);
   const { accounts } = useAccounts();
   const { startDownload } = useDownloadAction();
+  const previewEnabled = isDownloadPreviewEnabled(location.search);
+  const displayTasks = previewEnabled ? previewDownloadTasks : tasks;
 
   const [checkingAll, setCheckingAll] = useState(false);
   const cancelCheckRef = useRef(false);
   const [checkProgress, setCheckProgress] = useState({
     current: 0,
     total: 0,
-    appName: "",
+    appName: '',
   });
 
   useEffect(() => {
@@ -51,7 +59,9 @@ export default function DownloadList() {
   }, []);
 
   const filtered =
-    filter === "all" ? tasks : tasks.filter((t) => t.status === filter);
+    filter === 'all'
+      ? displayTasks
+      : displayTasks.filter((task) => task.status === filter);
 
   const sortedTasks = [...filtered].sort((a, b) => {
     const timeA = new Date(a.createdAt || 0).getTime();
@@ -60,22 +70,51 @@ export default function DownloadList() {
   });
 
   function handleDelete(id: string) {
-    if (!confirm(t("downloads.deleteConfirm"))) return;
+    const task = displayTasks.find((item) => item.id === id);
+    if (task && isPreviewDownloadTask(task)) {
+      showPreviewNotice();
+      return;
+    }
 
-    const task = tasks.find((t) => t.id === id);
+    if (!confirm(t('downloads.deleteConfirm'))) return;
+
     if (task) {
       const accountEmail = hashToEmail[task.accountHash];
       const account = accounts.find((a) => a.email === accountEmail);
       const ctx = getAccountContext(account, t);
 
       addToast(
-        t("toast.msg", { appName: task.software.name, ...ctx }),
-        "success",
-        t("toast.title.deleteSuccess"),
+        t('toast.msg', { appName: task.software.name, ...ctx }),
+        'success',
+        t('toast.title.deleteSuccess'),
       );
     }
 
     deleteDownload(id);
+  }
+
+  function showPreviewNotice() {
+    addToast(
+      t('downloads.preview.actionHint'),
+      'info',
+      t('downloads.preview.badge'),
+    );
+  }
+
+  function handlePause(id: string) {
+    if (previewEnabled) {
+      showPreviewNotice();
+      return;
+    }
+    pauseDownload(id);
+  }
+
+  function handleResume(id: string) {
+    if (previewEnabled) {
+      showPreviewNotice();
+      return;
+    }
+    resumeDownload(id);
   }
 
   function handleCancelCheck() {
@@ -84,17 +123,21 @@ export default function DownloadList() {
   }
 
   async function handleCheckAllUpdates() {
+    if (previewEnabled) {
+      showPreviewNotice();
+      return;
+    }
+
     cancelCheckRef.current = false;
     setCheckingAll(true);
-    addToast(t("downloads.checkUpdatesStarted"), "info");
+    addToast(t('downloads.checkUpdatesStarted'), 'info');
     let count = 0;
     const completedTasks = tasks.filter(
       (t) =>
-        t.status === "completed" &&
-        t.accountHash !== LOCAL_UPLOAD_ACCOUNT_HASH,
+        t.status === 'completed' && t.accountHash !== LOCAL_UPLOAD_ACCOUNT_HASH,
     );
 
-    setCheckProgress({ current: 0, total: completedTasks.length, appName: "" });
+    setCheckProgress({ current: 0, total: completedTasks.length, appName: '' });
 
     for (let i = 0; i < completedTasks.length; i++) {
       if (cancelCheckRef.current) break;
@@ -114,7 +157,7 @@ export default function DownloadList() {
         await delay(1500);
         if (cancelCheckRef.current) break;
 
-        const country = storeIdToCountry(account.store) ?? "US";
+        const country = storeIdToCountry(account.store) ?? 'US';
         const latestApp = await lookupApp(task.software.bundleID, country);
 
         if (
@@ -136,83 +179,119 @@ export default function DownloadList() {
       await delay(500);
       if (!cancelCheckRef.current) {
         setCheckingAll(false);
-        addToast(t("downloads.checkUpdatesCompleted", { count }), "success");
+        addToast(t('downloads.checkUpdatesCompleted', { count }), 'success');
       }
     }
   }
 
   return (
-    <PageContainer
-      title={t("downloads.title")}
-      action={
-        <div className="flex gap-2">
-          <button
-            onClick={handleCheckAllUpdates}
-            disabled={checkingAll}
-            className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
-          >
-            {checkingAll
-              ? t("downloads.checkingUpdates")
-              : t("downloads.checkUpdates")}
-          </button>
-          <Link
-            to="/downloads/add"
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            {t("downloads.new")}
-          </Link>
-          <Link
-            to="/downloads/upload"
-            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-          >
-            {t("downloads.upload.button")}
-          </Link>
-        </div>
-      }
-    >
-      <div className="mb-4 flex gap-2 flex-wrap">
+    <PageContainer>
+      <div className="mb-6 grid grid-cols-2 items-start gap-2 min-[360px]:grid-cols-3 sm:mb-7 sm:grid-cols-6">
+        <h1 className="col-span-2 min-w-0 text-[2rem] font-semibold leading-[1.12] tracking-[-0.035em] text-gray-900 min-[360px]:col-span-1 sm:col-span-3 sm:text-[2.125rem] dark:text-white">
+          {t('downloads.title')}
+        </h1>
+        <button
+          onClick={handleCheckAllUpdates}
+          disabled={checkingAll}
+          className="flex h-9 w-full min-w-0 items-center justify-center rounded-full bg-emerald-100 px-2.5 text-center text-[clamp(0.75rem,3.6vw,0.875rem)] font-semibold leading-tight text-emerald-800 transition-colors hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:bg-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-900 dark:disabled:bg-gray-800 dark:disabled:text-gray-600"
+        >
+          {checkingAll
+            ? t('downloads.checkingUpdates')
+            : t('downloads.checkUpdates')}
+        </button>
+        <Link
+          to="/downloads/add"
+          className="flex h-9 w-full min-w-0 items-center justify-center rounded-full bg-blue-600 px-2.5 text-center text-[clamp(0.75rem,3.6vw,0.875rem)] font-semibold leading-tight text-white transition-colors hover:bg-blue-700"
+        >
+          {t('downloads.new')}
+        </Link>
+        <Link
+          to="/downloads/upload"
+          className="flex h-9 w-full min-w-0 items-center justify-center rounded-full bg-green-600 px-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-green-700"
+        >
+          {t('downloads.upload.button')}
+        </Link>
+      </div>
+
+      <div
+        className="mb-5 grid grid-cols-2 gap-2 min-[360px]:grid-cols-3 sm:grid-cols-6"
+        role="group"
+        aria-label={t('downloads.title')}
+      >
         {(
           [
-            "all",
-            "downloading",
-            "pending",
-            "paused",
-            "completed",
-            "failed",
+            'all',
+            'downloading',
+            'pending',
+            'paused',
+            'completed',
+            'failed',
           ] as StatusFilter[]
         ).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className={`flex h-9 w-full min-w-0 items-center justify-center rounded-full px-2.5 text-center text-[clamp(0.75rem,3.6vw,0.875rem)] font-semibold leading-tight transition-colors ${
               filter === status
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 shadow-sm ring-1 ring-black/5 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:ring-white/10 dark:hover:bg-gray-800'
             }`}
           >
             {t(`downloads.status.${status}`)}
-            {status !== "all" && (
-              <span className="ml-1">
-                ({tasks.filter((t) => t.status === status).length})
-              </span>
-            )}
+            <span className="ml-1">
+              {`(${
+                status === 'all'
+                  ? displayTasks.length
+                  : displayTasks.filter((task) => task.status === status).length
+              })`}
+            </span>
           </button>
         ))}
       </div>
 
-      <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-400">
-        {t("downloads.warning")}
+      <div
+        role="note"
+        aria-label={t('downloads.warning')}
+        title={t('downloads.warning')}
+        className="mb-5 min-w-0 max-w-full overflow-hidden rounded-2xl bg-amber-50 px-2.5 py-3 text-center leading-relaxed text-amber-800 ring-1 ring-amber-200/70 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-800/50"
+      >
+        <span
+          aria-hidden="true"
+          className="block whitespace-nowrap text-[clamp(0.625rem,3.1vw,0.75rem)] xl:hidden"
+        >
+          {t('downloads.warningShort')}
+        </span>
+        <span
+          aria-hidden="true"
+          className="hidden whitespace-nowrap text-xs xl:block"
+        >
+          {t('downloads.warning')}
+        </span>
       </div>
 
-      {loading && tasks.length === 0 ? (
+      {previewEnabled && (
+        <div className="mb-5 flex min-w-0 items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-3 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+          <span
+            aria-hidden="true"
+            className="mt-0.5 inline-flex h-5 shrink-0 items-center rounded-full bg-blue-600 px-2 text-[10px] font-semibold uppercase tracking-wide text-white"
+          >
+            {t('downloads.preview.badge')}
+          </span>
+          <p className="min-w-0 leading-5">
+            {t('downloads.preview.description')}
+          </p>
+        </div>
+      )}
+
+      {loading && displayTasks.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400 py-12">
-          {t("downloads.loading")}
+          {t('downloads.loading')}
         </div>
       ) : sortedTasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4 my-4 bg-gray-50 dark:bg-gray-900/30 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4 border border-gray-100 dark:border-gray-700">
+        <div className="my-4 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-16 text-center dark:border-gray-800 dark:bg-gray-900/30">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-gray-900">
             <svg
-              className="w-12 h-12 text-blue-500 dark:text-blue-400"
+              className="h-8 w-8 text-blue-600 dark:text-blue-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -226,21 +305,50 @@ export default function DownloadList() {
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
-            {filter === "all"
-              ? t("downloads.emptyAll")
-              : t("downloads.emptyFilter", {
+            {filter === 'all'
+              ? t('downloads.emptyAll')
+              : t('downloads.emptyFilter', {
                   status: t(`downloads.status.${filter}`),
                 })}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-sm">
-            {filter === "all"
-              ? t("downloads.emptyAllDesc")
-              : t("downloads.emptyFilterDesc")}
+          <p
+            className="mb-6 max-w-full overflow-hidden text-center text-gray-500 dark:text-gray-400"
+            aria-label={
+              filter === 'all'
+                ? t('downloads.emptyAllDesc')
+                : t('downloads.emptyFilterDesc')
+            }
+            title={
+              filter === 'all'
+                ? t('downloads.emptyAllDesc')
+                : t('downloads.emptyFilterDesc')
+            }
+          >
+            {filter === 'all' ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="block whitespace-nowrap text-[clamp(0.625rem,3vw,0.875rem)] xl:hidden"
+                >
+                  {t('downloads.emptyAllDescShort')}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="hidden whitespace-nowrap text-sm xl:block"
+                >
+                  {t('downloads.emptyAllDesc')}
+                </span>
+              </>
+            ) : (
+              <span className="block whitespace-nowrap text-[clamp(0.625rem,3vw,0.875rem)]">
+                {t('downloads.emptyFilterDesc')}
+              </span>
+            )}
           </p>
-          {filter === "all" && (
+          {filter === 'all' && (
             <Link
               to="/search"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 hover:shadow-md transition-all active:scale-95"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
             >
               <svg
                 className="w-4 h-4"
@@ -255,18 +363,19 @@ export default function DownloadList() {
                   d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
                 />
               </svg>
-              {t("downloads.searchApps")}
+              {t('downloads.searchApps')}
             </Link>
           )}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {sortedTasks.map((task) => (
             <DownloadItem
               key={task.id}
               task={task}
-              onPause={pauseDownload}
-              onResume={resumeDownload}
+              preview={previewEnabled}
+              onPause={handlePause}
+              onResume={handleResume}
               onDelete={handleDelete}
             />
           ))}
@@ -276,7 +385,7 @@ export default function DownloadList() {
       <Modal
         open={checkingAll && checkProgress.total > 0}
         onClose={handleCancelCheck}
-        title={t("downloads.checkingUpdates")}
+        title={t('downloads.checkingUpdates')}
       >
         <div className="space-y-4">
           <div className="flex justify-center text-blue-600 dark:text-blue-400">
@@ -285,14 +394,15 @@ export default function DownloadList() {
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
               {checkProgress.appName
-                ? `${t("downloads.checkingApp")}${checkProgress.appName}`
-                : "..."}
+                ? `${t('downloads.checkingApp')}${checkProgress.appName}`
+                : '...'}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono">
               {checkProgress.current} / {checkProgress.total}
             </p>
           </div>
           <ProgressBar
+            label={t('downloads.checkingUpdates')}
             progress={
               checkProgress.total > 0
                 ? (checkProgress.current / checkProgress.total) * 100
@@ -300,14 +410,14 @@ export default function DownloadList() {
             }
           />
           <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-            {t("downloads.checkUpdatesDesc")}
+            {t('downloads.checkUpdatesDesc')}
           </p>
           <div className="flex justify-center">
             <button
               onClick={handleCancelCheck}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              {t("settings.data.cancel")}
+              {t('settings.data.cancel')}
             </button>
           </div>
         </div>

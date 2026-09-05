@@ -4,21 +4,21 @@ A web-based tool for acquiring and installing iOS apps outside the App Store. Au
 
 ![preview](./resources/preview.png)
 
-## Zero-Trust Architecture
+## Authentication architecture in this fork
 
-AssppWeb uses a zero-trust design where the server **never sees your Apple credentials**. All Apple API communication happens directly in your browser via WebAssembly (libcurl.js with Mbed TLS 1.3). The server only acts as a blind TCP relay (Wisp protocol) and handles IPA compilation from public CDN downloads.
+This fork uses a server-side ipatool SAP helper for Apple ID authentication. During login and reauthentication, your email, password, optional verification code, and cookies are sent to this instance over HTTPS. The helper keeps its account/keychain and cookies in memory; it caches SAP runtime assets separately under `/data/cache`.
 
-> **⚠️ Important Security Notice:** There are no official Asspp Web instances. Use any public instance at your own risk. While the backend cannot read your encrypted traffic, a malicious host could serve a modified frontend to capture your credentials before encryption. Therefore, **do not blindly trust public instances**. We strongly recommend self-hosting your own instance or using one provided by a trusted partner. Always verify the SSL certificate and ensure you are connecting to a secure, authentic endpoint.
+After login, purchase, download-info, and version requests still use browser-side libcurl.js WASM TLS through the Wisp relay. The backend downloads and prepares IPA files and serves installation links. Self-host this fork or use an instance whose operator you trust, and use HTTPS.
 
-**恳请所有转发项目的博主对自己的受众进行网络安全技术科普。要有哪个不拎清的大头儿子搞出事情来都够我们喝一壶的。**
+See [UPSTREAM_SYNC.md](UPSTREAM_SYNC.md) for the exact upstream revisions and integration scope.
 
 ## Quick Start
 
 ### Deploy to Cloudflare
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Lakr233/AssppWeb&apiTokenTmpl=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22write%22%7D%2C%7B%22key%22%3A%22containers%22%2C%22type%22%3A%22write%22%7D%2C%7B%22key%22%3A%22cloudchamber%22%2C%22type%22%3A%22write%22%7D%5D&apiTokenName=AssppWeb%20Deploy)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/mymolasses/AssppWeb&apiTokenTmpl=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22write%22%7D%2C%7B%22key%22%3A%22containers%22%2C%22type%22%3A%22write%22%7D%2C%7B%22key%22%3A%22cloudchamber%22%2C%22type%22%3A%22write%22%7D%5D&apiTokenName=AssppWeb%20Deploy)
 
-This uses Cloudflare Workers + Containers with the published image `ghcr.io/lakr233/assppweb:latest`.
+This uses Cloudflare Workers + Containers and builds this fork's Dockerfile, including the pinned SAP helper.
 
 Requirements:
 
@@ -35,7 +35,7 @@ If your build log fails at `Deploy a container application` with `Unauthorized`,
 <details>
 <summary>Click to show Railway deployment instructions</summary>
 
-1. Go to [railway.com/new/image](https://railway.com/new/image) → enter `ghcr.io/lakr233/assppweb:latest`
+1. Go to [railway.com/new/image](https://railway.com/new/image) → enter `ghcr.io/mymolasses/assppweb:latest`
 2. In service **Settings**, set **Healthcheck Path** to `/api/settings` and deploy
 3. Right-click the service → **Attach volume** → mount path: `/data`
 4. In **Variables**, set `DATA_DIR` = `/data` and deploy
@@ -59,9 +59,12 @@ If your build log fails at `Deploy a container application` with `Unauthorized`,
 **Setup Docker Compose**
 
 ```bash
-curl -O https://raw.githubusercontent.com/Lakr233/AssppWeb/main/compose.yml
-docker compose up -d
+git clone https://github.com/mymolasses/AssppWeb.git
+cd AssppWeb
+docker compose up --build -d
 ```
+
+The checked-in Compose file builds the local source and tags it as `ghcr.io/mymolasses/assppweb:latest`. It does not deploy the original author's image.
 
 **Environment Variables**
 
@@ -76,6 +79,9 @@ docker compose up -d
 | `MAX_DOWNLOAD_MB`                           | `0`             | Reject downloads exceeding this size in MB to prevent out-of-memory errors (0 to disable)   |
 | `DOWNLOAD_THREADS`                          | `8`             | Number of parallel threads for IPA downloads (1–32)                                         |
 | `ACCESS_PASSWORD`                           | _(none)_        | Require a password to access the web UI and API (empty to disable)                          |
+| `LOCAL_IPA_PASSWORD` | `1234` | Password for local IPA uploads and details |
+| `SAP_AUTH_HELPER_PATH` | `/usr/local/bin/asspp-sap-auth` | Path to the SAP authentication helper |
+| `SAP_AUTH_TIMEOUT_MS` | `300000` | Helper process timeout in milliseconds |
 
 **Reverse Proxy (Required for Install Apps on iOS)**
 
@@ -91,7 +97,7 @@ asspp.example.com { reverse_proxy 127.0.0.1:8080 }
 
 **⚠️ Make Sure WebSocket Works**
 
-AssppWeb relies on the Wisp protocol over WebSocket (`/wisp/`) for its zero-trust architecture. Ensure your reverse proxy or CDN (e.g., Nginx, Cloudflare) is configured to allow WebSocket connections, otherwise the app will fail to communicate with Apple servers.
+AssppWeb relies on the Wisp protocol over WebSocket (`/wisp/`) for browser-side Store requests. Ensure your reverse proxy or CDN (e.g., Nginx, Cloudflare) is configured to allow WebSocket connections, otherwise the app will fail to communicate with Apple servers.
 
 </details>
 

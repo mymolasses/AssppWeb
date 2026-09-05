@@ -11,59 +11,25 @@
 
 - `backend/` — Node.js/Express server (TypeScript, ESM)
 - `frontend/` — React SPA (TypeScript, Vite, Tailwind CSS)
-- `e2e/` — Playwright E2E tests (pnpm)
-- `references/ApplePackage/` — Swift reference implementation (source of truth)
+- `sap-auth/` — Go helper using the ipatool dependency pinned in go.mod
+- `references/ApplePackage/` — optional Swift protocol reference (not tracked in this checkout)
 - Multi-stage Docker build (single container serves both)
 
-## Architecture — Zero-Trust
+## Architecture — SAP authentication and browser-side Store requests
 
-The server is a blind TCP proxy. It NEVER sees Apple credentials.
+This fork already moved Apple authentication to a server-side SAP helper. Do not describe it as a server that never sees Apple credentials.
 
-```
-┌─ Browser (Client) ─────────────────────────────────┐
-│  Credentials (IndexedDB): email, password, cookies, │
-│    passwordToken, DSID, deviceIdentifier, pod       │
-│                                                      │
-│  Apple Protocol (libcurl.js WASM + Mbed TLS 1.3):   │
-│    1. Bag fetch → backend proxy → resolve auth URL   │
-│       (fallback to default auth endpoint if missing)  │
-│    2. Authenticate → get token, cookies, pod         │
-│    3. Purchase → acquire license                     │
-│    4. Download info → get CDN URL + SINFs + metadata │
-│    5. Version listing/lookup                         │
-│                                                      │
-│  TLS 1.3 encrypted via Wisp protocol over WebSocket  │
-└──────────────────────┬───────────────────────────────┘
-                       │ Wisp-multiplexed TCP (server cannot read)
-┌─ Server (Wisp Proxy) ┴──────────────────────────────┐
-│  Wisp server (@mercuryworkshop/wisp-js) on /wisp/    │
-│  → multiplexed TCP relay (blind tunnel, no decrypt)  │
-│                                                      │
-│  Bag proxy: GET /api/bag?guid=<id>                   │
-│    - Fetches init.itunes.apple.com/bag.xml via HTTPS │
-│    - Returns public Apple service URLs (no creds)    │
-│                                                      │
-│  After client obtains download info:                 │
-│    Client POSTs: { downloadURL, sinfs, metadata }    │
-│    - downloadURL = Apple CDN (public, no auth)       │
-│    - sinfs = DRM signatures (base64)                 │
-│    - iTunesMetadata = app metadata plist (base64)    │
-│                                                      │
-│  Server downloads IPA from CDN, injects SINFs +      │
-│  iTunesMetadata, stores compiled IPA, serves via     │
-│  public install URL (itms-services manifest)         │
-└──────────────────────────────────────────────────────┘
-```
+- Browser: keeps accounts in IndexedDB and POSTs email, password, device ID, optional 2FA code, and cookies to `/api/apple/authenticate` over the site's HTTPS connection.
+- Backend: passes that request through stdin to `asspp-sap-auth`. The helper uses ipatool for Apple's bag, SAP signatures, and authentication. Its keychain and cookie jar are in memory; credentials must not be logged or deliberately persisted by the helper.
+- Browser: continues purchase, download-info, and version requests using libcurl.js WASM TLS through the Wisp proxy. The Wisp relay does not decrypt those streams.
+- Backend: proxies public search/bag data, downloads IPA files, injects SINF/iTunesMetadata, and serves installation manifests.
+- Local IPA uploads/details retain `LocalIpaGate`; download-list quick actions must not bypass that gate. The backend checks the local IPA token for uploads and signing analysis.
 
-**Key invariant**: The server NEVER sees Apple credentials. All Apple TLS terminates at the browser via libcurl.js WASM (Mbed TLS 1.3). The server only receives public CDN URLs and non-secret metadata for IPA compilation. The bag proxy (`/api/bag`) only returns public Apple service URLs — no credentials pass through it.
+ipatool owns transient authentication retries (up to three sends for unexpected HTTP 204/404/5xx). The Go adapter must invoke Login only once. Account reauthentication may retain the fork's one fresh-cookie fallback.
 
 ## Reference Implementation
 
-The Swift reference at `references/ApplePackage/` is the source of truth for Apple protocol behavior:
-
-- Field mappings (iTunes API → Software type) use Swift `CodingKeys`
-- Authentication flow, bag endpoint, pod routing, error codes
-- Always consult the reference when making protocol changes
+Use the ipatool version pinned in `sap-auth/go.mod` for SAP authentication behavior. ApplePackage remains the reference for browser-side Store payloads and field mappings; consult its source when changing those flows. A separate `../ApplePackage-tmp/` checkout may be used when `references/ApplePackage/` is absent. Record deliberate differences in `UPSTREAM_SYNC.md`.
 
 ### iTunes API Field Mapping
 
@@ -107,6 +73,7 @@ The Wisp server validates target hosts via `hostname_whitelist` in `backend/src/
 - `buy.itunes.apple.com` — purchase endpoint
 - `init.itunes.apple.com` — bag endpoint
 - `/^p\d+-buy\.itunes\.apple\.com$/` — pod-based hosts
+- `downloaddispatch.itunes.apple.com` — redownload dispatch endpoint (failureType 5002 fallback)
 - Port restricted to `443` only
 - Direct IP targets blocked (`allow_direct_ip = false`)
 - Loopback IP targets blocked (`allow_loopback_ips = false`)
@@ -136,9 +103,9 @@ The backend proxies the bag endpoint via `GET /api/bag?guid=<deviceId>` using No
 - Vite for build tooling
 - IndexedDB for credential storage (via `idb`)
 - `libcurl.js` (WASM) for browser-side TLS 1.3 via Mbed TLS — connects through Wisp protocol
-- `appleRequest()` in `frontend/src/apple/request.ts` wraps `libcurl.fetch` for all Apple API calls and forces HTTP/1.1 (`_libcurl_http_version: 1.1`)
-- Bag endpoint (`frontend/src/apple/bag.ts`) uses backend proxy (`/api/bag`) and falls back to `https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate` when `authenticateAccount` is missing or bag fetch fails
-- Authentication (`frontend/src/apple/authenticate.ts`) resolves bag endpoint, then sets `guid` via URL query manipulation to avoid duplicate/malformed query parameters
+- `appleRequest()` in `frontend/src/apple/request.ts` wraps `libcurl.fetch` for browser-side Store API calls and forces HTTP/1.1 (`_libcurl_http_version: 1.1`)
+- Bag endpoint (`frontend/src/apple/bag.ts`) uses backend proxy (`/api/bag`) and falls back to `https://auth.itunes.apple.com/auth/v1/native/fast/` when `authenticateAccount` is missing or bag fetch fails
+- Authentication (`frontend/src/apple/authenticate.ts`) calls the backend SAP route; it does not authenticate via Wisp.
 - Plist build/parse (`frontend/src/apple/plist.ts`) uses native XML builder and browser-native `DOMParser`
 - Cookie helper (`frontend/src/apple/cookies.ts`) — `extractAndMergeCookies(rawHeaders, existingCookies)` replaces the repeated extract-and-merge pattern across all Apple protocol files
 
@@ -218,7 +185,9 @@ cd backend && npx vitest run    # Node environment
 cd frontend && npx vitest run   # jsdom environment with fake-indexeddb
 ```
 
-### E2E Tests (Playwright)
+### E2E Tests (Playwright, upstream reference)
+
+The following upstream commands require files/services not present in this checkout. Use the actual frontend/backend unit suites and `cd sap-auth && go test ./... && go build ./...` here; do not report the upstream E2E suite as run.
 
 ```bash
 cd e2e && pnpm test                            # Local (requires Docker on port 8080)
@@ -230,7 +199,7 @@ E2E tests import from `./fixtures` instead of `@playwright/test`.
 
 WebSocket proxy tests use `location.host` to derive URLs dynamically, so they work both locally (`localhost:8080`) and in Docker (`asspp:8080`).
 
-Real-account Docker verification (2026-02-22): authentication succeeds through Wisp, and backend logs contain only connection/stream metadata (no Apple credentials, password tokens, or cookies).
+Historical upstream verification (2026-02-22) used browser-side authentication. It does not validate this fork's later SAP helper; real-account authentication must be checked separately.
 
 E2E tests cover:
 
@@ -253,7 +222,9 @@ docker compose up --build -d   # Builds and runs on port 8080
 
 Single container serves both the Express backend and the Vite-built React SPA. SPA routes are handled by serving `index.html` for all non-API paths.
 
-### Docker E2E Testing
+### Docker E2E Testing (upstream reference)
+
+The test-profile service described below is not included in this fork's current compose.yml.
 
 The `compose.yml` includes a `playwright` service under the `test` profile:
 
