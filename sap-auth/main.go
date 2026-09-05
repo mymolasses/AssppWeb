@@ -3,15 +3,14 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/majd/ipatool/v2/pkg/appstore"
-	apphttp "github.com/majd/ipatool/v2/pkg/http"
 	"github.com/majd/ipatool/v2/pkg/util/operatingsystem"
 )
 
@@ -73,10 +72,6 @@ func (m fixedMachine) MacAddress() (string, error) {
 func (fixedMachine) HomeDirectory() string            { return os.TempDir() }
 func (fixedMachine) ReadPassword(int) ([]byte, error) { return nil, errors.New("unsupported") }
 
-type memoryCookieJar struct{ *cookiejar.Jar }
-
-func (memoryCookieJar) Save() error { return nil }
-
 func main() {
 	encoder := json.NewEncoder(os.Stdout)
 	var payload request
@@ -96,7 +91,7 @@ func main() {
 		_ = encoder.Encode(response{Error: err.Error()})
 		return
 	}
-	cookieJar := memoryCookieJar{Jar: jar}
+	cookieJar := &memoryCookieJar{Jar: jar}
 	seedCookies(cookieJar, payload.ExistingCookies)
 
 	store := appstore.NewAppStore(appstore.Args{
@@ -125,7 +120,7 @@ func main() {
 		LastName:                    lastName,
 		PasswordToken:               account.PasswordToken,
 		DirectoryServicesIdentifier: account.DirectoryServicesID,
-		Cookies:                     collectCookies(cookieJar, account.Pod),
+		Cookies:                     cookieJar.exportCookies(),
 		DeviceIdentifier:            payload.DeviceID,
 		Pod:                         account.Pod,
 	}
@@ -147,7 +142,7 @@ func login(store loginClient, payload request) (appstore.LoginOutput, error) {
 	})
 }
 
-func seedCookies(jar apphttp.CookieJar, cookies []inputCookie) {
+func seedCookies(jar http.CookieJar, cookies []inputCookie) {
 	for _, cookie := range cookies {
 		host := strings.TrimPrefix(cookie.Domain, ".")
 		if host == "" {
@@ -157,35 +152,16 @@ func seedCookies(jar apphttp.CookieJar, cookies []inputCookie) {
 		if err != nil {
 			continue
 		}
+		var expires time.Time
+		if cookie.ExpiresAt != 0 {
+			expires = time.Unix(cookie.ExpiresAt, 0)
+		}
 		jar.SetCookies(origin, []*http.Cookie{{
 			Name: cookie.Name, Value: cookie.Value, Path: cookie.Path,
 			Domain: cookie.Domain, HttpOnly: cookie.HTTPOnly, Secure: cookie.Secure,
+			Expires: expires,
 		}})
 	}
-}
-
-func collectCookies(jar apphttp.CookieJar, pod string) []inputCookie {
-	hosts := []string{"buy.itunes.apple.com"}
-	if pod != "" {
-		hosts = append(hosts, fmt.Sprintf("p%s-buy.itunes.apple.com", pod))
-	}
-	seen := make(map[string]bool)
-	result := make([]inputCookie, 0)
-	for _, host := range hosts {
-		origin, _ := url.Parse("https://" + host + "/")
-		for _, cookie := range jar.Cookies(origin) {
-			key := cookie.Name + "|" + host + "|" + cookie.Path
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			result = append(result, inputCookie{
-				Name: cookie.Name, Value: cookie.Value, Path: cookie.Path,
-				Domain: host, HTTPOnly: cookie.HttpOnly, Secure: cookie.Secure,
-			})
-		}
-	}
-	return result
 }
 
 func splitName(name string) (string, string) {

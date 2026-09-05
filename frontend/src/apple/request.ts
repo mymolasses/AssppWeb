@@ -1,7 +1,8 @@
-import { libcurl, initLibcurl } from "./libcurl-init";
-import { buildCookieHeader } from "./cookies";
-import { userAgent } from "./config";
-import type { Cookie } from "../types";
+import { libcurl, initLibcurl } from './libcurl-init';
+import { buildCookieHeader } from './cookies';
+import { parsePlist } from './plist';
+import { userAgent } from './config';
+import type { Cookie } from '../types';
 
 export interface AppleRequestOptions {
   host: string;
@@ -27,14 +28,14 @@ export async function appleRequest(
 
   const url = `https://${opts.host}${opts.path}`;
   const headers: Record<string, string> = {
-    "User-Agent": userAgent,
+    'User-Agent': userAgent,
     ...opts.headers,
   };
 
   if (opts.cookies?.length) {
     const cookieHeader = buildCookieHeader(opts.cookies, url);
     if (cookieHeader) {
-      headers["Cookie"] = cookieHeader;
+      headers['Cookie'] = cookieHeader;
     }
   }
 
@@ -42,7 +43,7 @@ export async function appleRequest(
     method: opts.method,
     headers,
     body: opts.body,
-    redirect: "manual",
+    redirect: 'manual',
     _libcurl_http_version: 1.1,
   });
 
@@ -52,6 +53,36 @@ export async function appleRequest(
   }
 
   const body = await resp.text();
+
+  // Local development diagnostics: never log credentials, cookies, raw bodies,
+  // download URLs, or query strings (which include the device identifier).
+  if (import.meta.env.DEV) {
+    let result: Record<string, unknown> = {};
+    try {
+      const parsed = parsePlist(body) as Record<string, unknown>;
+      result = {
+        failureType: /^-?\d+$/.test(String(parsed?.failureType ?? ''))
+          ? String(parsed.failureType)
+          : undefined,
+        hasCustomerMessage: Boolean(parsed?.customerMessage),
+        itemCount: Array.isArray(parsed?.songList)
+          ? parsed.songList.length
+          : null,
+      };
+    } catch {
+      result = { format: 'non-plist' };
+    }
+    console.info(
+      '[Apple request]',
+      JSON.stringify({
+        host: opts.host,
+        path: opts.path.split('?')[0],
+        status: resp.status,
+        sentCookieCount: headers.Cookie ? headers.Cookie.split(';').length : 0,
+        ...result,
+      }),
+    );
+  }
 
   return {
     status: resp.status,

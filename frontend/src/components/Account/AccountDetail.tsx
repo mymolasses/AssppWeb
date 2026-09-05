@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageContainer from '../Layout/PageContainer';
 import Spinner from '../common/Spinner';
+import Alert from '../common/Alert';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useToastStore } from '../../store/toast';
 import { authenticate, AuthenticationError } from '../../apple/authenticate';
@@ -31,6 +32,7 @@ export default function AccountDetail() {
   const [reauthCode, setReauthCode] = useState('');
   const [needsCode, setNeedsCode] = useState(false);
   const [freshReauth, setFreshReauth] = useState(false);
+  const [reauthError, setReauthError] = useState('');
 
   useEffect(() => {
     loadAccounts();
@@ -67,6 +69,7 @@ export default function AccountDetail() {
     if (!account) return;
     const currentAccount = account;
     setReauthing(true);
+    setReauthError('');
 
     const normalizedDeviceId = normalizeDeviceId(
       account.deviceIdentifier || '',
@@ -101,6 +104,7 @@ export default function AccountDetail() {
     } catch (err) {
       if (err instanceof AuthenticationError && err.codeRequired) {
         setNeedsCode(true);
+        setReauthError(err.message);
         addToast(err.message, 'error');
       } else if (err instanceof AuthenticationError && !freshReauth) {
         try {
@@ -115,8 +119,12 @@ export default function AccountDetail() {
             setFreshReauth(true);
             setNeedsCode(true);
             setReauthCode('');
+            setReauthError(freshError.message);
             addToast(freshError.message, 'error');
           } else {
+            setReauthError(
+              getErrorMessage(freshError, t('accounts.detail.reauthFailed')),
+            );
             addToast(
               getErrorMessage(freshError, t('accounts.detail.reauthFailed')),
               'error',
@@ -124,6 +132,7 @@ export default function AccountDetail() {
           }
         }
       } else {
+        setReauthError(getErrorMessage(err, t('accounts.detail.reauthFailed')));
         addToast(
           getErrorMessage(err, t('accounts.detail.reauthFailed')),
           'error',
@@ -181,6 +190,7 @@ export default function AccountDetail() {
           </dl>
         </section>
 
+        {reauthError && <Alert type="error">{reauthError}</Alert>}
         {needsCode && (
           <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10 sm:p-6">
             <label
