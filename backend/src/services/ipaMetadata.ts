@@ -1,14 +1,15 @@
-import path from "path";
-import { open as openZip } from "yauzl-promise";
-import type { Readable } from "stream";
-import bplistParser from "bplist-parser";
-import plist from "plist";
-import type { Software } from "../types/index.js";
+import path from 'path';
+import { open as openZip } from 'yauzl-promise';
+import type { Readable } from 'stream';
+import bplistParser from 'bplist-parser';
+import plist from 'plist';
+import type { Software } from '../types/index.js';
 
 interface IpaInfo {
   bundleID: string;
   name: string;
   version: string;
+  bundleVersion?: string;
   minimumOsVersion: string;
 }
 
@@ -31,10 +32,10 @@ function parsePlistBuffer(data: Buffer): Record<string, unknown> | null {
   }
 
   try {
-    const xml = data.toString("utf-8");
-    if (xml.includes("<?xml") || xml.includes("<plist")) {
+    const xml = data.toString('utf-8');
+    if (xml.includes('<?xml') || xml.includes('<plist')) {
       const parsed = plist.parse(xml);
-      if (parsed && typeof parsed === "object") {
+      if (parsed && typeof parsed === 'object') {
         return parsed as Record<string, unknown>;
       }
     }
@@ -51,7 +52,7 @@ function stringValue(
 ): string | undefined {
   for (const key of keys) {
     const value = info[key];
-    if (typeof value === "string" && value.trim()) {
+    if (typeof value === 'string' && value.trim()) {
       return value.trim();
     }
   }
@@ -68,7 +69,7 @@ export async function readIpaInfo(
       const filename = entry.filename;
       const isMainInfoPlist =
         /^Payload\/[^/]+\.app\/Info\.plist$/.test(filename) &&
-        !filename.includes("/Watch/");
+        !filename.includes('/Watch/');
       if (!isMainInfoPlist) continue;
 
       const stream = await entry.openReadStream();
@@ -76,28 +77,28 @@ export async function readIpaInfo(
       const info = parsePlistBuffer(data);
       if (!info) break;
 
-      const bundleID = stringValue(info, ["CFBundleIdentifier"]);
+      const bundleID = stringValue(info, ['CFBundleIdentifier']);
       if (!bundleID) {
-        throw new Error("IPA Info.plist is missing CFBundleIdentifier");
+        throw new Error('IPA Info.plist is missing CFBundleIdentifier');
       }
 
       const name =
-        stringValue(info, ["CFBundleDisplayName", "CFBundleName"]) ||
+        stringValue(info, ['CFBundleDisplayName', 'CFBundleName']) ||
         fallbackName;
       const version =
-        stringValue(info, ["CFBundleShortVersionString", "CFBundleVersion"]) ||
-        "1.0";
+        stringValue(info, ['CFBundleShortVersionString', 'CFBundleVersion']) ||
+        '1.0';
       const minimumOsVersion =
-        stringValue(info, ["MinimumOSVersion", "LSMinimumSystemVersion"]) ||
-        "";
+        stringValue(info, ['MinimumOSVersion', 'LSMinimumSystemVersion']) || '';
 
-      return { bundleID, name, version, minimumOsVersion };
+      const bundleVersion = stringValue(info, ['CFBundleVersion']);
+      return { bundleID, name, version, bundleVersion, minimumOsVersion };
     }
   } finally {
     await zip.close();
   }
 
-  throw new Error("Could not find Payload/*.app/Info.plist in IPA");
+  throw new Error('Could not find Payload/*.app/Info.plist in IPA');
 }
 
 export function buildUploadedSoftware(
@@ -113,17 +114,17 @@ export function buildUploadedSoftware(
     bundleID: info.bundleID,
     name: info.name || fallbackName,
     version: info.version,
-    artistName: "Local Upload",
-    sellerName: "Local Upload",
-    description: "Uploaded signed IPA",
+    artistName: 'Local Upload',
+    sellerName: 'Local Upload',
+    description: 'Uploaded signed IPA',
     averageUserRating: 0,
     userRatingCount: 0,
-    artworkUrl: "",
+    artworkUrl: '',
     screenshotUrls: [],
     minimumOsVersion: info.minimumOsVersion,
     fileSizeBytes: String(fileSizeBytes),
     releaseDate: now,
-    formattedPrice: "Local",
-    primaryGenreName: "Local IPA",
+    formattedPrice: 'Local',
+    primaryGenreName: 'Local IPA',
   };
 }

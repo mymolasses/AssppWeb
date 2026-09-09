@@ -1,7 +1,29 @@
-import type { Software } from "../types/index.js";
+import type { Software } from '../types/index.js';
+import { readIpaInfo } from './ipaMetadata.js';
+
+// Read the actual payload, including packages saved before build versions were
+// tracked. Display/store versions are not the IPA's CFBundleVersion.
+export async function buildManifestFromIpa(
+  ipaPath: string,
+  fallbackName: string,
+  payloadUrl: string,
+  displayImageSmallUrl: string,
+  displayImageLargeUrl: string,
+): Promise<string> {
+  const info = await readIpaInfo(ipaPath, fallbackName);
+  if (!info.bundleVersion) {
+    throw new Error('IPA Info.plist is missing CFBundleVersion');
+  }
+  return buildManifest(
+    { bundleID: info.bundleID, name: info.name, version: info.bundleVersion },
+    payloadUrl,
+    displayImageSmallUrl,
+    displayImageLargeUrl,
+  );
+}
 
 export function buildManifest(
-  software: Software,
+  software: Pick<Software, 'bundleID' | 'name' | 'version'>,
   payloadUrl: string,
   displayImageSmallUrl: string,
   displayImageLargeUrl: string,
@@ -53,18 +75,18 @@ export function buildManifest(
 
 function escapeXml(str: string): string {
   return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 // Minimal valid 1x1 white PNG (hardcoded)
 // This is the smallest valid PNG: 8-byte signature + IHDR + IDAT + IEND
 const MINIMAL_WHITE_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12P4////DwAJBgMBMHREuwAAAABJRU5ErkJggg==",
-  "base64",
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12P4////DwAJBgMBMHREuwAAAABJRU5ErkJggg==',
+  'base64',
 );
 
 export function getWhitePng(): Buffer {
