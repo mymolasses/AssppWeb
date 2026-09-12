@@ -1,8 +1,16 @@
 import { appleRequest } from './request';
 import { buildPlist, parsePlist } from './plist';
 import { extractAndMergeCookies } from './cookies';
-import { shouldUseRedownload } from './storeDownloadFallback';
-import { redownloadEndpoint, volumeStoreEndpoint } from './config';
+import { fetchBag } from './bag';
+import {
+  shouldUseRedownload,
+  shouldUseUpdateProduct,
+} from './storeDownloadFallback';
+import {
+  redownloadEndpoint,
+  updateProductEndpoint,
+  volumeStoreEndpoint,
+} from './config';
 import type { Account, Software } from '../types';
 
 export async function listVersions(
@@ -15,6 +23,7 @@ export async function listVersions(
   let requestHost = endpoint.host;
   let requestPath = endpoint.path;
   let triedRedownload = false;
+  let triedUpdateProduct = false;
   let cookies = [...account.cookies];
   let redirectAttempt = 0;
 
@@ -58,6 +67,22 @@ export async function listVersions(
     }
 
     const dict = parsePlist(response.body) as Record<string, any>;
+
+    if (!triedUpdateProduct && shouldUseUpdateProduct(response.status, dict)) {
+      triedUpdateProduct = true;
+      const bag = await fetchBag(deviceId);
+      const updateEndpoint = updateProductEndpoint(
+        bag.updateProductURL,
+        deviceId,
+      );
+      if (updateEndpoint) {
+        endpoint = updateEndpoint;
+        requestHost = endpoint.host;
+        requestPath = endpoint.path;
+        redirectAttempt = 0;
+        continue;
+      }
+    }
 
     if (!triedRedownload && shouldUseRedownload(response.status, dict)) {
       triedRedownload = true;

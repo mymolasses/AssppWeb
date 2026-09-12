@@ -1,11 +1,12 @@
-import { authHeaders } from "../api/client";
-import { parsePlist } from "./plist";
-import { defaultAuthURL, normalizeAuthURL } from "./authEndpoint";
+import { parsePlist } from './plist';
+import { defaultAuthURL, normalizeAuthURL } from './authEndpoint';
+import { authHeaders } from '../api/client';
 
 export { defaultAuthURL, normalizeAuthURL };
 
 export interface BagOutput {
   authURL: string;
+  updateProductURL?: string;
 }
 
 // Fetches the bag via the backend proxy.
@@ -33,15 +34,16 @@ export async function fetchBag(deviceId: string): Promise<BagOutput> {
     const authURL =
       (dict.authenticateAccount as string | undefined) ??
       (urlBag?.authenticateAccount as string | undefined);
+    const updateProductURL = urlBag?.updateProduct as string | undefined;
 
     if (!authURL) {
       console.warn(
-        "[Bag] authenticateAccount URL not found in bag, using default auth endpoint",
+        '[Bag] authenticateAccount URL not found in bag, using default auth endpoint',
       );
-      return { authURL: defaultAuthURL };
+      return { authURL: defaultAuthURL, updateProductURL };
     }
 
-    return { authURL: normalizeAuthURL(authURL) };
+    return { authURL: normalizeAuthURL(authURL), updateProductURL };
   } catch (error) {
     console.warn(
       `[Bag] Failed to fetch/parse bag, using default auth endpoint: ${

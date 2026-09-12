@@ -1,9 +1,17 @@
 import { appleRequest } from './request';
 import { buildPlist, parsePlist } from './plist';
 import { extractAndMergeCookies } from './cookies';
-import { shouldUseRedownload } from './storeDownloadFallback';
+import { fetchBag } from './bag';
+import {
+  shouldUseRedownload,
+  shouldUseUpdateProduct,
+} from './storeDownloadFallback';
 import i18n from '../i18n';
-import { redownloadEndpoint, volumeStoreEndpoint } from './config';
+import {
+  redownloadEndpoint,
+  updateProductEndpoint,
+  volumeStoreEndpoint,
+} from './config';
 import type { Account, Software, DownloadOutput, Sinf } from '../types';
 
 export class DownloadError extends Error {
@@ -37,6 +45,7 @@ export async function getDownloadInfo(
   let requestHost = endpoint.host;
   let requestPath = endpoint.path;
   let triedRedownload = false;
+  let triedUpdateProduct = false;
   let cookies = [...account.cookies];
   let redirectAttempt = 0;
 
@@ -84,6 +93,22 @@ export async function getDownloadInfo(
     }
 
     const dict = parsePlist(response.body) as Record<string, any>;
+
+    if (!triedUpdateProduct && shouldUseUpdateProduct(response.status, dict)) {
+      triedUpdateProduct = true;
+      const bag = await fetchBag(deviceId);
+      const updateEndpoint = updateProductEndpoint(
+        bag.updateProductURL,
+        deviceId,
+      );
+      if (updateEndpoint) {
+        endpoint = updateEndpoint;
+        requestHost = endpoint.host;
+        requestPath = endpoint.path;
+        redirectAttempt = 0;
+        continue;
+      }
+    }
 
     // Also handle HTTP 200 with no items and no error metadata, not just 5002.
     if (!triedRedownload && shouldUseRedownload(response.status, dict)) {

@@ -21,3 +21,14 @@ export function shouldUseRedownload(
     (items == null || (Array.isArray(items) && items.length === 0))
   );
 }
+
+export function shouldUseUpdateProduct(
+  status: number,
+  response: Record<string, unknown>,
+): boolean {
+  if (status !== 200 || response.failureType || response.customerMessage)
+    return false;
+
+  const items = response.songList;
+  return items == null || (Array.isArray(items) && items.length === 0);
+}

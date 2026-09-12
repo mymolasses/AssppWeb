@@ -8,11 +8,16 @@ import { purchaseApp } from '../../src/apple/purchase';
 import { listVersions } from '../../src/apple/versionFinder';
 import { getVersionMetadata } from '../../src/apple/versionLookup';
 import { appleRequest } from '../../src/apple/request';
+import { fetchBag } from '../../src/apple/bag';
 import { buildPlist, parsePlist } from '../../src/apple/plist';
 import { shouldUseRedownload } from '../../src/apple/storeDownloadFallback';
 
 vi.mock('../../src/apple/request', () => ({
   appleRequest: vi.fn(),
+}));
+
+vi.mock('../../src/apple/bag', () => ({
+  fetchBag: vi.fn(),
 }));
 
 const account: Account = {
@@ -63,6 +68,9 @@ function failure5002() {
 describe('apple store download fallback', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
+    });
   });
 
   it('retries downloads through redownload and uses appExtVrsId', async () => {
@@ -234,7 +242,39 @@ function productResponse() {
 describe('empty volumeStore response regression (ipatool #538)', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(fetchBag).mockResolvedValue({
+      authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
+    });
   });
+
+  for (const operation of operations) {
+    it(`recovers ${operation.name} through updateProduct`, async () => {
+      vi.mocked(fetchBag).mockResolvedValue({
+        authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
+        updateProductURL:
+          'https://downloaddispatch.itunes.apple.com/up/updateProduct',
+      });
+      vi.mocked(appleRequest)
+        .mockResolvedValueOnce(response({ songList: [] }))
+        .mockResolvedValueOnce(productResponse());
+
+      const result = await operation.run();
+
+      expect(result).toBeDefined();
+      expect(appleRequest).toHaveBeenCalledTimes(2);
+      const fallback = vi.mocked(appleRequest).mock.calls[1][0];
+      expect(fallback.host).toBe('downloaddispatch.itunes.apple.com');
+      expect(fallback.path).toBe('/up/updateProduct?guid=aabbccddeeff');
+      const payload = parsePlist(fallback.body!) as Record<string, unknown>;
+      expect(payload.salableAdamId).toBe(app.id);
+      expect(payload.appExtVrsId).toBeUndefined();
+      if (operation.name === 'version list') {
+        expect(payload.externalVersionId).toBeUndefined();
+      } else {
+        expect(payload.externalVersionId).toBe('98765');
+      }
+    });
+  }
 
   for (const operation of operations) {
     it.each([{ songList: [] }, { failureType: '', customerMessage: '' }])(
