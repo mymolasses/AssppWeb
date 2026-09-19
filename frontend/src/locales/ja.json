@@ -149,6 +149,29 @@
     "emptyAllDescShort": "ダウンロードはありません。検索でアプリを探せます。",
     "emptyFilter": "{{status}} のダウンロードはありません。",
     "emptyFilterDesc": "このステータスに一致するダウンロード記録はありません。",
+    "emptyFiltered": "フィルターに一致するパッケージがありません。",
+    "emptyFilteredDesc": "アカウント、地域、またはソースを変更してください。",
+    "filters": {
+      "account": "アカウント",
+      "allAccounts": "すべてのアカウント",
+      "region": "地域",
+      "allRegions": "すべての地域",
+      "source": "ソース",
+      "allSources": "すべてのソース",
+      "store": "ストア IPA",
+      "local": "ローカル IPA"
+    },
+    "sort": {
+      "label": "並び順",
+      "newest": "追加日時順",
+      "nameAsc": "名前 A–Z",
+      "nameDesc": "名前 Z–A"
+    },
+    "view": {
+      "label": "表示モード",
+      "compact": "簡潔",
+      "detailed": "詳細"
+    },
     "searchApps": "ダウンロードするアプリを検索",
     "deleteConfirm": "このダウンロードを削除しますか？",
     "checkUpdates": "アップデートを確認",

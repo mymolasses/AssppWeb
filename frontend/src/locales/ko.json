@@ -149,6 +149,29 @@
     "emptyAllDescShort": "다운로드가 없습니다. 검색에서 앱을 찾아보세요.",
     "emptyFilter": "{{status}} 상태의 다운로드가 없습니다.",
     "emptyFilterDesc": "이 상태와 일치하는 다운로드 기록이 없습니다.",
+    "emptyFiltered": "필터와 일치하는 패키지가 없습니다.",
+    "emptyFilteredDesc": "계정, 지역 또는 소스 필터를 변경해 보세요.",
+    "filters": {
+      "account": "계정",
+      "allAccounts": "모든 계정",
+      "region": "지역",
+      "allRegions": "모든 지역",
+      "source": "소스",
+      "allSources": "모든 소스",
+      "store": "스토어 IPA",
+      "local": "로컬 IPA"
+    },
+    "sort": {
+      "label": "정렬",
+      "newest": "최근 추가순",
+      "nameAsc": "이름 A–Z",
+      "nameDesc": "이름 Z–A"
+    },
+    "view": {
+      "label": "보기 모드",
+      "compact": "간단히",
+      "detailed": "자세히"
+    },
     "searchApps": "다운로드할 앱 검색",
     "deleteConfirm": "이 다운로드를 삭제하시겠습니까?",
     "checkUpdates": "업데이트 확인",

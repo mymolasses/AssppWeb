@@ -159,6 +159,29 @@
     "emptyAllDescShort": "下载队列为空，请前往搜索页面获取应用。",
     "emptyFilter": "暂无{{status}}下载。",
     "emptyFilterDesc": "没有符合该状态的下载记录。",
+    "emptyFiltered": "没有符合筛选条件的安装包。",
+    "emptyFilteredDesc": "请调整账号、地区或来源筛选条件。",
+    "filters": {
+      "account": "账号",
+      "allAccounts": "所有账号",
+      "region": "地区",
+      "allRegions": "所有地区",
+      "source": "来源",
+      "allSources": "所有来源",
+      "store": "商店 IPA",
+      "local": "本地 IPA"
+    },
+    "sort": {
+      "label": "排序",
+      "newest": "最新添加",
+      "nameAsc": "名称 A–Z",
+      "nameDesc": "名称 Z–A"
+    },
+    "view": {
+      "label": "显示模式",
+      "compact": "简洁",
+      "detailed": "详细"
+    },
     "searchApps": "搜索要下载的应用",
     "deleteConfirm": "删除此下载？",
     "checkUpdates": "检查更新",

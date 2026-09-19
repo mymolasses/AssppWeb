@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageContainer from '../Layout/PageContainer';
@@ -15,14 +15,17 @@ import { useDownloads } from '../../hooks/useDownloads';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useDownloadAction } from '../../hooks/useDownloadAction';
 import { useToastStore } from '../../store/toast';
+import { useUiPreferencesStore } from '../../store/uiPreferences';
 import { lookupApp } from '../../api/search';
+import { accountStoreCountry } from '../../utils/account';
 import { getAccountContext } from '../../utils/toast';
 import { isNewerVersion } from '../../utils/version';
 import { LOCAL_UPLOAD_ACCOUNT_HASH } from '../../constants/downloads';
 import { storeIdToCountry } from '../../apple/config';
 import type { DownloadTask } from '../../types';
 
-type StatusFilter = 'all' | DownloadTask['status'];
+type SourceFilter = 'all' | 'store' | 'local';
+type SortMode = 'newest' | 'nameAsc' | 'nameDesc';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -37,8 +40,13 @@ export default function DownloadList() {
     deleteDownload,
     hashToEmail,
   } = useDownloads();
-  const [filter, setFilter] = useState<StatusFilter>('all');
+  const [accountFilter, setAccountFilter] = useState('all');
+  const [regionFilter, setRegionFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('newest');
   const addToast = useToastStore((s) => s.addToast);
+  const viewMode = useUiPreferencesStore((s) => s.downloadsViewMode);
+  const setViewMode = useUiPreferencesStore((s) => s.setDownloadsViewMode);
   const { accounts } = useAccounts();
   const { startDownload } = useDownloadAction();
   const previewEnabled = isDownloadPreviewEnabled(location.search);
@@ -58,16 +66,52 @@ export default function DownloadList() {
     };
   }, []);
 
-  const filtered =
-    filter === 'all'
-      ? displayTasks
-      : displayTasks.filter((task) => task.status === filter);
+  const accountByEmail = new Map(
+    accounts.map((account) => [account.email, account]),
+  );
+  const regions = Array.from(
+    new Set(
+      accounts
+        .map((account) => accountStoreCountry(account))
+        .filter((country): country is string => Boolean(country)),
+    ),
+  ).sort((a, b) =>
+    t(`countries.${a}`).localeCompare(t(`countries.${b}`)),
+  );
 
-  const sortedTasks = [...filtered].sort((a, b) => {
+  const filteredTasks = displayTasks.filter((task) => {
+    const isLocal = task.accountHash === LOCAL_UPLOAD_ACCOUNT_HASH;
+    const accountEmail = hashToEmail[task.accountHash];
+    const account = accountByEmail.get(accountEmail);
+    const country = accountStoreCountry(account);
+
+    if (sourceFilter === 'local' && !isLocal) return false;
+    if (sourceFilter === 'store' && isLocal) return false;
+    if (accountFilter !== 'all' && accountEmail !== accountFilter) return false;
+    if (regionFilter !== 'all' && country !== regionFilter) return false;
+    return true;
+  });
+
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (sortMode === 'nameAsc' || sortMode === 'nameDesc') {
+      const nameA = a.displayName || a.software.name;
+      const nameB = b.displayName || b.software.name;
+      const result = nameA.localeCompare(nameB, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+      return sortMode === 'nameAsc' ? result : -result;
+    }
+
     const timeA = new Date(a.createdAt || 0).getTime();
     const timeB = new Date(b.createdAt || 0).getTime();
     return timeB - timeA;
   });
+
+  const hasActiveFilters =
+    accountFilter !== 'all' ||
+    regionFilter !== 'all' ||
+    sourceFilter !== 'all';
 
   function handleDelete(id: string) {
     const task = displayTasks.find((item) => item.id === id);
@@ -192,67 +236,107 @@ export default function DownloadList() {
 
   return (
     <PageContainer>
-      <div className="mb-6 grid grid-cols-2 items-start gap-2 min-[360px]:grid-cols-3 sm:mb-7 sm:grid-cols-6">
-        <h1 className="col-span-2 min-w-0 text-[2rem] font-semibold leading-[1.12] tracking-[-0.035em] text-gray-900 min-[360px]:col-span-1 sm:col-span-3 sm:text-[2.125rem] dark:text-white">
+      <div className="mb-6 flex min-w-0 flex-col gap-4 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="min-w-0 text-[2rem] font-semibold leading-[1.12] tracking-[-0.035em] text-gray-900 sm:text-[2.125rem] dark:text-white">
           {t('downloads.title')}
         </h1>
-        <button
-          onClick={handleCheckAllUpdates}
-          disabled={checkingAll}
-          className="flex h-9 w-full min-w-0 items-center justify-center rounded-full bg-emerald-100 px-2.5 text-center text-[clamp(0.75rem,3.6vw,0.875rem)] font-semibold leading-tight text-emerald-800 transition-colors hover:bg-emerald-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:bg-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-900 dark:disabled:bg-gray-800 dark:disabled:text-gray-600"
-        >
-          {checkingAll
-            ? t('downloads.checkingUpdates')
-            : t('downloads.checkUpdates')}
-        </button>
-        <Link
-          to="/downloads/add"
-          className="flex h-9 w-full min-w-0 items-center justify-center rounded-full bg-blue-600 px-2.5 text-center text-[clamp(0.75rem,3.6vw,0.875rem)] font-semibold leading-tight text-white transition-colors hover:bg-blue-700"
-        >
-          {t('downloads.new')}
-        </Link>
-        <Link
-          to="/downloads/upload"
-          className="flex h-9 w-full min-w-0 items-center justify-center rounded-full bg-green-600 px-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-green-700"
-        >
-          {t('downloads.upload.button')}
-        </Link>
+        <div className="grid min-w-0 grid-cols-3 gap-2 sm:flex sm:shrink-0">
+          <button
+            onClick={handleCheckAllUpdates}
+            disabled={checkingAll}
+            className="inline-flex h-10 min-w-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-center text-xs font-semibold leading-tight text-emerald-800 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400 sm:text-sm dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-600"
+          >
+            {checkingAll
+              ? t('downloads.checkingUpdates')
+              : t('downloads.checkUpdates')}
+          </button>
+          <Link
+            to="/downloads/add"
+            className="inline-flex h-10 min-w-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-center text-xs font-semibold leading-tight text-blue-700 transition-colors hover:bg-blue-100 sm:text-sm dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950"
+          >
+            {t('downloads.new')}
+          </Link>
+          <Link
+            to="/downloads/upload"
+            className="inline-flex h-10 min-w-0 items-center justify-center rounded-lg bg-blue-600 px-3 text-center text-xs font-semibold leading-tight text-white transition-colors hover:bg-blue-700 sm:text-sm"
+          >
+            {t('downloads.upload.button')}
+          </Link>
+        </div>
       </div>
 
-      <div
-        className="mb-5 grid grid-cols-2 gap-2 min-[360px]:grid-cols-3 sm:grid-cols-6"
-        role="group"
-        aria-label={t('downloads.title')}
-      >
-        {(
-          [
-            'all',
-            'downloading',
-            'pending',
-            'paused',
-            'completed',
-            'failed',
-          ] as StatusFilter[]
-        ).map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`flex h-9 w-full min-w-0 items-center justify-center rounded-full px-2.5 text-center text-[clamp(0.75rem,3.6vw,0.875rem)] font-semibold leading-tight transition-colors ${
-              filter === status
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 shadow-sm ring-1 ring-black/5 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:ring-white/10 dark:hover:bg-gray-800'
-            }`}
+      <div className="mb-5 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
+        <div className="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.9fr)_auto]">
+          <FilterSelect
+            label={t('downloads.filters.account')}
+            value={accountFilter}
+            onChange={setAccountFilter}
           >
-            {t(`downloads.status.${status}`)}
-            <span className="ml-1">
-              {`(${
-                status === 'all'
-                  ? displayTasks.length
-                  : displayTasks.filter((task) => task.status === status).length
-              })`}
-            </span>
-          </button>
-        ))}
+            <option value="all">{t('downloads.filters.allAccounts')}</option>
+            {accounts.map((account) => (
+              <option key={account.email} value={account.email}>
+                {account.email}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect
+            label={t('downloads.filters.region')}
+            value={regionFilter}
+            onChange={setRegionFilter}
+          >
+            <option value="all">{t('downloads.filters.allRegions')}</option>
+            {regions.map((country) => (
+              <option key={country} value={country}>
+                {t(`countries.${country}`)}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect
+            label={t('downloads.filters.source')}
+            value={sourceFilter}
+            onChange={(value) => setSourceFilter(value as SourceFilter)}
+          >
+            <option value="all">{t('downloads.filters.allSources')}</option>
+            <option value="store">{t('downloads.filters.store')}</option>
+            <option value="local">{t('downloads.filters.local')}</option>
+          </FilterSelect>
+
+          <FilterSelect
+            label={t('downloads.sort.label')}
+            value={sortMode}
+            onChange={(value) => setSortMode(value as SortMode)}
+          >
+            <option value="newest">{t('downloads.sort.newest')}</option>
+            <option value="nameAsc">{t('downloads.sort.nameAsc')}</option>
+            <option value="nameDesc">{t('downloads.sort.nameDesc')}</option>
+          </FilterSelect>
+
+          <div className="col-span-2 flex min-w-0 items-end lg:col-span-1">
+            <div
+              className="grid h-10 w-full grid-cols-2 rounded-lg bg-gray-100 p-1 dark:bg-gray-800 lg:w-auto"
+              role="group"
+              aria-label={t('downloads.view.label')}
+            >
+              {(['compact', 'detailed'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setViewMode(mode)}
+                  aria-pressed={viewMode === mode}
+                  className={`min-w-0 rounded-md px-3 text-xs font-semibold transition-colors ${
+                    viewMode === mode
+                      ? 'bg-white text-blue-700 shadow-sm dark:bg-gray-700 dark:text-blue-300'
+                      : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {t(`downloads.view.${mode}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div
@@ -311,26 +395,24 @@ export default function DownloadList() {
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
-            {filter === 'all'
-              ? t('downloads.emptyAll')
-              : t('downloads.emptyFilter', {
-                  status: t(`downloads.status.${filter}`),
-                })}
+            {hasActiveFilters
+              ? t('downloads.emptyFiltered')
+              : t('downloads.emptyAll')}
           </h3>
           <p
             className="mb-6 max-w-full overflow-hidden text-center text-gray-500 dark:text-gray-400"
             aria-label={
-              filter === 'all'
-                ? t('downloads.emptyAllDesc')
-                : t('downloads.emptyFilterDesc')
+              hasActiveFilters
+                ? t('downloads.emptyFilteredDesc')
+                : t('downloads.emptyAllDesc')
             }
             title={
-              filter === 'all'
-                ? t('downloads.emptyAllDesc')
-                : t('downloads.emptyFilterDesc')
+              hasActiveFilters
+                ? t('downloads.emptyFilteredDesc')
+                : t('downloads.emptyAllDesc')
             }
           >
-            {filter === 'all' ? (
+            {!hasActiveFilters ? (
               <>
                 <span
                   aria-hidden="true"
@@ -347,11 +429,11 @@ export default function DownloadList() {
               </>
             ) : (
               <span className="block whitespace-nowrap text-[clamp(0.625rem,3vw,0.875rem)]">
-                {t('downloads.emptyFilterDesc')}
+                {t('downloads.emptyFilteredDesc')}
               </span>
             )}
           </p>
-          {filter === 'all' && (
+          {!hasActiveFilters && (
             <Link
               to="/search"
               className="inline-flex min-h-11 items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
@@ -374,12 +456,19 @@ export default function DownloadList() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div
+          className={
+            viewMode === 'compact'
+              ? 'grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6'
+              : 'space-y-3'
+          }
+        >
           {sortedTasks.map((task) => (
             <DownloadItem
               key={task.id}
               task={task}
               preview={previewEnabled}
+              compact={viewMode === 'compact'}
               onPause={handlePause}
               onResume={handleResume}
               onDelete={handleDelete}
@@ -429,5 +518,32 @@ export default function DownloadList() {
         </div>
       </Modal>
     </PageContainer>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <label className="min-w-0">
+      <span className="mb-1 block truncate text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full min-w-0 truncate rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-gray-700 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+      >
+        {children}
+      </select>
+    </label>
   );
 }

@@ -85,6 +85,17 @@ function renderDetail() {
   );
 }
 
+function renderTaskDetail(downloadTask: DownloadTask) {
+  mocks.tasks = [downloadTask];
+  render(
+    <MemoryRouter initialEntries={[`/downloads/${downloadTask.id}`]}>
+      <Routes>
+        <Route path="/downloads/:id" element={<PackageDetail />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe('upstream UI with local IPA protection', () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -111,6 +122,27 @@ describe('upstream UI with local IPA protection', () => {
     expect(
       screen.getByRole('link', { name: 'downloads.package.title' }),
     ).toHaveAttribute('href', '/downloads/local-test');
+  });
+
+  it('renders compact items with only the app icon and display name', () => {
+    render(
+      <MemoryRouter>
+        <DownloadItem
+          task={task}
+          compact
+          onPause={vi.fn()}
+          onResume={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /My Test Build/ })).toHaveAttribute(
+      'href',
+      '/downloads/local-test',
+    );
+    expect(screen.queryByText('Example')).not.toBeInTheDocument();
+    expect(screen.queryByText('downloads.package.delete')).not.toBeInTheDocument();
   });
 
   it('requires unlocking before displaying local IPA details', () => {
@@ -144,6 +176,24 @@ describe('upstream UI with local IPA protection', () => {
       ),
     );
     await waitFor(() => expect(mocks.fetchTasks).toHaveBeenCalledOnce());
+  });
+
+  it('does not offer signing analysis for App Store downloads', () => {
+    renderTaskDetail({
+      ...task,
+      id: 'store-test',
+      accountHash: 'store-account',
+    });
+
+    expect(
+      screen.queryByRole('button', { name: 'downloads.signing.check' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'downloads.package.checkUpdate' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'downloads.package.delete' }),
+    ).toBeInTheDocument();
   });
 
   it('shows the original filename and saves an editable display name', async () => {

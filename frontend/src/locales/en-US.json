@@ -159,6 +159,29 @@
     "emptyAllDescShort": "No downloads yet—find apps in Search.",
     "emptyFilter": "No {{status}} downloads.",
     "emptyFilterDesc": "No download records match this status.",
+    "emptyFiltered": "No packages match these filters.",
+    "emptyFilteredDesc": "Try changing the account, region, or source filters.",
+    "filters": {
+      "account": "Account",
+      "allAccounts": "All accounts",
+      "region": "Region",
+      "allRegions": "All regions",
+      "source": "Source",
+      "allSources": "All sources",
+      "store": "Store IPA",
+      "local": "Local IPA"
+    },
+    "sort": {
+      "label": "Sort",
+      "newest": "Newest added",
+      "nameAsc": "Name A–Z",
+      "nameDesc": "Name Z–A"
+    },
+    "view": {
+      "label": "View mode",
+      "compact": "Compact",
+      "detailed": "Detailed"
+    },
     "searchApps": "Search for apps to download",
     "deleteConfirm": "Delete this download?",
     "checkUpdates": "Check Updates",

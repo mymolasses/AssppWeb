@@ -11,6 +11,7 @@ import type { DownloadTask } from '../../types';
 interface DownloadItemProps {
   task: DownloadTask;
   preview?: boolean;
+  compact?: boolean;
   onPause: (id: string) => void;
   onResume: (id: string) => void;
   onDelete: (id: string) => void;
@@ -19,6 +20,7 @@ interface DownloadItemProps {
 export default function DownloadItem({
   task,
   preview = false,
+  compact = false,
   onPause,
   onResume,
   onDelete,
@@ -31,6 +33,25 @@ export default function DownloadItem({
   const detailsHref = `/downloads/${task.id}${
     preview ? '?preview=downloads' : ''
   }`;
+
+  if (compact) {
+    return (
+      <Link
+        to={detailsHref}
+        title={displayName}
+        className="group flex min-w-0 flex-col items-center rounded-xl border border-gray-200 bg-white p-3 text-center transition-colors hover:border-blue-300 hover:bg-blue-50/50 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-800 dark:hover:bg-blue-950/20"
+      >
+        <AppIcon
+          url={task.software.artworkUrl}
+          name={displayName}
+          size="lg"
+        />
+        <span className="mt-2 w-full truncate text-sm font-semibold text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+          {displayName}
+        </span>
+      </Link>
+    );
+  }
 
   return (
     <article className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">

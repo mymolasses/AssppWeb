@@ -424,7 +424,7 @@ function PackageDetailContent() {
                   : t('downloads.package.checkUpdate')}
               </button>
             )}
-            {isCompleted && task.hasFile && !isPreview && (
+            {isCompleted && task.hasFile && isLocalUpload && !isPreview && (
               <button
                 type="button"
                 onClick={handleAnalyzeSigning}
