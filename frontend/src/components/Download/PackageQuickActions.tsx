@@ -44,7 +44,11 @@ export default function PackageQuickActions({
       return;
     }
 
-    addToast(task.software.name, 'info', t('toast.title.installStarted'));
+    addToast(
+      task.displayName || task.software.name,
+      'info',
+      t('toast.title.installStarted'),
+    );
   }
 
   async function handleShare() {
@@ -63,7 +67,7 @@ export default function PackageQuickActions({
 
       if (navigator.share) {
         await navigator.share({
-          title: task.software.name,
+          title: task.displayName || task.software.name,
           text: installInfo.installUrl,
         });
       }
@@ -83,7 +87,11 @@ export default function PackageQuickActions({
       return;
     }
 
-    addToast(task.software.name, 'info', t('toast.title.downloadIpaStarted'));
+    addToast(
+      task.displayName || task.software.name,
+      'info',
+      t('toast.title.downloadIpaStarted'),
+    );
 
     try {
       const params = new URLSearchParams({ accountHash: task.accountHash });
@@ -189,7 +197,9 @@ async function copyText(value: string) {
 }
 
 function packageFileName(task: DownloadTask): string {
-  const unsafeName = `${task.software.name}_${task.software.version}`;
+  const unsafeName = `${task.displayName || task.software.name}_${
+    task.software.version
+  }`;
   const safeName = unsafeName.replace(/[\\/:*?"<>|]/g, '-');
   return `${safeName}.ipa`;
 }

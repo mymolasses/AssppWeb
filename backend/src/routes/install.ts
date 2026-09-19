@@ -73,6 +73,7 @@ router.get("/install/:id/manifest.plist", (req: Request, res: Response) => {
     payloadUrl,
     smallIconUrl,
     largeIconUrl,
+    task.displayName,
   );
 
   res.setHeader("Content-Type", "application/xml");

@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   tasks: [] as DownloadTask[],
   fetchTasks: vi.fn(),
   analyzeSigning: vi.fn(),
+  updateDisplayName: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -30,6 +31,7 @@ vi.mock('../../src/hooks/useDownloadAction', () => ({
 }));
 vi.mock('../../src/api/downloads', () => ({
   analyzeDownloadSigning: mocks.analyzeSigning,
+  updateDownloadDisplayName: mocks.updateDisplayName,
 }));
 vi.mock('../../src/apple/versionFinder', () => ({
   listVersions: vi.fn(),
@@ -43,6 +45,8 @@ const task: DownloadTask = {
   speed: '',
   createdAt: '2026-09-05T00:00:00Z',
   hasFile: true,
+  displayName: 'My Test Build',
+  originalFileName: '九号出行_旧版_1.0.ipa',
   software: {
     id: 0,
     bundleID: 'com.example.local',
@@ -87,6 +91,7 @@ describe('upstream UI with local IPA protection', () => {
     mocks.tasks = [task];
     mocks.fetchTasks.mockReset();
     mocks.analyzeSigning.mockReset();
+    mocks.updateDisplayName.mockReset();
   });
 
   it('keeps local IPA quick actions behind the details gate', () => {
@@ -136,6 +141,31 @@ describe('upstream UI with local IPA protection', () => {
       expect(mocks.analyzeSigning).toHaveBeenCalledWith(
         task.id,
         LOCAL_UPLOAD_ACCOUNT_HASH,
+      ),
+    );
+    await waitFor(() => expect(mocks.fetchTasks).toHaveBeenCalledOnce());
+  });
+
+  it('shows the original filename and saves an editable display name', async () => {
+    sessionStorage.setItem('local-ipa-token', 'test-token');
+    mocks.updateDisplayName.mockResolvedValue(task);
+    renderDetail();
+
+    expect(screen.getByText('九号出行_旧版_1.0.ipa')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'My Test Build' }),
+    ).toBeInTheDocument();
+
+    const input = screen.getByLabelText('downloads.package.displayName');
+    fireEvent.change(input, { target: { value: '九号出行测试版' } });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'downloads.package.saveDisplayName' }),
+    );
+
+    await waitFor(() =>
+      expect(mocks.updateDisplayName).toHaveBeenCalledWith(
+        task.id,
+        '九号出行测试版',
       ),
     );
     await waitFor(() => expect(mocks.fetchTasks).toHaveBeenCalledOnce());

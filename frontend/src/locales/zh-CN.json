@@ -195,7 +195,10 @@
       "uploading": "上传中...",
       "success": "IPA 上传成功。",
       "failed": "上传失败",
-      "localSource": "本地 IPA"
+      "localSource": "本地 IPA",
+      "displayName": "自定义展示名称（可选）",
+      "displayNamePlaceholder": "留空则使用 IPA 内的应用名称",
+      "displayNameHelp": "上传后仍可在安装包详情中修改。"
     },
     "signing": {
       "title": "IPA 签名检测",
@@ -278,6 +281,13 @@
       "category": "类别",
       "released": "发布日期",
       "developer": "开发者",
+      "originalFileName": "上传原文件名",
+      "displayName": "自定义展示名称",
+      "displayNameHelp": "留空并保存可恢复为 IPA 内名称：{{name}}",
+      "saveDisplayName": "保存名称",
+      "savingDisplayName": "保存中...",
+      "displayNameSaved": "展示名称已保存。",
+      "displayNameFailed": "保存展示名称失败。",
       "fileUnavailable": "安装包文件不可用。",
       "pause": "暂停",
       "resume": "恢复",

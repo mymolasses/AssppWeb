@@ -84,7 +84,10 @@ export default function DownloadList() {
       const ctx = getAccountContext(account, t);
 
       addToast(
-        t('toast.msg', { appName: task.software.name, ...ctx }),
+        t('toast.msg', {
+          appName: task.displayName || task.software.name,
+          ...ctx,
+        }),
         'success',
         t('toast.title.deleteSuccess'),
       );
@@ -146,7 +149,10 @@ export default function DownloadList() {
       const accountEmail = hashToEmail[task.accountHash];
       const account = accounts.find((a) => a.email === accountEmail);
 
-      setCheckProgress((prev) => ({ ...prev, appName: task.software.name }));
+      setCheckProgress((prev) => ({
+        ...prev,
+        appName: task.displayName || task.software.name,
+      }));
 
       if (!account) {
         setCheckProgress((prev) => ({ ...prev, current: i + 1 }));

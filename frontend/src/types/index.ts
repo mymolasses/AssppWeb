@@ -93,6 +93,8 @@ export interface VersionMetadata {
 export interface DownloadTask {
   id: string;
   software: Software;
+  displayName?: string;
+  originalFileName?: string;
   accountHash: string;
   status:
     | "pending"
@@ -112,6 +114,8 @@ export interface DownloadTask {
 export interface PackageInfo {
   id: string;
   software: Software;
+  displayName?: string;
+  originalFileName?: string;
   accountHash: string;
   fileSize: number;
   createdAt: string;

@@ -16,6 +16,7 @@ export default function UploadIpa() {
   const addToast = useToastStore((s) => s.addToast);
 
   const [file, setFile] = useState<File | null>(null);
+  const [displayName, setDisplayName] = useState("");
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
 
@@ -26,7 +27,7 @@ export default function UploadIpa() {
     setUploading(true);
     setProgress(0);
     try {
-      const task = await uploadIpa(file, setProgress);
+      const task = await uploadIpa(file, displayName, setProgress);
       await fetchTasks();
       addToast(t("downloads.upload.success"), "success");
       navigate(`/downloads/${task.id}`);
@@ -75,6 +76,28 @@ export default function UploadIpa() {
           </p>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             {t("downloads.upload.help")}
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="upload-display-name"
+            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            {t("downloads.upload.displayName")}
+          </label>
+          <input
+            id="upload-display-name"
+            type="text"
+            maxLength={120}
+            value={displayName}
+            disabled={uploading}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder={t("downloads.upload.displayNamePlaceholder")}
+            className="min-h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          />
+          <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+            {t("downloads.upload.displayNameHelp")}
           </p>
         </div>
 

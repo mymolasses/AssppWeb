@@ -50,7 +50,7 @@ export default function GlobalDownloadNotifier() {
       const accountEmail = hashToEmail[task.accountHash] || task.accountHash;
       const account = accounts.find((a) => a.email === accountEmail);
       const ctx = getAccountContext(account, t);
-      const appName = task.software.name;
+      const appName = task.displayName || task.software.name;
 
       if (type === "success") {
         addToast(

@@ -195,7 +195,10 @@
       "uploading": "Uploading...",
       "success": "IPA uploaded.",
       "failed": "Upload failed",
-      "localSource": "Local IPA"
+      "localSource": "Local IPA",
+      "displayName": "Custom display name (optional)",
+      "displayNamePlaceholder": "Leave blank to use the name inside the IPA",
+      "displayNameHelp": "You can change it later from the package details."
     },
     "signing": {
       "title": "IPA Signing Check",
@@ -278,6 +281,13 @@
       "category": "Category",
       "released": "Released",
       "developer": "Developer",
+      "originalFileName": "Original upload filename",
+      "displayName": "Custom display name",
+      "displayNameHelp": "Save an empty value to restore the IPA name: {{name}}",
+      "saveDisplayName": "Save Name",
+      "savingDisplayName": "Saving...",
+      "displayNameSaved": "Display name saved.",
+      "displayNameFailed": "Failed to save the display name.",
       "fileUnavailable": "The package file is unavailable.",
       "pause": "Pause",
       "resume": "Resume",

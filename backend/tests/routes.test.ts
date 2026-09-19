@@ -2,10 +2,19 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import express, { Request, Response } from "express";
 import request from "supertest";
 import { createServer, Server } from "http";
+import fs from "fs";
+import path from "path";
 import settingsRoutes from "../src/routes/settings.js";
 import installRoutes from "../src/routes/install.js";
 import { getBaseUrl } from "../src/routes/install.js";
 import downloadRoutes from "../src/routes/downloads.js";
+import { config, localIpaPasswordHash } from "../src/config.js";
+import { LOCAL_UPLOAD_ACCOUNT_HASH } from "../src/constants.js";
+import {
+  createUploadedTask,
+  deleteTask,
+} from "../src/services/downloadManager.js";
+import type { Software } from "../src/types/index.js";
 
 function createApp() {
   const app = express();
@@ -82,6 +91,60 @@ describe("Downloads Route", () => {
       "/api/downloads/nonexistent-id?accountHash=abcdef1234567890",
     );
     expect(res.status).toBe(404);
+  });
+
+  it("updates and clears the display name of a locally uploaded IPA", async () => {
+    const incomingDir = path.join(
+      config.dataDir,
+      "packages",
+      LOCAL_UPLOAD_ACCOUNT_HASH,
+      "_incoming",
+    );
+    await fs.promises.mkdir(incomingDir, { recursive: true });
+    const sourcePath = path.join(incomingDir, "display-name-test.ipa");
+    await fs.promises.writeFile(sourcePath, "test");
+    const software: Software = {
+      id: 0,
+      bundleID: "com.example.display-name-test",
+      name: "Embedded Name",
+      version: "1.2.3",
+      artistName: "Local Upload",
+      sellerName: "Local Upload",
+      description: "",
+      averageUserRating: 0,
+      userRatingCount: 0,
+      artworkUrl: "",
+      screenshotUrls: [],
+      minimumOsVersion: "15.0",
+      releaseDate: new Date().toISOString(),
+      primaryGenreName: "Local IPA",
+    };
+    const task = createUploadedTask(
+      software,
+      LOCAL_UPLOAD_ACCOUNT_HASH,
+      sourcePath,
+      undefined,
+      "原始文件名_1.2.3.ipa",
+    );
+
+    try {
+      const updated = await request(app)
+        .post(`/api/downloads/${task.id}/display-name`)
+        .set("X-Local-IPA-Token", localIpaPasswordHash)
+        .send({ displayName: "测试版本" });
+      expect(updated.status).toBe(200);
+      expect(updated.body.displayName).toBe("测试版本");
+      expect(updated.body.originalFileName).toBe("原始文件名_1.2.3.ipa");
+
+      const reset = await request(app)
+        .post(`/api/downloads/${task.id}/display-name`)
+        .set("X-Local-IPA-Token", localIpaPasswordHash)
+        .send({ displayName: null });
+      expect(reset.status).toBe(200);
+      expect(reset.body.displayName).toBeUndefined();
+    } finally {
+      deleteTask(task.id);
+    }
   });
 });
 

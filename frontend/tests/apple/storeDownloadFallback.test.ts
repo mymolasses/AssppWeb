@@ -159,6 +159,27 @@ describe('apple store download fallback', () => {
     expect(appleRequest).toHaveBeenCalledOnce();
   });
 
+  it('accepts device downloads when Apple omits sinf data', async () => {
+    vi.mocked(appleRequest).mockResolvedValueOnce(
+      response({
+        songList: [
+          {
+            URL: 'https://example.com/app.ipa',
+            metadata: {
+              bundleShortVersionString: '2.0',
+              bundleVersion: '200',
+            },
+          },
+        ],
+      }),
+    );
+
+    const result = await getDownloadInfo(account, app);
+
+    expect(result.output.sinfs).toEqual([]);
+    expect(result.output.downloadURL).toBe('https://example.com/app.ipa');
+  });
+
   it('does not retry a native Mac purchase with Apple Arcade pricing', async () => {
     vi.mocked(appleRequest).mockResolvedValueOnce(
       response({ failureType: '2059' }),

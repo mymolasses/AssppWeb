@@ -55,6 +55,10 @@ export interface IpaSigningInfo {
 export interface DownloadTask {
   id: string;
   software: Software;
+  /** User-facing title. The IPA's embedded app name remains in software.name. */
+  displayName?: string;
+  /** Original filename supplied by the browser for a local IPA upload. */
+  originalFileName?: string;
   accountHash: string;
   downloadURL: string;
   sinfs: Sinf[];
@@ -77,6 +81,8 @@ export interface DownloadTask {
 export interface PackageInfo {
   id: string;
   software: Software;
+  displayName?: string;
+  originalFileName?: string;
   accountHash: string;
   filePath: string;
   fileSize: number;

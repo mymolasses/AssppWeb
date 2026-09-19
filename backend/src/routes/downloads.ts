@@ -17,6 +17,7 @@ import {
   addProgressListener,
   removeProgressListener,
   sanitizeTaskForResponse,
+  updateTaskDisplayName,
   updateTaskSigningInfo,
   validateDownloadURL,
 } from "../services/downloadManager.js";
@@ -33,9 +34,18 @@ const router = Router();
 
 const PACKAGES_DIR = path.join(config.dataDir, "packages");
 
-function sanitizeUploadName(value: string): string {
+function normalizeUploadName(value: string): string {
   const base = path.basename(value || "uploaded.ipa");
-  return base.replace(/[^\w .()-]/g, "_").slice(0, 200) || "uploaded.ipa";
+  return (
+    base.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 255) ||
+    "uploaded.ipa"
+  );
+}
+
+function normalizeDisplayName(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  return normalized ? normalized.slice(0, 120) : undefined;
 }
 
 function decodeUploadName(value: string): string {
@@ -212,7 +222,7 @@ router.post("/downloads/upload", async (req: Request, res: Response) => {
     }
   }
 
-  const fileName = sanitizeUploadName(
+  const fileName = normalizeUploadName(
     typeof req.headers["x-file-name"] === "string"
       ? decodeUploadName(req.headers["x-file-name"])
       : "uploaded.ipa",
@@ -245,11 +255,18 @@ router.post("/downloads/upload", async (req: Request, res: Response) => {
     );
     const software = buildUploadedSoftware(info, fileName, stats.size);
     const signingInfo = await analyzeIpaSigning(tempPath, software.bundleID);
+    const displayName = normalizeDisplayName(
+      typeof req.headers["x-display-name"] === "string"
+        ? decodeUploadName(req.headers["x-display-name"])
+        : undefined,
+    );
     const task = createUploadedTask(
       software,
       LOCAL_UPLOAD_ACCOUNT_HASH,
       tempPath,
       signingInfo,
+      fileName,
+      displayName,
     );
     res.status(201).json(sanitizeTaskForResponse(task));
   } catch (err) {
@@ -262,6 +279,44 @@ router.post("/downloads/upload", async (req: Request, res: Response) => {
       error: err instanceof Error ? err.message : "Failed to upload IPA",
     });
   }
+});
+
+// Change the user-facing title of a locally uploaded IPA without modifying it.
+router.post("/downloads/:id/display-name", (req: Request, res: Response) => {
+  const localIpaToken = req.headers["x-local-ipa-token"];
+  if (
+    typeof localIpaToken !== "string" ||
+    !verifyLocalIpaToken(localIpaToken)
+  ) {
+    res.status(403).json({ error: "Local IPA password required" });
+    return;
+  }
+
+  const id = getIdParam(req);
+  const task = getTask(id);
+  if (!task) {
+    res.status(404).json({ error: "Download not found" });
+    return;
+  }
+  if (task.accountHash !== LOCAL_UPLOAD_ACCOUNT_HASH) {
+    res
+      .status(400)
+      .json({ error: "Display names can only be changed for uploaded IPAs" });
+    return;
+  }
+  if (
+    req.body?.displayName !== null &&
+    typeof req.body?.displayName !== "string"
+  ) {
+    res.status(400).json({ error: "displayName must be a string or null" });
+    return;
+  }
+
+  const updated = updateTaskDisplayName(
+    id,
+    normalizeDisplayName(req.body?.displayName),
+  );
+  res.json(sanitizeTaskForResponse(updated!));
 });
 
 // List downloads filtered by account hashes

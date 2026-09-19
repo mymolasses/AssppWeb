@@ -85,6 +85,8 @@ function persistTasks() {
     .map((t) => ({
       id: t.id,
       software: t.software,
+      displayName: t.displayName,
+      originalFileName: t.originalFileName,
       accountHash: t.accountHash,
       downloadURL: "",
       sinfs: [],
@@ -213,6 +215,8 @@ function initOnStartup() {
             const task: DownloadTask = {
               id: item.id,
               software: item.software,
+              displayName: item.displayName,
+              originalFileName: item.originalFileName,
               accountHash: item.accountHash,
               downloadURL: "",
               sinfs: [],
@@ -333,6 +337,19 @@ export function updateTaskSigningInfo(
   return task;
 }
 
+export function updateTaskDisplayName(
+  id: string,
+  displayName?: string,
+): DownloadTask | undefined {
+  const task = tasks.get(id);
+  if (!task) return undefined;
+
+  task.displayName = displayName;
+  persistTasks();
+  notifyProgress(task);
+  return task;
+}
+
 export function deleteTask(id: string): boolean {
   const task = tasks.get(id);
   if (!task) return false;
@@ -445,6 +462,8 @@ export function createUploadedTask(
   accountHash: string,
   sourceFilePath: string,
   signingInfo?: IpaSigningInfo,
+  originalFileName?: string,
+  displayName?: string,
 ): DownloadTask {
   safePathSegment(accountHash, "accountHash");
   safePathSegment(software.bundleID, "bundleID");
@@ -453,6 +472,8 @@ export function createUploadedTask(
   const task: DownloadTask = {
     id: uuidv4(),
     software,
+    displayName,
+    originalFileName,
     accountHash,
     downloadURL: "",
     sinfs: [],
@@ -556,8 +577,9 @@ async function startDownload(task: DownloadTask) {
     abortControllers.delete(task.id);
     clearTimeout(timeout);
 
-    // Inject sinfs
-    if (task.sinfs.length > 0) {
+    // Add any available license data and metadata. Some Apple device downloads
+    // omit SINF data; their package is still valid and must keep flowing.
+    if (task.sinfs.length > 0 || task.iTunesMetadata) {
       task.status = "injecting";
       task.progress = 100;
       notifyProgress(task);

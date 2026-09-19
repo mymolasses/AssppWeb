@@ -27,6 +27,7 @@ export default function DownloadItem({
 
   const isActive = task.status === 'downloading' || task.status === 'injecting';
   const isPaused = task.status === 'paused';
+  const displayName = task.displayName || task.software.name;
   const detailsHref = `/downloads/${task.id}${
     preview ? '?preview=downloads' : ''
   }`;
@@ -36,7 +37,7 @@ export default function DownloadItem({
       <div className="flex min-w-0 items-start gap-3">
         <AppIcon
           url={task.software.artworkUrl}
-          name={task.software.name}
+          name={displayName}
           size="sm"
         />
         <div className="min-w-0 flex-1">
@@ -46,7 +47,7 @@ export default function DownloadItem({
                 to={detailsHref}
                 className="block truncate text-sm font-semibold text-gray-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
               >
-                {task.software.name}
+                {displayName}
               </Link>
               <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
                 {task.software.artistName}
@@ -82,7 +83,7 @@ export default function DownloadItem({
 
       {(isActive || isPaused) && (
         <div className="mt-3">
-          <ProgressBar progress={task.progress} label={task.software.name} />
+          <ProgressBar progress={task.progress} label={displayName} />
           <div className="mt-1.5 flex min-w-0 justify-between gap-3 text-xs font-medium text-gray-500 dark:text-gray-400">
             <span>{Math.round(task.progress)}%</span>
             {task.speed && isActive && (

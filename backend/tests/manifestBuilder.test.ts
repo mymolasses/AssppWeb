@@ -101,6 +101,19 @@ describe("manifestBuilder", () => {
       expect(manifest).toContain("Test &amp; &lt;App&gt; &quot;Special&quot;");
       expect(manifest).not.toContain("Test & <App>");
     });
+
+    it("uses and escapes a custom display name when provided", () => {
+      const manifest = buildManifest(
+        mockSoftware,
+        "https://example.com/payload.ipa",
+        "https://example.com/small.png",
+        "https://example.com/large.png",
+        "测试版 & Beta",
+      );
+
+      expect(manifest).toContain("<string>测试版 &amp; Beta</string>");
+      expect(manifest).not.toContain("<string>Test App</string>");
+    });
   });
 
   describe("getWhitePng", () => {

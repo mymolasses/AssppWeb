@@ -70,9 +70,29 @@ export class ChunkedDownloader {
       res.headers.get("content-length") || "0",
       10,
     );
-    const supportsRange = acceptRanges === "bytes" && contentLength > 0;
+    if (acceptRanges !== "bytes" || contentLength <= 0) {
+      return { supportsRange: false, contentLength };
+    }
 
-    return { supportsRange, contentLength };
+    // Some CDNs advertise byte ranges but ignore them. Verify with an actual
+    // one-byte request before starting concurrent chunks, matching ipatool 2.6's
+    // stricter resume validation.
+    const rangeResponse = await fetch(this.url, {
+      method: "GET",
+      signal,
+      redirect: "follow",
+      headers: { Range: "bytes=0-0" },
+    });
+    try {
+      const contentRange = rangeResponse.headers.get("content-range");
+      const expectedRange = `bytes 0-0/${contentLength}`;
+      const supportsRange =
+        rangeResponse.status === 206 && contentRange === expectedRange;
+
+      return { supportsRange, contentLength };
+    } finally {
+      await rangeResponse.body?.cancel();
+    }
   }
 
   /** Split total size into chunk ranges. */
@@ -112,8 +132,13 @@ export class ChunkedDownloader {
           headers: { Range: `bytes=${chunk.start}-${chunk.end}` },
         });
 
-        if (res.status !== 206 && res.status !== 200) {
+        if (res.status !== 206) {
           throw new Error(`Chunk ${chunk.index}: HTTP ${res.status}`);
+        }
+        const expectedContentRange =
+          `bytes ${chunk.start}-${chunk.end}/${this.totalSize}`;
+        if (res.headers.get("content-range") !== expectedContentRange) {
+          throw new Error(`Chunk ${chunk.index}: invalid Content-Range`);
         }
         if (!res.body) {
           throw new Error(`Chunk ${chunk.index}: no body`);

@@ -199,10 +199,6 @@ export async function getDownloadInfo(
       }
     }
 
-    if (sinfs.length === 0) {
-      throw new DownloadError(i18n.t('errors.download.noSinf'));
-    }
-
     // Build iTunesMetadata plist
     const metadataDict: Record<string, any> = { ...metadata };
     metadataDict['apple-id'] = account.email;

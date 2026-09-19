@@ -44,6 +44,8 @@ router.get("/packages", (req: Request, res: Response) => {
     packages.push({
       id: task.id,
       software: task.software,
+      displayName: task.displayName,
+      originalFileName: task.originalFileName,
       accountHash: task.accountHash,
       fileSize: stats.size,
       createdAt: task.createdAt,
@@ -84,7 +86,7 @@ router.get("/packages/:id/file", (req: Request, res: Response) => {
     return;
   }
 
-  const safeName = sanitizeFilename(task.software.name);
+  const safeName = sanitizeFilename(task.displayName || task.software.name);
   const safeVersion = sanitizeFilename(task.software.version);
   const fileName = `${safeName}_${safeVersion}.ipa`;
   res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);

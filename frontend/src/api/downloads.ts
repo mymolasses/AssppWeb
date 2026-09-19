@@ -22,6 +22,7 @@ export async function startDownload(data: {
 
 export async function uploadIpa(
   file: File,
+  displayName?: string,
   onProgress?: (progress: number) => void,
 ): Promise<DownloadTask> {
   return new Promise((resolve, reject) => {
@@ -34,6 +35,12 @@ export async function uploadIpa(
     }
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
     xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
+    if (displayName?.trim()) {
+      xhr.setRequestHeader(
+        "X-Display-Name",
+        encodeURIComponent(displayName.trim()),
+      );
+    }
     const localIpaToken = sessionStorage.getItem("local-ipa-token");
     if (localIpaToken) xhr.setRequestHeader("X-Local-IPA-Token", localIpaToken);
 
@@ -58,6 +65,24 @@ export async function uploadIpa(
     xhr.onerror = () => reject(new Error("Upload failed"));
     xhr.send(file);
   });
+}
+
+export async function updateDownloadDisplayName(
+  id: string,
+  displayName?: string,
+): Promise<DownloadTask> {
+  const localIpaToken = sessionStorage.getItem("local-ipa-token");
+  const response = await fetch(`/api/downloads/${id}/display-name`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+      ...(localIpaToken ? { "X-Local-IPA-Token": localIpaToken } : {}),
+    },
+    body: JSON.stringify({ displayName: displayName?.trim() || null }),
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
 }
 
 export async function analyzeDownloadSigning(

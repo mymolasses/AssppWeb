@@ -5,6 +5,7 @@ export function buildManifest(
   payloadUrl: string,
   displayImageSmallUrl: string,
   displayImageLargeUrl: string,
+  displayName?: string,
 ): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -43,7 +44,7 @@ export function buildManifest(
                 <key>kind</key>
                 <string>software</string>
                 <key>title</key>
-                <string>${escapeXml(software.name)}</string>
+                <string>${escapeXml(displayName || software.name)}</string>
             </dict>
         </dict>
     </array>

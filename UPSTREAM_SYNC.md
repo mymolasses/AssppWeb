@@ -30,3 +30,16 @@ Docker builds use the pinned Go module with `-mod=readonly`. Compose builds this
 Regression coverage includes empty/missing item lists, one-time fallback, historical version payloads, cookies across redirects, real errors, HTTP failures, login delegation, account preference retention, local IPA gating, and the Wisp destination allowlist. Frontend/backend type checks, test suites, frontend production build, and Go helper tests/build are run before completing the integration.
 
 Tests use fixtures, not a real Apple account. They verify the retry behavior but cannot establish that Apple will return a usable fallback response for every account or app. Docker deployment and live download/version-history checks require the running instance. No remote push or deployment is part of this local synchronization.
+
+## ipatool v2.6.0 follow-up — 2026-09-19
+
+The SAP authentication helper now pins the official `github.com/majd/ipatool/v2 v2.6.0` release. This brings its improved handling of unexpected Apple authentication responses and the Linux glibc/musl runtime fix into the server-side helper.
+
+The Web download path already had the `updateProduct` recovery needed for empty `volumeStore` responses. Two additional v2.6.0 reliability changes were adapted to the Web architecture:
+
+- Apple download responses without SINF data are accepted. The backend treats license injection as optional and can still add available iTunes metadata before completing the package.
+- Concurrent downloads verify a real `bytes=0-0` response before splitting the file, and every chunk must return the exact requested `Content-Range`. A server that advertises but ignores Range now uses the single-stream path instead of concatenating duplicate full responses.
+
+Native macOS downloads, purchase listing, jailbroken-iOS binaries, and interactive CLI prompts are not exposed by AssppWeb's SAP-only Go helper. ipatool's custom ZIP framing and iTunes artwork writer were not copied: AssppWeb updates IPA entries with the system `zip` utility and serves separate OTA artwork URLs, so those implementations are not directly compatible.
+
+Local IPA tasks now persist the browser-supplied original filename separately from the IPA's embedded application name. They may also persist an optional display name, editable from package details. The display name is used in download cards, notifications, generated filenames, share metadata, and OTA manifest titles; clearing it restores the embedded IPA name. Existing task records remain valid because both fields are optional.

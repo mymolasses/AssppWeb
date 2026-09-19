@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageContainer from '../Layout/PageContainer';
@@ -19,7 +19,10 @@ import { useDownloads } from '../../hooks/useDownloads';
 import { useToastStore } from '../../store/toast';
 import { listVersions } from '../../apple/versionFinder';
 import { lookupApp } from '../../api/search';
-import { analyzeDownloadSigning } from '../../api/downloads';
+import {
+  analyzeDownloadSigning,
+  updateDownloadDisplayName,
+} from '../../api/downloads';
 import { formatBytes } from '../../utils/format';
 import { getAccountContext } from '../../utils/toast';
 import { isNewerVersion } from '../../utils/version';
@@ -50,10 +53,16 @@ function PackageDetailContent() {
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [selectedVersion, setSelectedVersion] = useState('');
   const [checkingSigning, setCheckingSigning] = useState(false);
+  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
 
   const previewEnabled = isDownloadPreviewEnabled(location.search);
   const taskPool = previewEnabled ? previewDownloadTasks : tasks;
   const task = taskPool.find((item) => item.id === id);
+
+  useEffect(() => {
+    setDisplayNameInput(task?.displayName ?? '');
+  }, [task?.id, task?.displayName]);
 
   if (!task) {
     return (
@@ -77,7 +86,7 @@ function PackageDetailContent() {
       : hashToEmail[task.accountHash];
   const account = accounts.find((item) => item.email === accountEmail);
   const accountLabel = accountEmail || task.accountHash;
-  const appName = task.software.name;
+  const appName = task.displayName || task.software.name;
   const taskId = task.id;
   const bundleID = task.software.bundleID;
   const currentVersion = task.software.version;
@@ -134,6 +143,20 @@ function PackageDetailContent() {
       addToast(t('downloads.signing.checkFailed'), 'error');
     } finally {
       setCheckingSigning(false);
+    }
+  }
+
+  async function handleSaveDisplayName() {
+    if (!isLocalUpload || savingDisplayName) return;
+    setSavingDisplayName(true);
+    try {
+      await updateDownloadDisplayName(taskId, displayNameInput);
+      await fetchTasks();
+      addToast(t('downloads.package.displayNameSaved'), 'success');
+    } catch {
+      addToast(t('downloads.package.displayNameFailed'), 'error');
+    } finally {
+      setSavingDisplayName(false);
     }
   }
 
@@ -203,15 +226,15 @@ function PackageDetailContent() {
           <div className="flex min-w-0 items-start gap-4">
             <AppIcon
               url={task.software.artworkUrl}
-              name={task.software.name}
+              name={appName}
               size="lg"
             />
             <div className="min-w-0 flex-1">
               <h2
-                title={task.software.name}
+                title={appName}
                 className="break-words text-xl font-semibold text-gray-900 [overflow-wrap:anywhere] dark:text-white"
               >
-                {task.software.name}
+                {appName}
               </h2>
               <p
                 title={task.software.artistName}
@@ -232,7 +255,7 @@ function PackageDetailContent() {
             <div className="mt-4 min-w-0 border-t border-gray-100 pt-4 dark:border-gray-800">
               <ProgressBar
                 progress={task.progress}
-                label={task.software.name}
+                label={appName}
               />
               <div className="mt-1.5 flex min-w-0 justify-between gap-3 text-sm text-gray-500 dark:text-gray-400">
                 <span>{Math.round(task.progress)}%</span>
@@ -286,6 +309,11 @@ function PackageDetailContent() {
           </dl>
 
           <dl className="mt-4 min-w-0 divide-y divide-gray-100 border-t border-gray-100 text-sm dark:divide-gray-800 dark:border-gray-800">
+            {isLocalUpload && (
+              <PackageDetailRow label={t('downloads.package.originalFileName')}>
+                {task.originalFileName || '—'}
+              </PackageDetailRow>
+            )}
             <PackageDetailRow
               label={t('downloads.package.developer')}
               valueTitle={task.software.sellerName}
@@ -316,6 +344,44 @@ function PackageDetailContent() {
               {new Date(task.createdAt).toLocaleString()}
             </PackageDetailRow>
           </dl>
+
+          {isLocalUpload && (
+            <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+              <label
+                htmlFor="package-display-name"
+                className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                {t('downloads.package.displayName')}
+              </label>
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+                <input
+                  id="package-display-name"
+                  type="text"
+                  maxLength={120}
+                  value={displayNameInput}
+                  disabled={savingDisplayName}
+                  onChange={(event) => setDisplayNameInput(event.target.value)}
+                  placeholder={task.software.name}
+                  className="min-h-11 min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveDisplayName}
+                  disabled={savingDisplayName}
+                  className="min-h-11 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {savingDisplayName
+                    ? t('downloads.package.savingDisplayName')
+                    : t('downloads.package.saveDisplayName')}
+                </button>
+              </div>
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {t('downloads.package.displayNameHelp', {
+                  name: task.software.name,
+                })}
+              </p>
+            </div>
+          )}
         </section>
 
         {task.signingInfo && (
