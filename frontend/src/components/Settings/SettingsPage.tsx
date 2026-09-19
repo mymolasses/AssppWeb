@@ -83,7 +83,9 @@ export default function SettingsPage() {
         accounts,
       };
       const encrypted = await encryptData(backup, exportPassword);
-      const blob = new Blob([encrypted], { type: 'text/plain' });
+      // Use a binary content type so browsers keep the .enc suffix instead of
+      // appending .txt based on text/plain.
+      const blob = new Blob([encrypted], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -371,7 +373,7 @@ export default function SettingsPage() {
               type="file"
               ref={fileInputRef}
               className="hidden"
-              accept=".enc"
+              accept=".enc,.backup,.txt,application/octet-stream,text/plain"
               onChange={handleFileSelect}
             />
           </div>
