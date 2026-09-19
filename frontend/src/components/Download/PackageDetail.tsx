@@ -384,10 +384,6 @@ function PackageDetailContent() {
           )}
         </section>
 
-        {task.signingInfo && (
-          <SigningInfoPanel signingInfo={task.signingInfo} />
-        )}
-
         <section
           aria-labelledby="package-actions-title"
           className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:p-5"
@@ -424,18 +420,6 @@ function PackageDetailContent() {
                   : t('downloads.package.checkUpdate')}
               </button>
             )}
-            {isCompleted && task.hasFile && isLocalUpload && !isPreview && (
-              <button
-                type="button"
-                onClick={handleAnalyzeSigning}
-                disabled={checkingSigning}
-                className="min-h-11 min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-              >
-                {checkingSigning
-                  ? t('downloads.signing.checking')
-                  : t('downloads.signing.check')}
-              </button>
-            )}
             {isActive && (
               <button
                 type="button"
@@ -462,7 +446,24 @@ function PackageDetailContent() {
               {t('downloads.package.delete')}
             </button>
           </div>
+
+          {isCompleted && task.hasFile && isLocalUpload && !isPreview && (
+            <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={handleAnalyzeSigning}
+                disabled={checkingSigning}
+                className="min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                {checkingSigning
+                  ? t('downloads.signing.checking')
+                  : t('downloads.signing.check')}
+              </button>
+            </div>
+          )}
         </section>
+
+        {task.signingInfo && <SigningInfoPanel signingInfo={task.signingInfo} />}
       </div>
 
       <Modal

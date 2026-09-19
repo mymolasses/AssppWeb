@@ -24,6 +24,15 @@ interface ServerInfo {
   downloadThreads?: number;
 }
 
+const ACCOUNT_BACKUP_FORMAT = 'asspp.accounts';
+const ACCOUNT_BACKUP_VERSION = 1;
+
+interface AccountBackup {
+  format: typeof ACCOUNT_BACKUP_FORMAT;
+  version: typeof ACCOUNT_BACKUP_VERSION;
+  accounts: Account[];
+}
+
 const entityTypes = [
   { value: 'iPhone', label: 'iPhone' },
   { value: 'iPad', label: 'iPad' },
@@ -68,12 +77,17 @@ export default function SettingsPage() {
       return;
     }
     try {
-      const encrypted = await encryptData(accounts, exportPassword);
+      const backup: AccountBackup = {
+        format: ACCOUNT_BACKUP_FORMAT,
+        version: ACCOUNT_BACKUP_VERSION,
+        accounts,
+      };
+      const encrypted = await encryptData(backup, exportPassword);
       const blob = new Blob([encrypted], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'asspp-accounts.enc';
+      a.download = 'asspp-accounts.backup.enc';
       a.click();
       URL.revokeObjectURL(url);
 
@@ -103,8 +117,16 @@ export default function SettingsPage() {
   const handleImport = async () => {
     try {
       const parsed = await decryptData(importFileData, importPassword);
-      if (!Array.isArray(parsed)) throw new Error('Invalid format');
-      const valid = parsed.filter(
+      // Accept the current versioned backup envelope and legacy raw arrays.
+      const importedAccounts = Array.isArray(parsed)
+        ? parsed
+        : parsed?.format === ACCOUNT_BACKUP_FORMAT &&
+            parsed?.version === ACCOUNT_BACKUP_VERSION &&
+            Array.isArray(parsed.accounts)
+          ? parsed.accounts
+          : null;
+      if (!importedAccounts) throw new Error('Invalid format');
+      const valid = importedAccounts.filter(
         (item: any) =>
           item &&
           typeof item === 'object' &&
