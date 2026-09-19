@@ -338,8 +338,15 @@ router.get("/downloads", (req: Request, res: Response) => {
     res.json([]);
     return;
   }
+  const localIpaToken = req.headers["x-local-ipa-token"];
+  const canViewLocalIpas =
+    typeof localIpaToken === "string" && verifyLocalIpaToken(localIpaToken);
   const filtered = getAllTasks()
-    .filter((t) => hashes.has(t.accountHash))
+    .filter(
+      (t) =>
+        hashes.has(t.accountHash) &&
+        (t.accountHash !== LOCAL_UPLOAD_ACCOUNT_HASH || canViewLocalIpas),
+    )
     .map(sanitizeTaskForResponse);
   res.json(filtered);
 });

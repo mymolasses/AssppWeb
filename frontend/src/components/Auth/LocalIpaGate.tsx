@@ -8,7 +8,13 @@ export function isLocalIpaUnlocked(): boolean {
   return Boolean(sessionStorage.getItem(SESSION_KEY));
 }
 
-export default function LocalIpaGate({ children }: { children: ReactNode }) {
+export default function LocalIpaGate({
+  children,
+  onUnlock,
+}: {
+  children: ReactNode;
+  onUnlock?: () => void | Promise<void>;
+}) {
   const { t } = useTranslation();
   const [unlocked, setUnlocked] = useState(isLocalIpaUnlocked);
   const [password, setPassword] = useState("");
@@ -30,6 +36,7 @@ export default function LocalIpaGate({ children }: { children: ReactNode }) {
         const token = (result as { token?: string }).token;
         if (token) sessionStorage.setItem(SESSION_KEY, token);
         setUnlocked(true);
+        await onUnlock?.();
       } else {
         setError(true);
       }

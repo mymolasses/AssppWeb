@@ -5,6 +5,7 @@ import PageContainer from '../Layout/PageContainer';
 import Modal from '../common/Modal';
 import ProgressBar from '../common/ProgressBar';
 import Spinner from '../common/Spinner';
+import LocalIpaGate, { isLocalIpaUnlocked } from '../Auth/LocalIpaGate';
 import DownloadItem from './DownloadItem';
 import {
   isDownloadPreviewEnabled,
@@ -28,6 +29,8 @@ type SourceFilter = 'all' | 'store' | 'local';
 type SortMode = 'newest' | 'nameAsc' | 'nameDesc';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const headerActionClass =
+  'inline-flex h-10 min-w-0 items-center justify-center rounded-lg px-3 text-center leading-tight transition-colors';
 
 export default function DownloadList() {
   const { t } = useTranslation();
@@ -39,18 +42,28 @@ export default function DownloadList() {
     resumeDownload,
     deleteDownload,
     hashToEmail,
+    fetchTasks,
   } = useDownloads();
   const [accountFilter, setAccountFilter] = useState('all');
   const [regionFilter, setRegionFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
+  const [localIpaUnlocked, setLocalIpaUnlocked] = useState(
+    isLocalIpaUnlocked,
+  );
   const addToast = useToastStore((s) => s.addToast);
   const viewMode = useUiPreferencesStore((s) => s.downloadsViewMode);
   const setViewMode = useUiPreferencesStore((s) => s.setDownloadsViewMode);
   const { accounts } = useAccounts();
   const { startDownload } = useDownloadAction();
   const previewEnabled = isDownloadPreviewEnabled(location.search);
-  const displayTasks = previewEnabled ? previewDownloadTasks : tasks;
+  const allDisplayTasks = previewEnabled ? previewDownloadTasks : tasks;
+  const displayTasks =
+    previewEnabled || localIpaUnlocked
+      ? allDisplayTasks
+      : allDisplayTasks.filter(
+          (task) => task.accountHash !== LOCAL_UPLOAD_ACCOUNT_HASH,
+        );
 
   const [checkingAll, setCheckingAll] = useState(false);
   const cancelCheckRef = useRef(false);
@@ -112,6 +125,21 @@ export default function DownloadList() {
     accountFilter !== 'all' ||
     regionFilter !== 'all' ||
     sourceFilter !== 'all';
+
+  function taskRegionLabel(task: DownloadTask): string {
+    if (task.accountHash === LOCAL_UPLOAD_ACCOUNT_HASH) {
+      return t('downloads.upload.localSource');
+    }
+    if (isPreviewDownloadTask(task)) return t('countries.US');
+    const email = hashToEmail[task.accountHash];
+    const country = accountStoreCountry(accountByEmail.get(email));
+    return country ? t(`countries.${country}`) : '—';
+  }
+
+  async function handleLocalIpaUnlock() {
+    setLocalIpaUnlocked(true);
+    await fetchTasks();
+  }
 
   function handleDelete(id: string) {
     const task = displayTasks.find((item) => item.id === id);
@@ -244,23 +272,27 @@ export default function DownloadList() {
           <button
             onClick={handleCheckAllUpdates}
             disabled={checkingAll}
-            className="inline-flex h-10 min-w-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-center text-xs font-semibold leading-tight text-emerald-800 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400 sm:text-sm dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-600"
+            className={`${headerActionClass} border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-600`}
           >
-            {checkingAll
-              ? t('downloads.checkingUpdates')
-              : t('downloads.checkUpdates')}
+            <span className="text-sm font-semibold">
+              {checkingAll
+                ? t('downloads.checkingUpdates')
+                : t('downloads.checkUpdates')}
+            </span>
           </button>
           <Link
             to="/downloads/add"
-            className="inline-flex h-10 min-w-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-center text-xs font-semibold leading-tight text-blue-700 transition-colors hover:bg-blue-100 sm:text-sm dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950"
+            className={`${headerActionClass} border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950`}
           >
-            {t('downloads.new')}
+            <span className="text-sm font-semibold">{t('downloads.new')}</span>
           </Link>
           <Link
             to="/downloads/upload"
-            className="inline-flex h-10 min-w-0 items-center justify-center rounded-lg bg-blue-600 px-3 text-center text-xs font-semibold leading-tight text-white transition-colors hover:bg-blue-700 sm:text-sm"
+            className={`${headerActionClass} bg-blue-600 text-white hover:bg-blue-700`}
           >
-            {t('downloads.upload.button')}
+            <span className="text-sm font-semibold">
+              {t('downloads.upload.button')}
+            </span>
           </Link>
         </div>
       </div>
@@ -373,7 +405,13 @@ export default function DownloadList() {
         </div>
       )}
 
-      {loading && displayTasks.length === 0 ? (
+      {!previewEnabled && sourceFilter === 'local' && !localIpaUnlocked ? (
+        <LocalIpaGate onUnlock={handleLocalIpaUnlock}>
+          <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+            {t('downloads.loading')}
+          </div>
+        </LocalIpaGate>
+      ) : loading && displayTasks.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400 py-12">
           {t('downloads.loading')}
         </div>
@@ -469,6 +507,7 @@ export default function DownloadList() {
               task={task}
               preview={previewEnabled}
               compact={viewMode === 'compact'}
+              regionLabel={taskRegionLabel(task)}
               onPause={handlePause}
               onResume={handleResume}
               onDelete={handleDelete}

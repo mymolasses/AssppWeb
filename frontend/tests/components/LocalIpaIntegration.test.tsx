@@ -110,6 +110,7 @@ describe('upstream UI with local IPA protection', () => {
       <MemoryRouter>
         <DownloadItem
           task={task}
+          regionLabel="downloads.upload.localSource"
           onPause={vi.fn()}
           onResume={vi.fn()}
           onDelete={vi.fn()}
@@ -122,6 +123,8 @@ describe('upstream UI with local IPA protection', () => {
     expect(
       screen.getByRole('link', { name: 'downloads.package.title' }),
     ).toHaveAttribute('href', '/downloads/local-test');
+    expect(screen.getByText('downloads.filters.region')).toBeInTheDocument();
+    expect(screen.getByText('downloads.upload.localSource')).toBeInTheDocument();
   });
 
   it('renders compact items with only the app icon and display name', () => {
@@ -130,6 +133,7 @@ describe('upstream UI with local IPA protection', () => {
         <DownloadItem
           task={task}
           compact
+          regionLabel="downloads.upload.localSource"
           onPause={vi.fn()}
           onResume={vi.fn()}
           onDelete={vi.fn()}
@@ -143,6 +147,9 @@ describe('upstream UI with local IPA protection', () => {
     );
     expect(screen.queryByText('Example')).not.toBeInTheDocument();
     expect(screen.queryByText('downloads.package.delete')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('v1.0 · downloads.upload.localSource'),
+    ).toBeInTheDocument();
   });
 
   it('requires unlocking before displaying local IPA details', () => {

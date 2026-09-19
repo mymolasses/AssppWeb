@@ -12,6 +12,7 @@ interface DownloadItemProps {
   task: DownloadTask;
   preview?: boolean;
   compact?: boolean;
+  regionLabel?: string;
   onPause: (id: string) => void;
   onResume: (id: string) => void;
   onDelete: (id: string) => void;
@@ -21,6 +22,7 @@ export default function DownloadItem({
   task,
   preview = false,
   compact = false,
+  regionLabel = '—',
   onPause,
   onResume,
   onDelete,
@@ -48,6 +50,9 @@ export default function DownloadItem({
         />
         <span className="mt-2 w-full truncate text-sm font-semibold text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
           {displayName}
+        </span>
+        <span className="mt-1 w-full truncate text-xs text-gray-500 dark:text-gray-400">
+          v{task.software.version} · {regionLabel}
         </span>
       </Link>
     );
@@ -87,7 +92,7 @@ export default function DownloadItem({
         </div>
       </div>
 
-      <dl className="mt-3 grid min-w-0 grid-cols-3 gap-2">
+      <dl className="mt-3 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
         <SummaryItem
           label={t('downloads.package.version')}
           value={task.software.version}
@@ -99,6 +104,10 @@ export default function DownloadItem({
         <SummaryItem
           label={t('downloads.package.minOs')}
           value={`iOS ${task.software.minimumOsVersion || '—'}`}
+        />
+        <SummaryItem
+          label={t('downloads.filters.region')}
+          value={regionLabel}
         />
       </dl>
 

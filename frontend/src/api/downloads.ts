@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete, authHeaders } from "./client";
+import { apiPost, apiDelete, authHeaders } from "./client";
 import type { DownloadTask, Software, Sinf } from "../types";
 
 export async function fetchDownloads(
@@ -8,7 +8,15 @@ export async function fetchDownloads(
   const params = new URLSearchParams({
     accountHashes: accountHashes.join(","),
   });
-  return apiGet<DownloadTask[]>(`/api/downloads?${params}`);
+  const localIpaToken = sessionStorage.getItem("local-ipa-token");
+  const response = await fetch(`/api/downloads?${params}`, {
+    headers: {
+      ...authHeaders(),
+      ...(localIpaToken ? { "X-Local-IPA-Token": localIpaToken } : {}),
+    },
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
 }
 
 export async function startDownload(data: {

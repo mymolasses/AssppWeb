@@ -128,6 +128,19 @@ describe("Downloads Route", () => {
     );
 
     try {
+      const hiddenList = await request(app).get(
+        `/api/downloads?accountHashes=${LOCAL_UPLOAD_ACCOUNT_HASH}`,
+      );
+      expect(hiddenList.status).toBe(200);
+      expect(hiddenList.body).toEqual([]);
+
+      const unlockedList = await request(app)
+        .get(`/api/downloads?accountHashes=${LOCAL_UPLOAD_ACCOUNT_HASH}`)
+        .set("X-Local-IPA-Token", localIpaPasswordHash);
+      expect(unlockedList.status).toBe(200);
+      expect(unlockedList.body).toHaveLength(1);
+      expect(unlockedList.body[0].id).toBe(task.id);
+
       const updated = await request(app)
         .post(`/api/downloads/${task.id}/display-name`)
         .set("X-Local-IPA-Token", localIpaPasswordHash)
