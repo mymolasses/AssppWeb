@@ -15,7 +15,9 @@ export async function startDownload(data: {
   software: Software;
   accountHash: string;
   downloadURL: string;
+  artworkURL?: string;
   sinfs: Sinf[];
+  iTunesMetadata?: string;
 }): Promise<DownloadTask> {
   return apiPost<DownloadTask>("/api/downloads", data);
 }

@@ -79,6 +79,7 @@ export interface IpaSigningInfo {
 
 export interface DownloadOutput {
   downloadURL: string;
+  artworkURL?: string;
   sinfs: Sinf[];
   bundleShortVersionString: string;
   bundleVersion: string;

@@ -247,6 +247,7 @@ function productResponse() {
   return response({
     songList: [
       {
+        artworkURL: 'https://is1-ssl.mzstatic.com/image/thumb/app.png',
         URL: 'https://example.com/app.ipa',
         metadata: {
           bundleShortVersionString: '2.0',
@@ -323,6 +324,10 @@ describe('empty volumeStore response regression (ipatool #538)', () => {
           expect(result.metadata.displayVersion).toBe('2.0');
         if ('output' in result)
           expect(result.output.downloadURL).toBe('https://example.com/app.ipa');
+        if ('output' in result)
+          expect(result.output.artworkURL).toBe(
+            'https://is1-ssl.mzstatic.com/image/thumb/app.png',
+          );
       },
     );
 

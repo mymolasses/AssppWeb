@@ -88,7 +88,7 @@ The backend proxies the bag endpoint via `GET /api/bag?guid=<deviceId>` using No
 - Express + `@mercuryworkshop/wisp-js` for HTTP and Wisp proxy
 - ESM modules (`"type": "module"` in package.json)
 - `tsx` for development, `tsc` for production build
-- SINF injector also handles optional `iTunesMetadata.plist` injection at IPA root
+- SINF injector also handles optional `iTunesMetadata.plist` and `iTunesArtwork` injection at IPA root
 - Bag proxy for `init.itunes.apple.com`
 
 ### Backend Shared Utilities

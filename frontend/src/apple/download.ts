@@ -210,6 +210,8 @@ export async function getDownloadInfo(
     return {
       output: {
         downloadURL: url,
+        artworkURL:
+          typeof item.artworkURL === 'string' ? item.artworkURL : undefined,
         sinfs,
         bundleShortVersionString: version,
         bundleVersion,

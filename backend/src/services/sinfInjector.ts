@@ -22,6 +22,7 @@ export async function inject(
   sinfs: Sinf[],
   ipaPath: string,
   iTunesMetadata?: string,
+  artwork?: Buffer,
 ): Promise<void> {
   const { bundleName, manifest, info } = await readIpaMetadata(ipaPath);
 
@@ -66,6 +67,13 @@ export async function inject(
     filesToInject.push({
       entryPath: "iTunesMetadata.plist",
       data: metadataBuffer,
+    });
+  }
+
+  if (artwork?.length) {
+    filesToInject.push({
+      entryPath: "iTunesArtwork",
+      data: artwork,
     });
   }
 

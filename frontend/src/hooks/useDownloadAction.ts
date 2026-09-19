@@ -82,6 +82,7 @@ export function useDownloadAction() {
       software: { ...app, version: output.bundleShortVersionString },
       accountHash: hash,
       downloadURL: output.downloadURL,
+      artworkURL: output.artworkURL,
       sinfs: output.sinfs,
       iTunesMetadata: output.iTunesMetadata,
     });

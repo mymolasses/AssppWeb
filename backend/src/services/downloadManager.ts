@@ -3,6 +3,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { config, DOWNLOAD_TIMEOUT_MS } from "../config.js";
 import { inject } from "./sinfInjector.js";
+import { downloadArtwork, validateArtworkURL } from "./artwork.js";
 import { ChunkedDownloader } from "./chunkedDownloader.js";
 import type {
   DownloadTask,
@@ -69,9 +70,16 @@ export function sanitizeTaskForResponse(
   task: DownloadTask,
 ): Omit<
   DownloadTask,
-  "downloadURL" | "sinfs" | "iTunesMetadata" | "filePath"
+  "downloadURL" | "artworkURL" | "sinfs" | "iTunesMetadata" | "filePath"
 > & { hasFile?: boolean } {
-  const { downloadURL, sinfs, iTunesMetadata, filePath, ...safe } = task;
+  const {
+    downloadURL,
+    artworkURL,
+    sinfs,
+    iTunesMetadata,
+    filePath,
+    ...safe
+  } = task;
   return {
     ...safe,
     hasFile: !!filePath && fs.existsSync(filePath),
@@ -430,9 +438,11 @@ export function createTask(
   downloadURL: string,
   sinfs: Sinf[],
   iTunesMetadata?: string,
+  artworkURL?: string,
 ): DownloadTask {
   // Validate download URL
   validateDownloadURL(downloadURL);
+  if (artworkURL) validateArtworkURL(artworkURL);
 
   // Validate path segments
   safePathSegment(accountHash, "accountHash");
@@ -444,6 +454,7 @@ export function createTask(
     software,
     accountHash,
     downloadURL,
+    artworkURL,
     sinfs,
     iTunesMetadata,
     status: "pending",
@@ -574,24 +585,27 @@ async function startDownload(task: DownloadTask) {
     await downloader.download(controller.signal);
 
     chunkDownloaders.delete(task.id);
-    abortControllers.delete(task.id);
-    clearTimeout(timeout);
 
-    // Add any available license data and metadata. Some Apple device downloads
-    // omit SINF data; their package is still valid and must keep flowing.
-    if (task.sinfs.length > 0 || task.iTunesMetadata) {
+    const artwork = await downloadArtwork(task.artworkURL, controller.signal);
+
+    // Add any available license data, metadata, and artwork. Some Apple device
+    // downloads omit SINF data; their package is still valid and must keep flowing.
+    if (task.sinfs.length > 0 || task.iTunesMetadata || artwork) {
       task.status = "injecting";
       task.progress = 100;
       notifyProgress(task);
 
-      await inject(task.sinfs, filePath, task.iTunesMetadata);
+      await inject(task.sinfs, filePath, task.iTunesMetadata, artwork);
     }
 
     task.status = "completed";
     task.progress = 100;
+    abortControllers.delete(task.id);
+    clearTimeout(timeout);
 
     // Strip sensitive data after successful compile
     task.downloadURL = "";
+    task.artworkURL = undefined;
     task.sinfs = [];
     task.iTunesMetadata = undefined;
 

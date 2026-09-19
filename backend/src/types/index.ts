@@ -61,6 +61,7 @@ export interface DownloadTask {
   originalFileName?: string;
   accountHash: string;
   downloadURL: string;
+  artworkURL?: string;
   sinfs: Sinf[];
   iTunesMetadata?: string;
   status:
