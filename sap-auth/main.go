@@ -49,6 +49,7 @@ type response struct {
 	Account      *accountResponse `json:"account,omitempty"`
 	Error        string           `json:"error,omitempty"`
 	CodeRequired bool             `json:"codeRequired,omitempty"`
+	Cookies      []inputCookie    `json:"cookies,omitempty"`
 }
 
 type memoryKeychain struct{}
@@ -103,10 +104,7 @@ func main() {
 
 	result, err := login(store, payload)
 	if err != nil {
-		_ = encoder.Encode(response{
-			Error:        err.Error(),
-			CodeRequired: errors.Is(err, appstore.ErrAuthCodeRequired),
-		})
+		_ = encoder.Encode(authenticationFailure(err, cookieJar))
 		return
 	}
 
@@ -125,6 +123,14 @@ func main() {
 		Pod:                         account.Pod,
 	}
 	_ = encoder.Encode(response{Account: &output})
+}
+
+func authenticationFailure(err error, jar *memoryCookieJar) response {
+	return response{
+		Error:        err.Error(),
+		CodeRequired: errors.Is(err, appstore.ErrAuthCodeRequired) || strings.Contains(err.Error(), "try a fresh 2FA code"),
+		Cookies:      jar.exportCookies(),
+	}
 }
 
 // ipatool retries transient HTTP 204/404/5xx authentication responses itself.

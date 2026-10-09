@@ -36,6 +36,7 @@ export interface SAPAuthResult {
   account?: SAPAuthAccount;
   error?: string;
   codeRequired?: boolean;
+  cookies?: SAPAuthCookie[];
 }
 
 const MAX_HELPER_OUTPUT_BYTES = 1024 * 1024;

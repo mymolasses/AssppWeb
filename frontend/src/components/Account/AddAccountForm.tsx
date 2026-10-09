@@ -8,6 +8,7 @@ import { useToastStore } from '../../store/toast';
 import { authenticate, AuthenticationError } from '../../apple/authenticate';
 import { getErrorMessage } from '../../utils/error';
 import { generateDeviceId, normalizeDeviceId } from '../../apple/config';
+import type { Cookie } from '../../types';
 
 export default function AddAccountForm() {
   const navigate = useNavigate();
@@ -20,12 +21,14 @@ export default function AddAccountForm() {
   const [code, setCode] = useState('');
   const [deviceId, setDeviceId] = useState(() => generateDeviceId());
   const [needsCode, setNeedsCode] = useState(false);
+  const [authCookies, setAuthCookies] = useState<Cookie[]>([]);
   const [loading, setLoading] = useState(false);
   const inputClassName =
     'block min-h-11 w-full min-w-0 max-w-full rounded-xl border-0 bg-gray-100 px-3 py-2 text-base text-gray-900 focus:ring-2 focus:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-800 dark:text-white';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading || (needsCode && !/^\d{6}$/.test(code))) return;
     setLoading(true);
 
     try {
@@ -36,15 +39,19 @@ export default function AddAccountForm() {
         email,
         password,
         needsCode && code ? code : undefined,
-        undefined,
+        authCookies,
         cleanedDeviceId,
       );
       await addAccount(account);
       addToast(t('accounts.addForm.addSuccess'), 'success');
       navigate('/accounts');
     } catch (err) {
+      if (err instanceof AuthenticationError && err.cookies) {
+        setAuthCookies(err.cookies);
+      }
       if (err instanceof AuthenticationError && err.codeRequired) {
         setNeedsCode(true);
+        setCode('');
         addToast(err.message, 'error');
       } else {
         addToast(
@@ -74,7 +81,12 @@ export default function AddAccountForm() {
                 type="text"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setAuthCookies([]);
+                  setNeedsCode(false);
+                  setCode('');
+                }}
                 disabled={loading}
                 placeholder={t('accounts.addForm.emailPlaceholder')}
                 className={inputClassName}
@@ -93,7 +105,12 @@ export default function AddAccountForm() {
                 type="password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setAuthCookies([]);
+                  setNeedsCode(false);
+                  setCode('');
+                }}
                 disabled={loading}
                 className={inputClassName}
               />
@@ -143,9 +160,8 @@ export default function AddAccountForm() {
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  maxLength={6}
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => setCode(e.target.value.replace(/\s/g, ''))}
                   disabled={loading}
                   placeholder={t('accounts.addForm.codePlaceholder')}
                   className={inputClassName}
@@ -161,7 +177,7 @@ export default function AddAccountForm() {
           <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-center">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (needsCode && !/^\d{6}$/.test(code))}
               className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading && <Spinner />}

@@ -48,7 +48,9 @@ describe("apple/authenticate", () => {
   it("preserves the backend 2FA requirement", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
-        JSON.stringify({ error: "auth code is required", codeRequired: true }),
+        JSON.stringify({ error: "auth code is required", codeRequired: true,
+          cookies: [{ name: 'challenge', value: 'test-session', domain: 'auth.itunes.apple.com', path: '/', httpOnly: true, secure: true }],
+        }),
         { status: 401, headers: { "Content-Type": "application/json" } },
       ),
     );
@@ -64,6 +66,7 @@ describe("apple/authenticate", () => {
     ).rejects.toMatchObject({
       message: "auth code is required",
       codeRequired: true,
+      cookies: [{ name: 'challenge', value: 'test-session', domain: 'auth.itunes.apple.com', path: '/', httpOnly: true, secure: true }],
     });
   });
 

@@ -5,6 +5,7 @@ export class AuthenticationError extends Error {
   constructor(
     message: string,
     public readonly codeRequired: boolean = false,
+    public readonly cookies?: Cookie[],
   ) {
     super(message);
     this.name = 'AuthenticationError';
@@ -14,6 +15,7 @@ export class AuthenticationError extends Error {
 interface AuthenticationFailure {
   error?: string;
   codeRequired?: boolean;
+  cookies?: Cookie[];
 }
 
 type AuthenticatedAccount = Omit<Account, 'password'>;
@@ -69,7 +71,7 @@ export async function authenticate(
       body: JSON.stringify({
         email,
         password,
-        authCode: code?.replace(/ /g, ''),
+        authCode: code?.replace(/\s/g, ''),
         deviceId,
         existingCookies: sanitizeExistingCookies(existingCookies),
       }),
@@ -87,6 +89,9 @@ export async function authenticate(
     throw new AuthenticationError(
       failure.error || 'Apple authentication failed',
       failure.codeRequired === true,
+      Array.isArray(failure.cookies)
+        ? sanitizeExistingCookies(failure.cookies)
+        : undefined,
     );
   }
 

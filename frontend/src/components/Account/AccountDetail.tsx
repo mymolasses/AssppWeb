@@ -13,6 +13,7 @@ import {
   normalizeDeviceId,
   storeIdToCountry,
 } from '../../apple/config';
+import type { Cookie } from '../../types';
 
 export default function AccountDetail() {
   const { email } = useParams<{ email: string }>();
@@ -33,10 +34,18 @@ export default function AccountDetail() {
   const [needsCode, setNeedsCode] = useState(false);
   const [freshReauth, setFreshReauth] = useState(false);
   const [reauthError, setReauthError] = useState('');
+  const [authCookies, setAuthCookies] = useState<Cookie[] | undefined>();
+  const [authDeviceId, setAuthDeviceId] = useState<string | undefined>();
 
   useEffect(() => {
     loadAccounts();
-  }, [loadAccounts]);
+    setAuthCookies(undefined);
+    setAuthDeviceId(undefined);
+    setNeedsCode(false);
+    setReauthCode('');
+    setFreshReauth(false);
+    setReauthError('');
+  }, [loadAccounts, email]);
 
   const decodedEmail = email ? decodeURIComponent(email) : '';
   const account = accounts.find((a) => a.email === decodedEmail);
@@ -66,7 +75,7 @@ export default function AccountDetail() {
   }
 
   async function handleReauth() {
-    if (!account) return;
+    if (!account || reauthing || (needsCode && !/^\d{6}$/.test(reauthCode))) return;
     const currentAccount = account;
     setReauthing(true);
     setReauthError('');
@@ -74,9 +83,12 @@ export default function AccountDetail() {
     const normalizedDeviceId = normalizeDeviceId(
       account.deviceIdentifier || '',
     );
-    const deviceId = /^[a-f0-9]{12}$/.test(normalizedDeviceId)
-      ? normalizedDeviceId
-      : generateDeviceId();
+    const deviceId = authDeviceId || (
+      /^[a-f0-9]{12}$/.test(normalizedDeviceId)
+        ? normalizedDeviceId
+        : generateDeviceId()
+    );
+    setAuthDeviceId(deviceId);
 
     async function authenticateAndSave(
       cookies: typeof currentAccount.cookies,
@@ -93,25 +105,41 @@ export default function AccountDetail() {
       setNeedsCode(false);
       setReauthCode('');
       setFreshReauth(false);
+      setAuthCookies(undefined);
+      setAuthDeviceId(undefined);
       addToast(t('accounts.detail.reauthSuccess'), 'success');
     }
 
     try {
       await authenticateAndSave(
-        freshReauth ? [] : account.cookies,
+        authCookies ?? (freshReauth ? [] : account.cookies),
         needsCode && reauthCode ? reauthCode : undefined,
       );
     } catch (err) {
+      if (err instanceof AuthenticationError && err.cookies) {
+        setAuthCookies(err.cookies);
+      }
       if (err instanceof AuthenticationError && err.codeRequired) {
         setNeedsCode(true);
+        setReauthCode('');
         setReauthError(err.message);
         addToast(err.message, 'error');
-      } else if (err instanceof AuthenticationError && !freshReauth) {
+      } else if (
+        err instanceof AuthenticationError &&
+        !freshReauth &&
+        !needsCode &&
+        account.cookies.length > 0
+      ) {
+        setFreshReauth(true);
+        setAuthCookies([]);
         try {
           // Cached-session failure: immediately make one clean-login attempt.
           addToast(t('accounts.detail.reauthRetrying'), 'info');
           await authenticateAndSave([]);
         } catch (freshError) {
+          if (freshError instanceof AuthenticationError && freshError.cookies) {
+            setAuthCookies(freshError.cookies);
+          }
           if (
             freshError instanceof AuthenticationError &&
             freshError.codeRequired
@@ -205,9 +233,8 @@ export default function AccountDetail() {
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={6}
                 value={reauthCode}
-                onChange={(e) => setReauthCode(e.target.value)}
+                onChange={(e) => setReauthCode(e.target.value.replace(/\s/g, ''))}
                 disabled={reauthing}
                 placeholder="000000"
                 className="min-h-11 w-full min-w-0 flex-1 rounded-xl border-0 bg-gray-100 px-3 py-2 text-base text-gray-900 focus:ring-2 focus:ring-blue-500/40 disabled:opacity-60 dark:bg-gray-800 dark:text-white"
@@ -215,7 +242,7 @@ export default function AccountDetail() {
               />
               <button
                 onClick={handleReauth}
-                disabled={reauthing || !reauthCode}
+                disabled={reauthing || !/^\d{6}$/.test(reauthCode)}
                 className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {reauthing && <Spinner />}
@@ -228,7 +255,7 @@ export default function AccountDetail() {
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleReauth}
-            disabled={reauthing}
+            disabled={reauthing || needsCode}
             className="flex min-h-11 items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {reauthing && <Spinner />}

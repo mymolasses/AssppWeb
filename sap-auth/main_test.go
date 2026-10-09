@@ -2,10 +2,29 @@ package main
 
 import (
 	"errors"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"testing"
 
 	"github.com/majd/ipatool/v2/pkg/appstore"
 )
+
+func TestAuthenticationFailureRetainsChallenge(t *testing.T) {
+	jar, _ := cookiejar.New(nil)
+	cookies := &memoryCookieJar{Jar: jar}
+	origin, _ := url.Parse("https://auth.itunes.apple.com/")
+	cookies.SetCookies(origin, []*http.Cookie{{Name: "challenge", Value: "test-session", Path: "/", Secure: true}})
+	for _, err := range []error{appstore.ErrAuthCodeRequired, errors.New("apple did not complete verification; try a fresh 2FA code")} {
+		result := authenticationFailure(err, cookies)
+		if !result.CodeRequired || len(result.Cookies) != 1 || result.Cookies[0].Value != "test-session" {
+			t.Fatal("2FA challenge must retain cookies and request code input")
+		}
+	}
+	if authenticationFailure(errors.New("transport timeout"), cookies).CodeRequired {
+		t.Fatal("transport failures must not be mistaken for a new challenge")
+	}
+}
 
 type stubLoginClient struct {
 	calls  int

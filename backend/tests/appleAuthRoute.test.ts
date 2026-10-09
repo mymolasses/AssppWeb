@@ -66,6 +66,7 @@ describe("Apple SAP authentication route", () => {
     vi.mocked(runSAPAuthentication).mockResolvedValue({
       error: "auth code is required",
       codeRequired: true,
+      cookies: [{ name: 'challenge', value: 'test-session', domain: 'auth.itunes.apple.com', path: '/', httpOnly: true, secure: true }],
     });
 
     const response = await request(createApp())
@@ -80,6 +81,7 @@ describe("Apple SAP authentication route", () => {
     expect(response.body).toEqual({
       error: "auth code is required",
       codeRequired: true,
+      cookies: [{ name: 'challenge', value: 'test-session', domain: 'auth.itunes.apple.com', path: '/', httpOnly: true, secure: true }],
     });
   });
 });

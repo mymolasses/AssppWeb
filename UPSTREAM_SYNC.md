@@ -1,5 +1,30 @@
 # Upstream synchronization — 2026-09-06
 
+## Authentication repair — 2026-10-09
+
+The SAP helper now pins official ipatool commit `e3932cec31765b025b8e3edd6797e9e69c3c3fa8`
+(`v2.6.1-0.20261007230230-e3932cec3176`), rather than the v2.6.0 release.
+This includes 2FA input/error handling (735b689), signed POST preservation across
+301/302/307/308 redirects (1ec8b3e), bounded authentication requests and transport
+retries (e258fed), initial authentication path normalization (f9aa653), and
+phone-number account storefront routing (93b527a).
+
+Fork-specific adaptation: the one-shot helper returns its cookie jar with login
+errors, and the backend forwards it to the browser. Add-account and reauthentication
+forms keep these cookies in component memory for the next verification request;
+unsuccessful logins are not saved as accounts. SAP signers still have the same
+per-Login lifetime as official ipatool. No credentials or challenge cookies are
+stored by the backend.
+
+Reauthentication preserves the device ID throughout a challenge and only permits
+the existing fresh-cookie fallback before 2FA begins. Verification failures must
+not silently start a password-only login. A fresh-code response clears the old
+input and keeps the verification field visible. Account/password changes reset
+the add-account challenge; changing the detail route clears pending state.
+
+Validation uses mock challenges and fixture cookies; live Apple authentication
+still requires testing against the deployed helper and the user's network.
+
 ## Sources
 
 - Fork baseline: `mymolasses/AssppWeb` main at `75201f9`.

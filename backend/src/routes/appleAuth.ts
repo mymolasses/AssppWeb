@@ -56,6 +56,7 @@ router.post("/apple/authenticate", async (req: Request, res: Response) => {
       res.status(401).json({
         error: result.error || "Apple authentication failed",
         codeRequired: result.codeRequired === true,
+        cookies: result.cookies,
       });
       return;
     }
