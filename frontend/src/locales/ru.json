@@ -50,8 +50,8 @@
     "free": "Бесплатно",
     "product": {
       "title": "Сведения о приложении",
-      "openInAppStore": "Переключить App Store на {{region}}",
-      "appStoreWebPage": "Веб-страница",
+      "openInAppStore": "Сменить регион App Store на {{region}}",
+      "appStoreWebPage": "Открыть страницу приложения",
       "previewBadge": "Интерактивный предпросмотр",
       "previewDescription": "Приложение и аккаунт вымышлены. Действия не обращаются к Apple и не создают реальные задачи.",
       "previewActionComplete": "Имитация действия завершена. Реальные данные не изменены.",

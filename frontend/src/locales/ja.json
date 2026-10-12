@@ -50,8 +50,8 @@
     "free": "無料",
     "product": {
       "title": "アプリの詳細",
-      "openInAppStore": "{{region}}の App Store に切り替えて開く",
-      "appStoreWebPage": "Web ページ",
+      "openInAppStore": "App Store を{{region}}に切り替える",
+      "appStoreWebPage": "アプリの詳細を開く",
       "previewBadge": "インタラクティブプレビュー",
       "previewDescription": "このアプリとアカウントは架空のものです。操作によって Apple に接続したり、実際のタスクを作成したりすることはありません。",
       "previewActionComplete": "シミュレーション操作が完了しました。実際のデータは変更されていません。",

@@ -40,7 +40,7 @@ export default function AppStoreLink({
         href={`https://apps.apple.com/${cc}/app/id${appId}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex min-h-10 items-center justify-center rounded-full bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 sm:text-sm"
+        className="inline-flex min-h-10 max-w-full items-center justify-center rounded-full bg-purple-50 px-4 py-2 text-center text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-100 dark:bg-purple-950/60 dark:text-purple-300 dark:hover:bg-purple-950 sm:text-sm"
       >
         {t('search.product.appStoreWebPage')}
       </a>

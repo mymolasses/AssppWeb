@@ -58,8 +58,8 @@
     "free": "免费",
     "product": {
       "title": "应用详情",
-      "openInAppStore": "切换到{{region}}并打开",
-      "appStoreWebPage": "网页版",
+      "openInAppStore": "AppStore切换到{{region}}地区",
+      "appStoreWebPage": "打开App详情页",
       "previewBadge": "交互预览",
       "previewDescription": "这是虚构应用和账号；操作不会联系 Apple，也不会创建真实任务。",
       "previewActionComplete": "模拟操作已完成，未更改任何真实数据。",
