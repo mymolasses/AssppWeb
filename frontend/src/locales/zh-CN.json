@@ -58,6 +58,7 @@
     "free": "免费",
     "product": {
       "title": "应用详情",
+      "openInAppStore": "打开{{region}} App Store",
       "previewBadge": "交互预览",
       "previewDescription": "这是虚构应用和账号；操作不会联系 Apple，也不会创建真实任务。",
       "previewActionComplete": "模拟操作已完成，未更改任何真实数据。",

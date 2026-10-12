@@ -92,7 +92,7 @@ function deferredPromise() {
   return { promise, resolve, reject };
 }
 
-function renderProductDetail(onRender?: () => void) {
+function renderProductDetail(onRender?: () => void, country = 'US') {
   const product = <ProductDetail />;
 
   return render(
@@ -100,7 +100,7 @@ function renderProductDetail(onRender?: () => void) {
       initialEntries={[
         {
           pathname: `/search/${app.id}`,
-          state: { app, country: 'US' },
+          state: { app, country },
         },
       ]}
     >
@@ -151,6 +151,13 @@ describe('ProductDetail download action', () => {
       vi.useRealTimers();
     }
     useToastStore.setState({ toasts: [] });
+  });
+
+  it('links to the searched storefront even when the selected account is Indian', () => {
+    mocks.accounts = [{ ...account, store: '143467' }];
+    renderProductDetail(undefined, 'HK');
+    expect(screen.getByRole('link', { name: 'search.product.openInAppStore' }))
+      .toHaveAttribute('href', `https://apps.apple.com/hk/app/id${app.id}`);
   });
 
   it('keeps the download button stable until startDownload resolves', async () => {

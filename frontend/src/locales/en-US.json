@@ -58,6 +58,7 @@
     "free": "Free",
     "product": {
       "title": "App Details",
+      "openInAppStore": "Open {{region}} App Store",
       "previewBadge": "Interactive Preview",
       "previewDescription": "This app and account are fictional. Actions will not contact Apple or create real tasks.",
       "previewActionComplete": "Simulated action completed. No real data was changed.",

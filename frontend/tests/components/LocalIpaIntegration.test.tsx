@@ -4,10 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DownloadItem from '../../src/components/Download/DownloadItem';
 import PackageDetail from '../../src/components/Download/PackageDetail';
 import { LOCAL_UPLOAD_ACCOUNT_HASH } from '../../src/constants/downloads';
-import type { DownloadTask } from '../../src/types';
+import type { Account, DownloadTask } from '../../src/types';
 
 const mocks = vi.hoisted(() => ({
   tasks: [] as DownloadTask[],
+  accounts: [] as Account[],
+  hashToEmail: {} as Record<string, string>,
   fetchTasks: vi.fn(),
   analyzeSigning: vi.fn(),
   updateDisplayName: vi.fn(),
@@ -19,12 +21,12 @@ vi.mock('react-i18next', () => ({
 vi.mock('../../src/hooks/useDownloads', () => ({
   useDownloads: () => ({
     tasks: mocks.tasks,
-    hashToEmail: {},
+    hashToEmail: mocks.hashToEmail,
     fetchTasks: mocks.fetchTasks,
   }),
 }));
 vi.mock('../../src/hooks/useAccounts', () => ({
-  useAccounts: () => ({ accounts: [] }),
+  useAccounts: () => ({ accounts: mocks.accounts }),
 }));
 vi.mock('../../src/hooks/useDownloadAction', () => ({
   useDownloadAction: () => ({ startDownload: vi.fn() }),
@@ -100,9 +102,19 @@ describe('upstream UI with local IPA protection', () => {
   beforeEach(() => {
     sessionStorage.clear();
     mocks.tasks = [task];
+    mocks.accounts = [];
+    mocks.hashToEmail = {};
     mocks.fetchTasks.mockReset();
     mocks.analyzeSigning.mockReset();
     mocks.updateDisplayName.mockReset();
+  });
+
+  it('opens the downloaded app in its account storefront, including compound storefront IDs', () => {
+    mocks.accounts = [{ email: 'hk@example.test', store: '143463-2,34' } as Account];
+    mocks.hashToEmail = { 'hk-account': 'hk@example.test' };
+    renderTaskDetail({ ...task, accountHash: 'hk-account', software: { ...task.software, id: 123456 } });
+    expect(screen.getByRole('link', { name: 'search.product.openInAppStore' }))
+      .toHaveAttribute('href', 'https://apps.apple.com/hk/app/id123456');
   });
 
   it('keeps local IPA quick actions behind the details gate', () => {

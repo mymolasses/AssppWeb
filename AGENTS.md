@@ -116,6 +116,7 @@ The backend proxies the bag endpoint via `GET /api/bag?guid=<deviceId>` using No
 - **Spinner** — inline SVG loading spinner for buttons
 - **CountrySelect** — optgroup-based country dropdown with "Available Regions" + "All Regions"
 - **AppIcon** — 3 sizes (40/56/80px), rounded corners, letter fallback
+- **AppStoreLink** — region-specific App Store link; requires a positive app ID and known country, and must not use a default region for orphaned downloads
 - **Badge** — color-coded status pill
 - **ProgressBar** — gray track, blue fill, percentage label
 - **icons** — shared SVG icon components (`HomeIcon`, `AccountsIcon`, `SearchIcon`, `DownloadsIcon`, `SettingsIcon`, `SunIcon`, `MoonIcon`, `SystemIcon`) used by Sidebar, MobileNav, and MobileHeader

@@ -50,6 +50,7 @@
     "free": "무료",
     "product": {
       "title": "앱 세부 정보",
+      "openInAppStore": "{{region}} App Store 열기",
       "previewBadge": "인터랙티브 미리보기",
       "previewDescription": "이 앱과 계정은 가상 데이터입니다. 작업을 실행해도 Apple에 연결하거나 실제 작업을 생성하지 않습니다.",
       "previewActionComplete": "모의 작업이 완료되었습니다. 실제 데이터는 변경되지 않았습니다.",

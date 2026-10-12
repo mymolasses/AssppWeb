@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import PageContainer from '../Layout/PageContainer';
 import Alert from '../common/Alert';
 import AppIcon from '../common/AppIcon';
+import AppStoreLink from '../common/AppStoreLink';
 import Spinner from '../common/Spinner';
 import {
   isProductPreviewEnabled,
@@ -189,6 +190,7 @@ export default function ProductDetail() {
                 {t('search.product.ratings')})
               </span>
             </div>
+            {!previewEnabled && <AppStoreLink appId={app.id} country={country} />}
           </div>
         </section>
 

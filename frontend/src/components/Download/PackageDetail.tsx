@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageContainer from '../Layout/PageContainer';
 import AppIcon from '../common/AppIcon';
+import AppStoreLink from '../common/AppStoreLink';
 import Badge from '../common/Badge';
 import Modal from '../common/Modal';
 import ProgressBar from '../common/ProgressBar';
@@ -248,6 +249,12 @@ function PackageDetailContent() {
                   v{task.software.version}
                 </span>
               </div>
+              {!isLocalUpload && !isPreview && (
+                <AppStoreLink
+                  appId={task.software.id}
+                  country={account && storeIdToCountry(account.store)}
+                />
+              )}
             </div>
           </div>
 
