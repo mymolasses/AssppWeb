@@ -50,7 +50,8 @@
     "free": "Бесплатно",
     "product": {
       "title": "Сведения о приложении",
-      "openInAppStore": "Открыть App Store ({{region}})",
+      "openInAppStore": "Переключить App Store на {{region}}",
+      "appStoreWebPage": "Веб-страница",
       "previewBadge": "Интерактивный предпросмотр",
       "previewDescription": "Приложение и аккаунт вымышлены. Действия не обращаются к Apple и не создают реальные задачи.",
       "previewActionComplete": "Имитация действия завершена. Реальные данные не изменены.",

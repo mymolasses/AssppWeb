@@ -1,5 +1,22 @@
 # Upstream synchronization — 2026-09-06
 
+## Storefront link repair — 2026-10-12
+
+The region link now uses the HTTPS `resetAndRedirect` route found in the user's
+shared [App Store region shortcut](https://www.icloud.com/shortcuts/67efad4a8afb41ef825b56478e86e43e).
+Unlike an ordinary apps.apple.com link, it requests a storefront reset using
+`dsf`. The shortcut's fixed app ID is replaced by the displayed app ID. The
+nested `viewSoftware` URL is fully encoded: in a public Apple endpoint probe,
+the original unescaped query lost the app ID while the encoded version retained
+the app ID and country and returned `X-Set-Apple-Store-Front: 143463-2,8` for HK.
+A normal apps.apple.com link remains as a separate web fallback.
+
+The public protocol response includes a Reset action and `signout=true`.
+This alone does not establish how a current iPhone handles its saved Apple
+Account: the user reports that their shortcut switches browsing storefronts
+without logging out. Account retention and navigation still need real-device
+validation; switching the browsing storefront does not grant cross-region purchases.
+
 ## Authentication repair — 2026-10-09
 
 The SAP helper now pins official ipatool commit `e3932cec31765b025b8e3edd6797e9e69c3c3fa8`

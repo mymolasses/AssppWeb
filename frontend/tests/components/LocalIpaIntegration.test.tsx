@@ -113,8 +113,13 @@ describe('upstream UI with local IPA protection', () => {
     mocks.accounts = [{ email: 'hk@example.test', store: '143463-2,34' } as Account];
     mocks.hashToEmail = { 'hk-account': 'hk@example.test' };
     renderTaskDetail({ ...task, accountHash: 'hk-account', software: { ...task.software, id: 123456 } });
-    expect(screen.getByRole('link', { name: 'search.product.openInAppStore' }))
-      .toHaveAttribute('href', 'https://apps.apple.com/hk/app/id123456');
+    const url = new URL(screen.getByRole('link', {
+      name: 'search.product.openInAppStore',
+    }).getAttribute('href')!);
+    expect(url.searchParams.get('dsf')).toBe('143463');
+    expect(url.searchParams.get('url')).toBe(
+      '/WebObjects/MZStore.woa/wa/viewSoftware?mt=8&id=123456&cc=hk',
+    );
   });
 
   it('keeps local IPA quick actions behind the details gate', () => {

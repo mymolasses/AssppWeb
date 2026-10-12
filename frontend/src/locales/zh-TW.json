@@ -50,7 +50,8 @@
     "free": "免費",
     "product": {
       "title": "應用程式詳情",
-      "openInAppStore": "開啟{{region}} App Store",
+      "openInAppStore": "切換至{{region}}並開啟",
+      "appStoreWebPage": "網頁版",
       "previewBadge": "互動預覽",
       "previewDescription": "這是虛構的應用程式與帳號；操作不會連線至 Apple，也不會建立實際任務。",
       "previewActionComplete": "模擬操作已完成，未變更任何實際資料。",

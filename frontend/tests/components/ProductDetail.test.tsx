@@ -156,7 +156,15 @@ describe('ProductDetail download action', () => {
   it('links to the searched storefront even when the selected account is Indian', () => {
     mocks.accounts = [{ ...account, store: '143467' }];
     renderProductDetail(undefined, 'HK');
-    expect(screen.getByRole('link', { name: 'search.product.openInAppStore' }))
+    const link = screen.getByRole('link', { name: 'search.product.openInAppStore' });
+    const url = new URL(link.getAttribute('href')!);
+    expect(url.hostname).toBe('itunes.apple.com');
+    expect(url.pathname).toBe('/WebObjects/MZStore.woa/wa/resetAndRedirect');
+    expect(url.searchParams.get('dsf')).toBe('143463');
+    expect(url.searchParams.get('url')).toBe(
+      `/WebObjects/MZStore.woa/wa/viewSoftware?mt=8&id=${app.id}&cc=hk`,
+    );
+    expect(screen.getByRole('link', { name: 'search.product.appStoreWebPage' }))
       .toHaveAttribute('href', `https://apps.apple.com/hk/app/id${app.id}`);
   });
 
