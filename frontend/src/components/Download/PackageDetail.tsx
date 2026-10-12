@@ -249,14 +249,14 @@ function PackageDetailContent() {
                   v{task.software.version}
                 </span>
               </div>
-              {!isLocalUpload && !isPreview && (
-                <AppStoreLink
-                  appId={task.software.id}
-                  country={account && storeIdToCountry(account.store)}
-                />
-              )}
             </div>
           </div>
+          {!isLocalUpload && !isPreview && (
+            <AppStoreLink
+              appId={task.software.id}
+              country={account && storeIdToCountry(account.store)}
+            />
+          )}
 
           {(isActive || isPaused) && (
             <div className="mt-4 min-w-0 border-t border-gray-100 pt-4 dark:border-gray-800">

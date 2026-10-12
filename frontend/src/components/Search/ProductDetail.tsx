@@ -166,32 +166,34 @@ export default function ProductDetail() {
           </Alert>
         )}
 
-        <section className="flex min-w-0 items-start gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10 sm:gap-5 sm:p-6">
-          <div className="shrink-0">
-            <AppIcon url={app.artworkUrl} name={app.name} size="lg" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
-              {app.name}
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400">{app.artistName}</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-              <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
-                {app.formattedPrice ?? t('search.product.free')}
-              </span>
-              <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
-                {app.primaryGenreName}
-              </span>
-              <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
-                v{app.version}
-              </span>
-              <span>
-                ★ {app.averageUserRating.toFixed(1)} ({app.userRatingCount}{' '}
-                {t('search.product.ratings')})
-              </span>
+        <section className="min-w-0 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10 sm:p-6">
+          <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+            <div className="shrink-0">
+              <AppIcon url={app.artworkUrl} name={app.name} size="lg" />
             </div>
-            {!previewEnabled && <AppStoreLink appId={app.id} country={country} />}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+                {app.name}
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400">{app.artistName}</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
+                  {app.formattedPrice ?? t('search.product.free')}
+                </span>
+                <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
+                  {app.primaryGenreName}
+                </span>
+                <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
+                  v{app.version}
+                </span>
+                <span>
+                  ★ {app.averageUserRating.toFixed(1)} ({app.userRatingCount}{' '}
+                  {t('search.product.ratings')})
+                </span>
+              </div>
+            </div>
           </div>
+          {!previewEnabled && <AppStoreLink appId={app.id} country={country} />}
         </section>
 
         {productAccounts.length === 0 ? (
