@@ -140,3 +140,19 @@ and bounded fallbacks. Frontend/backend suites, type checks and builds, plus
 Go helper tests/build are checked. Protocol tests use fixtures and injected
 native generators; they do not establish success with a live Apple account or
 exercise the downloaded Apple StoreAgent binary against a real account.
+## Historical version metadata — 2026-10-19
+
+Historical version details now follow ipatool's IPA reader instead of trusting
+`songList[0].metadata`, which can contain stale version numbers and dates. The
+browser still obtains the selected version's download URL using the account's
+Store session, then passes only that URL to the authenticated backend metadata
+route. The backend uses HTTP Range requests to read the ZIP directory and the
+main `Payload/*.app/Info.plist`, supporting XML and binary plists without a full
+IPA download. Version numbers come from `CFBundleShortVersionString` (with
+`bundleShortVersionString` fallback). Dates come from `releaseDate`/`ReleaseDate`,
+with the ZIP entry modification date as fallback, as in ipatool.
+
+Deliberate UI difference: the response carries `dateSource`; a ZIP timestamp is
+labelled “File modified (not release date)”, while a package date is labelled
+“Release date (package field)”. Metadata failures do not fall back to stale Store
+metadata. Range responses, redirect hosts, read size, and plist size are checked.

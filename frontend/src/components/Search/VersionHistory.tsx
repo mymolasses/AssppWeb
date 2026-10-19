@@ -197,7 +197,10 @@ export default function VersionHistory() {
                     </p>
                     {meta && (
                       <p className="text-xs text-gray-500 [overflow-wrap:anywhere] dark:text-gray-400">
-                        {new Date(meta.releaseDate).toLocaleDateString()}
+                        {meta.dateSource === 'file-modified'
+                          ? t('search.versions.fileModifiedDate', '文件修改时间（非发布日期）')
+                          : t('search.versions.packageReleaseDate', '发布日期（包内字段）')}
+                        {': '}{new Date(meta.date).toLocaleDateString()}
                       </p>
                     )}
                     {!meta && !isLoadingMeta && (

@@ -1,3 +1,4 @@
+import { apiPost } from '../../src/api/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getDownloadInfo,
@@ -12,6 +13,8 @@ import { buildPlist, parsePlist } from '../../src/apple/plist';
 import { shouldUseRedownload } from '../../src/apple/storeDownloadFallback';
 import { latestIOSVersionId } from '../../src/apple/platformVersion';
 import type { Account, Software } from '../../src/types';
+
+vi.mock('../../src/api/client', () => ({ apiPost: vi.fn() }));
 
 vi.mock('../../src/apple/request', () => ({
   appleRequest: vi.fn(),
@@ -72,6 +75,7 @@ describe('apple store download fallback', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(latestIOSVersionId).mockResolvedValue('98765');
+    vi.mocked(apiPost).mockResolvedValue({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'info-plist' });
     vi.mocked(fetchBag).mockResolvedValue({
       authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
     });
@@ -218,8 +222,13 @@ describe('apple store download fallback', () => {
         response({
           songList: [
             {
+              URL: 'https://apps.apple.com/version.ipa',
+              metadataPlaceholder: true,
               metadata: {
-                bundleShortVersionString: '3.0',
+                itemId: app.id,
+                softwareVersionBundleId: app.bundleID,
+                softwareVersionExternalIdentifier: '55555',
+                bundleShortVersionString: 'stale',
                 releaseDate: '2026-06-12T00:00:00Z',
               },
             },
@@ -229,7 +238,8 @@ describe('apple store download fallback', () => {
 
     const result = await getVersionMetadata(account, app, '55555');
 
-    expect(result.metadata.displayVersion).toBe('3.0');
+    expect(result.metadata).toEqual({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'info-plist' });
+    expect(apiPost).toHaveBeenCalledWith('/api/apple/version-metadata', { downloadURL: 'https://apps.apple.com/version.ipa' });
     const retryPayload = parsePlist(
       vi.mocked(appleRequest).mock.calls[1][0].body ?? '',
     ) as Record<string, any>;
@@ -272,6 +282,7 @@ describe('empty volumeStore response regression (ipatool #538)', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(latestIOSVersionId).mockResolvedValue('98765');
+    vi.mocked(apiPost).mockResolvedValue({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'info-plist' });
     vi.mocked(fetchBag).mockResolvedValue({
       authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
     });
@@ -326,7 +337,7 @@ describe('empty volumeStore response regression (ipatool #538)', () => {
         if ('versions' in result)
           expect(result.versions).toEqual(['98765', '123']);
         if ('metadata' in result)
-          expect(result.metadata.displayVersion).toBe('2.0');
+          expect(result.metadata.displayVersion).toBe('3.0');
         if ('output' in result)
           expect(result.output.downloadURL).toBe('https://example.com/app.ipa');
         if ('output' in result)

@@ -81,6 +81,8 @@
       "noAccountsForRegion": "找不到該地區的帳號"
     },
     "versions": {
+      "fileModifiedDate": "檔案修改時間（非發佈日期）",
+      "packageReleaseDate": "發佈日期（套件內欄位）",
       "title": "歷史版本",
       "unavailable": "應用程式資訊無法使用，請從搜尋頁面進入。",
       "loadFailed": "載入版本失敗",

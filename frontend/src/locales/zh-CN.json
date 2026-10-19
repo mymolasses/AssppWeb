@@ -89,6 +89,8 @@
       "noAccountsForRegion": "未找到该地区的账号"
     },
     "versions": {
+      "fileModifiedDate": "文件修改时间（非发布日期）",
+      "packageReleaseDate": "发布日期（包内字段）",
       "title": "历史版本",
       "unavailable": "应用信息不可用，请从搜索页面进入。",
       "loadFailed": "加载版本失败",

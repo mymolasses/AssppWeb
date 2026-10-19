@@ -89,6 +89,8 @@
       "noAccountsForRegion": "No accounts found for this region"
     },
     "versions": {
+      "fileModifiedDate": "File modified (not release date)",
+      "packageReleaseDate": "Release date (package field)",
       "title": "Version History",
       "unavailable": "App information is not available. Please navigate from the search page.",
       "loadFailed": "Failed to load versions",
