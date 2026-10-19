@@ -1,87 +1,126 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import express from "express";
-import request from "supertest";
-import appleAuthRoutes from "../src/routes/appleAuth.js";
-import { runSAPAuthentication } from "../src/services/sapAuth.js";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import express from 'express';
+import request from 'supertest';
+import appleAuthRoutes from '../src/routes/appleAuth.js';
+import { runSAPAuthentication, runSAPKBSync } from '../src/services/sapAuth.js';
 
-vi.mock("../src/services/sapAuth.js", () => ({
+vi.mock('../src/services/sapAuth.js', () => ({
   runSAPAuthentication: vi.fn(),
+  runSAPKBSync: vi.fn(),
 }));
 
 function createApp() {
   const app = express();
   app.use(express.json());
-  app.use("/api", appleAuthRoutes);
+  app.use('/api', appleAuthRoutes);
   return app;
 }
 
-describe("Apple SAP authentication route", () => {
+describe('Apple SAP authentication route', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("validates the device identifier", async () => {
+  it('validates the device identifier', async () => {
     const response = await request(createApp())
-      .post("/api/apple/authenticate")
-      .send({ email: "test@example.com", password: "secret", deviceId: "bad" });
+      .post('/api/apple/authenticate')
+      .send({ email: 'test@example.com', password: 'secret', deviceId: 'bad' });
 
     expect(response.status).toBe(400);
     expect(runSAPAuthentication).not.toHaveBeenCalled();
   });
 
-  it("returns the helper account without logging or transforming secrets", async () => {
+  it('returns the helper account without logging or transforming secrets', async () => {
     vi.mocked(runSAPAuthentication).mockResolvedValue({
       account: {
-        email: "test@example.com",
-        appleId: "test@example.com",
-        store: "143441",
-        firstName: "Test",
-        lastName: "User",
-        passwordToken: "token",
-        directoryServicesIdentifier: "123",
+        email: 'test@example.com',
+        appleId: 'test@example.com',
+        store: '143441',
+        firstName: 'Test',
+        lastName: 'User',
+        passwordToken: 'token',
+        directoryServicesIdentifier: '123',
         cookies: [],
-        deviceIdentifier: "aabbccddeeff",
+        deviceIdentifier: 'aabbccddeeff',
       },
     });
 
     const response = await request(createApp())
-      .post("/api/apple/authenticate")
+      .post('/api/apple/authenticate')
       .send({
-        email: " test@example.com ",
-        password: "secret",
-        authCode: "123 456",
-        deviceId: "AABBCCDDEEFF",
+        email: ' test@example.com ',
+        password: 'secret',
+        authCode: '123 456',
+        deviceId: 'AABBCCDDEEFF',
       });
 
     expect(response.status).toBe(200);
-    expect(response.body.passwordToken).toBe("token");
+    expect(response.body.passwordToken).toBe('token');
     expect(runSAPAuthentication).toHaveBeenCalledWith(
       expect.objectContaining({
-        email: "test@example.com",
-        password: "secret",
-        deviceId: "aabbccddeeff",
+        email: 'test@example.com',
+        password: 'secret',
+        deviceId: 'aabbccddeeff',
       }),
     );
   });
 
-  it("maps an ipatool 2FA challenge to a 401 response", async () => {
+  it('maps an ipatool 2FA challenge to a 401 response', async () => {
     vi.mocked(runSAPAuthentication).mockResolvedValue({
-      error: "auth code is required",
+      error: 'auth code is required',
       codeRequired: true,
       cookies: [{ name: 'challenge', value: 'test-session', domain: 'auth.itunes.apple.com', path: '/', httpOnly: true, secure: true }],
     });
 
     const response = await request(createApp())
-      .post("/api/apple/authenticate")
+      .post('/api/apple/authenticate')
       .send({
-        email: "test@example.com",
-        password: "secret",
-        deviceId: "aabbccddeeff",
+        email: 'test@example.com',
+        password: 'secret',
+        deviceId: 'aabbccddeeff',
       });
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
-      error: "auth code is required",
+      error: 'auth code is required',
       codeRequired: true,
       cookies: [{ name: 'challenge', value: 'test-session', domain: 'auth.itunes.apple.com', path: '/', httpOnly: true, secure: true }],
     });
+  });
+});
+
+describe('kbsync generation bridge', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('passes only DSID and device ID and prevents response caching', async () => {
+    vi.mocked(runSAPKBSync).mockResolvedValue({ kbsync: 'AQID' });
+    const response = await request(createApp()).post('/api/apple/kbsync').send({
+      dsid: '123', deviceId: 'AABBCCDDEEFF',
+      password: 'must-not-be-forwarded', passwordToken: 'private',
+      cookies: [{ name: 'session', value: 'private' }],
+      downloadURL: 'https://unrelated.example',
+    });
+    expect(runSAPKBSync).toHaveBeenCalledWith({ dsid: '123', deviceId: 'aabbccddeeff' });
+    expect(runSAPAuthentication).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body).toEqual({ kbsync: 'AQID' });
+  });
+
+  it.each([
+    { dsid: '0', deviceId: 'aabbccddeeff' },
+    { dsid: '18446744073709551616', deviceId: 'aabbccddeeff' },
+    { dsid: 123, deviceId: 'aabbccddeeff' },
+    { dsid: '123', deviceId: '../invalid' },
+  ])('rejects malformed identity %j', async (body) => {
+    const response = await request(createApp()).post('/api/apple/kbsync').send(body);
+    expect(response.status).toBe(400);
+    expect(runSAPKBSync).not.toHaveBeenCalled();
+  });
+
+  it('returns a recoverable failure without helper diagnostics', async () => {
+    vi.mocked(runSAPKBSync).mockRejectedValue(new Error('private runtime details'));
+    const response = await request(createApp()).post('/api/apple/kbsync')
+      .send({ dsid: '123', deviceId: 'aabbccddeeff' });
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({ error: 'Download signature generation failed' });
   });
 });

@@ -86,3 +86,57 @@ The Web download path already had the `updateProduct` recovery needed for empty 
 Native macOS downloads, purchase listing, jailbroken-iOS binaries, and interactive CLI prompts are not exposed by AssppWeb's SAP-only Go helper. ipatool's custom ZIP framing was not copied because AssppWeb updates IPA entries with the system `zip` utility rather than raw-copying ZIP records, so that implementation and its bug do not apply here.
 
 Local IPA tasks now persist the browser-supplied original filename separately from the IPA's embedded application name. They may also persist an optional display name, editable from package details. The display name is used in download cards, notifications, generated filenames, share metadata, and OTA manifest titles; clearing it restores the embedded IPA name. Existing task records remain valid because both fields are optional.
+
+## ipatool v2.7.0 browser Store adaptation — 2026-10-19
+
+The SAP helper now pins official `github.com/majd/ipatool/v2 v2.7.0`. Login still
+invokes the library's `Login` once and retains the fork's 2FA challenge cookies.
+
+Downloads, version listing, and version metadata now share one browser-side
+Store request implementation. The preferred path reads the bag's
+`volumeStoreDownloadProduct` URL and validates the exact HTTPS dispatch host
+and `/WebObjects/DownloadDispatch.woa/wa/ent/download` path before use. It sends
+the account token, storefront, pinned version, hardware-derived serial, and
+kbsync using ipatool 2.7.0's payload and headers. Redirects from this request
+are rejected, so the token is never forwarded to another destination.
+
+To preserve this fork's architecture, a separate `/api/apple/kbsync` operation
+accepts only DSID and device ID. The existing one-shot Go helper calls pinned
+ipatool SAP asset/machine routines to generate the blob with a two-minute bound;
+it does not perform Apple Store requests. The browser caches only blobs that
+produced a validated response, keyed by DSID/device ID. A rejected cached blob
+is invalidated and regenerated once; a rejected fresh blob goes directly to the
+legacy chain. No blob, token, or cookies are persisted by this server operation.
+Asset caches remain non-credential native runtime files, as with SAP login.
+
+If the preferred path is missing or fails, recovery uses volumeStore,
+redownload, then the bag's updateProduct, at most once per endpoint. Legacy
+5002 recovery is retained. Recovery also recognizes the observed message-only
+`No Longer Available` response and an empty HTTP 500 from redownload. Pinned
+redownload/update requests use `appExtVrsId`; volumeStore uses
+`externalVersionId`. Update and preferred responses must contain exactly one
+item matching the app ID, bundle ID, and external version ID. Explicitly
+mismatched legacy metadata is rejected too. Cookies survive endpoint changes
+and validated legacy redirects.
+
+Unpinned dispatch requests first resolve an iOS version using the account's
+storefront: MDM catalogs `ios`, `iphone`, then `ipad`, followed by the public
+App Store JSON catalog for apps absent from MDM (including Apple Arcade).
+These metadata requests carry no account cookies or tokens. This Web UI has
+no explicit iPhone/iPad platform selector, so the public catalog also tries an
+iPad offer when the iPhone offer is absent. Requested historical versions are
+never replaced by the current version lookup.
+
+Reference checked: ApplePackage's `StoreDownloadEndpoint+Fetch.swift` on main
+still documents volumeStore-to-redownload recovery for 5002. The preferred
+kbsync path, catalog recovery, updateProduct handling, and identity checks here
+are deliberate adaptations of official ipatool v2.7.0 rather than changes to
+that Swift behavior. Native Mac/watchOS/tvOS UI expansion is outside this change.
+
+Validation covers malformed and unavailable endpoints, version identity,
+credential-free catalog/signature requests, per-account/device cache isolation,
+rejected-cache regeneration, non-forwarding token redirects, retained cookies,
+and bounded fallbacks. Frontend/backend suites, type checks and builds, plus
+Go helper tests/build are checked. Protocol tests use fixtures and injected
+native generators; they do not establish success with a live Apple account or
+exercise the downloaded Apple StoreAgent binary against a real account.

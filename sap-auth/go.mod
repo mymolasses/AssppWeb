@@ -2,7 +2,7 @@ module github.com/majd/ipatool/v2/asspp-sap-auth
 
 go 1.25.0
 
-require github.com/majd/ipatool/v2 v2.6.1-0.20261007230230-e3932cec3176
+require github.com/majd/ipatool/v2 v2.7.0
 
 require (
 	github.com/1Password/connect-sdk-go v1.5.4-0.20250417152128-c154b387248b // indirect

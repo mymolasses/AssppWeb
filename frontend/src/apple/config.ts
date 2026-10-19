@@ -191,22 +191,28 @@ export function updateProductEndpoint(
   endpointURL: string | undefined,
   deviceId: string,
 ): StoreDownloadEndpoint | undefined {
-  if (!endpointURL) return undefined;
+  return dispatchEndpoint(endpointURL, '/up/updateProduct', deviceId);
+}
 
+export function dispatchEndpoint(
+  endpointURL: string | undefined,
+  path: string,
+  deviceId: string,
+): StoreDownloadEndpoint | undefined {
+  if (!endpointURL) return undefined;
   try {
     const url = new URL(endpointURL);
     if (
       url.protocol !== 'https:' ||
-      url.hostname !== 'downloaddispatch.itunes.apple.com' ||
-      url.pathname !== '/up/updateProduct'
-    ) {
-      return undefined;
-    }
+      url.host !== 'downloaddispatch.itunes.apple.com' ||
+      url.pathname !== path ||
+      url.username || url.password || url.search || url.hash
+    ) return undefined;
     url.searchParams.set('guid', deviceId);
     return {
       host: url.hostname,
       path: `${url.pathname}${url.search}`,
-      externalVersionIdKey: 'externalVersionId',
+      externalVersionIdKey: 'appExtVrsId',
     };
   } catch {
     return undefined;

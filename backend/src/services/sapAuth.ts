@@ -1,5 +1,5 @@
-import { spawn } from "child_process";
-import { config } from "../config.js";
+import { spawn } from 'child_process';
+import { config } from '../config.js';
 
 export interface SAPAuthCookie {
   name: string;
@@ -39,14 +39,34 @@ export interface SAPAuthResult {
   cookies?: SAPAuthCookie[];
 }
 
+export interface SAPKBSyncRequest {
+  deviceId: string;
+  dsid: string;
+}
+
+export interface SAPKBSyncResult {
+  kbsync?: string;
+  error?: string;
+}
+
 const MAX_HELPER_OUTPUT_BYTES = 1024 * 1024;
 
 export function runSAPAuthentication(
   input: SAPAuthRequest,
 ): Promise<SAPAuthResult> {
+  return runSAPHelper(input);
+}
+
+export function runSAPKBSync(input: SAPKBSyncRequest): Promise<SAPKBSyncResult> {
+  return runSAPHelper({ operation: 'kbsync', deviceId: input.deviceId, dsid: input.dsid });
+}
+
+function runSAPHelper(
+  input: SAPAuthRequest | (SAPKBSyncRequest & { operation: 'kbsync' }),
+): Promise<SAPAuthResult & SAPKBSyncResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(config.sapAuthHelperPath, [], {
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
         XDG_CACHE_HOME:
@@ -54,8 +74,8 @@ export function runSAPAuthentication(
       },
     });
 
-    let stdout = "";
-    let stderr = "";
+    let stdout = '';
+    let stderr = '';
     let settled = false;
 
     const finish = (callback: () => void) => {
@@ -66,41 +86,41 @@ export function runSAPAuthentication(
     };
 
     const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      finish(() => reject(new Error("SAP authentication helper timed out")));
+      child.kill('SIGKILL');
+      finish(() => reject(new Error('SAP authentication helper timed out')));
     }, config.sapAuthTimeoutMs);
 
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => {
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk: string) => {
       stdout += chunk;
       if (Buffer.byteLength(stdout) > MAX_HELPER_OUTPUT_BYTES) {
-        child.kill("SIGKILL");
-        finish(() => reject(new Error("SAP authentication response is too large")));
+        child.kill('SIGKILL');
+        finish(() => reject(new Error('SAP authentication response is too large')));
       }
     });
-    child.stderr.on("data", (chunk: string) => {
+    child.stderr.on('data', (chunk: string) => {
       if (Buffer.byteLength(stderr) < MAX_HELPER_OUTPUT_BYTES) stderr += chunk;
     });
-    child.on("error", (error) => {
+    child.on('error', (error) => {
       finish(() => reject(error));
     });
-    child.on("close", (code) => {
+    child.on('close', (code) => {
       finish(() => {
         if (!stdout.trim()) {
           reject(
             new Error(
               code === 0
-                ? "SAP authentication helper returned no response"
-                : `SAP authentication helper failed${stderr.trim() ? `: ${stderr.trim()}` : ""}`,
+                ? 'SAP authentication helper returned no response'
+                : `SAP authentication helper failed${stderr.trim() ? `: ${stderr.trim()}` : ''}`,
             ),
           );
           return;
         }
         try {
-          resolve(JSON.parse(stdout) as SAPAuthResult);
+          resolve(JSON.parse(stdout) as SAPAuthResult & SAPKBSyncResult);
         } catch {
-          reject(new Error("SAP authentication helper returned invalid JSON"));
+          reject(new Error('SAP authentication helper returned invalid JSON'));
         }
       });
     });

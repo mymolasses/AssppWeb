@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Account, Software } from '../../src/types';
 import {
   getDownloadInfo,
   isDownloadAuthExpired,
@@ -11,10 +10,14 @@ import { appleRequest } from '../../src/apple/request';
 import { fetchBag } from '../../src/apple/bag';
 import { buildPlist, parsePlist } from '../../src/apple/plist';
 import { shouldUseRedownload } from '../../src/apple/storeDownloadFallback';
+import { latestIOSVersionId } from '../../src/apple/platformVersion';
+import type { Account, Software } from '../../src/types';
 
 vi.mock('../../src/apple/request', () => ({
   appleRequest: vi.fn(),
 }));
+
+vi.mock('../../src/apple/platformVersion', () => ({ latestIOSVersionId: vi.fn() }));
 
 vi.mock('../../src/apple/bag', () => ({
   fetchBag: vi.fn(),
@@ -67,7 +70,8 @@ function failure5002() {
 
 describe('apple store download fallback', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    vi.mocked(latestIOSVersionId).mockResolvedValue('98765');
     vi.mocked(fetchBag).mockResolvedValue({
       authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
     });
@@ -250,6 +254,9 @@ function productResponse() {
         artworkURL: 'https://is1-ssl.mzstatic.com/image/thumb/app.png',
         URL: 'https://example.com/app.ipa',
         metadata: {
+          itemId: app.id,
+          softwareVersionBundleId: app.bundleID,
+          softwareVersionExternalIdentifier: '98765',
           bundleShortVersionString: '2.0',
           bundleVersion: '200',
           softwareVersionExternalIdentifiers: [123, 98765],
@@ -264,6 +271,7 @@ function productResponse() {
 describe('empty volumeStore response regression (ipatool #538)', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(latestIOSVersionId).mockResolvedValue('98765');
     vi.mocked(fetchBag).mockResolvedValue({
       authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
     });
@@ -278,23 +286,20 @@ describe('empty volumeStore response regression (ipatool #538)', () => {
       });
       vi.mocked(appleRequest)
         .mockResolvedValueOnce(response({ songList: [] }))
+        .mockResolvedValueOnce({ ...response({}), status: 500, body: '' })
         .mockResolvedValueOnce(productResponse());
 
       const result = await operation.run();
 
       expect(result).toBeDefined();
-      expect(appleRequest).toHaveBeenCalledTimes(2);
-      const fallback = vi.mocked(appleRequest).mock.calls[1][0];
+      expect(appleRequest).toHaveBeenCalledTimes(3);
+      const fallback = vi.mocked(appleRequest).mock.calls[2][0];
       expect(fallback.host).toBe('downloaddispatch.itunes.apple.com');
       expect(fallback.path).toBe('/up/updateProduct?guid=aabbccddeeff');
       const payload = parsePlist(fallback.body!) as Record<string, unknown>;
       expect(payload.salableAdamId).toBe(app.id);
-      expect(payload.appExtVrsId).toBeUndefined();
-      if (operation.name === 'version list') {
-        expect(payload.externalVersionId).toBeUndefined();
-      } else {
-        expect(payload.externalVersionId).toBe('98765');
-      }
+      expect(payload.appExtVrsId).toBe('98765');
+      expect(payload.externalVersionId).toBeUndefined();
     });
   }
 

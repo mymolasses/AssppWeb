@@ -1,5 +1,7 @@
 # AssppWeb
 
+Current release: **1.1.0** · [Release notes](CHANGELOG.md)
+
 A web-based tool for acquiring and installing iOS apps outside the App Store. Authenticate with your Apple ID, search for apps, acquire licenses, and install IPAs directly to your device.
 
 ![preview](./resources/preview.png)

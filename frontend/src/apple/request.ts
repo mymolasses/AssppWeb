@@ -11,6 +11,7 @@ export interface AppleRequestOptions {
   headers?: Record<string, string>;
   body?: string;
   cookies?: Cookie[];
+  signal?: AbortSignal;
 }
 
 export interface AppleResponse {
@@ -24,7 +25,9 @@ export interface AppleResponse {
 export async function appleRequest(
   opts: AppleRequestOptions,
 ): Promise<AppleResponse> {
+  opts.signal?.throwIfAborted();
   await initLibcurl();
+  opts.signal?.throwIfAborted();
 
   const url = `https://${opts.host}${opts.path}`;
   const headers: Record<string, string> = {
@@ -39,13 +42,19 @@ export async function appleRequest(
     }
   }
 
-  const resp = await libcurl.fetch(url, {
+  // libcurl.js supports params.signal at runtime; its bundled declarations
+  // currently omit that Fetch-compatible option.
+  const fetchOptions: NonNullable<Parameters<typeof libcurl.fetch>[1]> & {
+    signal?: AbortSignal;
+  } = {
     method: opts.method,
     headers,
     body: opts.body,
     redirect: 'manual',
+    signal: opts.signal,
     _libcurl_http_version: 1.1,
-  });
+  };
+  const resp = await libcurl.fetch(url, fetchOptions);
 
   const responseHeaders: Record<string, string> = {};
   for (const [key, value] of resp.raw_headers) {

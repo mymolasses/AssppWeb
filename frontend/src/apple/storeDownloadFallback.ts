@@ -1,34 +1,30 @@
 import { RETRYABLE_FAILURE_TYPE } from './config';
 
-/**
- * Some owned apps return HTTP 200 from volumeStore without songList or error
- * metadata. The redownload endpoint can still serve them (ipatool issue #538,
- * HaughtyEyes/ipatool commit bad372d). Preserve the existing 5002 fallback too.
- * Callers may switch endpoints only once and must retain Apple's real errors.
- */
-export function shouldUseRedownload(
-  status: number,
-  response: Record<string, unknown>,
-): boolean {
-  if (status !== 200) return false;
-  if (String(response.failureType ?? '') === RETRYABLE_FAILURE_TYPE)
-    return true;
+function emptyItems(response: Record<string, unknown>): boolean {
+  return response.songList == null ||
+    (Array.isArray(response.songList) && response.songList.length === 0);
+}
 
-  const items = response.songList;
-  return (
-    !response.failureType &&
-    !response.customerMessage &&
-    (items == null || (Array.isArray(items) && items.length === 0))
+function recoverableEmpty(response: Record<string, unknown>): boolean {
+  if (response.failureType || !emptyItems(response)) return false;
+  if (!response.customerMessage) return true;
+  if (typeof response.customerMessage !== 'string') return false;
+  const message = response.customerMessage.trim().toLowerCase();
+  return message === 'no longer available' || message.endsWith(' no longer available');
+}
+
+export function shouldUseRedownload(status: number, response: Record<string, unknown>): boolean {
+  return status === 200 && (
+    String(response.failureType ?? '') === RETRYABLE_FAILURE_TYPE ||
+    recoverableEmpty(response)
   );
 }
 
 export function shouldUseUpdateProduct(
   status: number,
   response: Record<string, unknown>,
+  body: string,
 ): boolean {
-  if (status !== 200 || response.failureType || response.customerMessage)
-    return false;
-
-  const items = response.songList;
-  return items == null || (Array.isArray(items) && items.length === 0);
+  return (status === 500 && body.trim() === '') ||
+    (status === 200 && recoverableEmpty(response));
 }

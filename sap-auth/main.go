@@ -25,6 +25,8 @@ type inputCookie struct {
 }
 
 type request struct {
+	Operation       string        `json:"operation,omitempty"`
+	DSID            string        `json:"dsid,omitempty"`
 	Email           string        `json:"email"`
 	Password        string        `json:"password"`
 	AuthCode        string        `json:"authCode,omitempty"`
@@ -46,6 +48,7 @@ type accountResponse struct {
 }
 
 type response struct {
+	KBSync       string           `json:"kbsync,omitempty"`
 	Account      *accountResponse `json:"account,omitempty"`
 	Error        string           `json:"error,omitempty"`
 	CodeRequired bool             `json:"codeRequired,omitempty"`
@@ -78,6 +81,14 @@ func main() {
 	var payload request
 	if err := json.NewDecoder(os.Stdin).Decode(&payload); err != nil {
 		_ = encoder.Encode(response{Error: "invalid request"})
+		return
+	}
+	if payload.Operation == "kbsync" {
+		_ = encoder.Encode(kbsyncResponse(payload, generateDownloadKBSync))
+		return
+	}
+	if payload.Operation != "" {
+		_ = encoder.Encode(response{Error: "unsupported helper operation"})
 		return
 	}
 

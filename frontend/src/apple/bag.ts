@@ -7,6 +7,8 @@ export { defaultAuthURL, normalizeAuthURL };
 export interface BagOutput {
   authURL: string;
   updateProductURL?: string;
+  redownloadURL?: string;
+  entDownloadURL?: string;
 }
 
 // Fetches the bag via the backend proxy.
@@ -35,15 +37,18 @@ export async function fetchBag(deviceId: string): Promise<BagOutput> {
       (dict.authenticateAccount as string | undefined) ??
       (urlBag?.authenticateAccount as string | undefined);
     const updateProductURL = urlBag?.updateProduct as string | undefined;
+    const redownloadURL = urlBag?.redownloadProduct as string | undefined;
+    const entDownloadURL = urlBag?.volumeStoreDownloadProduct as string | undefined;
+    const downloadEndpoints = { updateProductURL, redownloadURL, entDownloadURL };
 
     if (!authURL) {
       console.warn(
         '[Bag] authenticateAccount URL not found in bag, using default auth endpoint',
       );
-      return { authURL: defaultAuthURL, updateProductURL };
+      return { authURL: defaultAuthURL, ...downloadEndpoints };
     }
 
-    return { authURL: normalizeAuthURL(authURL), updateProductURL };
+    return { authURL: normalizeAuthURL(authURL), ...downloadEndpoints };
   } catch (error) {
     console.warn(
       `[Bag] Failed to fetch/parse bag, using default auth endpoint: ${

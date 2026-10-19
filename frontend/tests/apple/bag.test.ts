@@ -159,3 +159,14 @@ describe('apple/bag', () => {
     });
   });
 });
+
+it('preserves preferred and legacy download endpoints when the auth URL is absent', async () => {
+  const entDownloadURL = 'https://downloaddispatch.itunes.apple.com/WebObjects/DownloadDispatch.woa/wa/ent/download';
+  const redownloadURL = 'https://downloaddispatch.itunes.apple.com/r/redownload';
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true, text: async () => buildPlist({
+      urlBag: { volumeStoreDownloadProduct: entDownloadURL, redownloadProduct: redownloadURL },
+    }),
+  }));
+  await expect(fetchBag('aabbccddeeff')).resolves.toMatchObject({ entDownloadURL, redownloadURL });
+});

@@ -23,6 +23,7 @@ This fork already moved Apple authentication to a server-side SAP helper. Do not
 - Backend: passes that request through stdin to `asspp-sap-auth`. The helper uses ipatool for Apple's bag, SAP signatures, and authentication. Its keychain and cookie jar are in memory; credentials must not be logged or deliberately persisted by the helper.
 - Browser: continues purchase, download-info, and version requests using libcurl.js WASM TLS through the Wisp proxy. The Wisp relay does not decrypt those streams.
 - Backend: proxies public search/bag data, downloads IPA files, injects SINF/iTunesMetadata, and serves installation manifests.
+- Kbsync: `/api/apple/kbsync` passes only DSID and the per-account device ID to the native helper to generate a blob. Store requests remain in the browser. Successful blobs are cached only in browser memory per DSID/device pair; the backend must not persist them.
 - Local IPA uploads/details retain `LocalIpaGate`; download-list quick actions must not bypass that gate. The backend checks the local IPA token for uploads and signing analysis.
 
 ipatool owns transient authentication retries (up to three sends for unexpected HTTP 204/404/5xx). The Go adapter must invoke Login only once. Account reauthentication may retain the fork's one fresh-cookie fallback.
@@ -74,6 +75,8 @@ The Wisp server validates target hosts via `hostname_whitelist` in `backend/src/
 - `init.itunes.apple.com` — bag endpoint
 - `/^p\d+-buy\.itunes\.apple\.com$/` — pod-based hosts
 - `downloaddispatch.itunes.apple.com` — redownload dispatch endpoint (failureType 5002 fallback)
+- `uclient-api.itunes.apple.com` — public MDM/consumer version catalogs
+- `apps.apple.com` — public App Store catalog fallback, including Apple Arcade
 - Port restricted to `443` only
 - Direct IP targets blocked (`allow_direct_ip = false`)
 - Loopback IP targets blocked (`allow_loopback_ips = false`)
