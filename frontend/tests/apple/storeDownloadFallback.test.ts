@@ -1,5 +1,5 @@
-import { apiPost } from '../../src/api/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { apiPost } from '../../src/api/client';
 import {
   getDownloadInfo,
   isDownloadAuthExpired,
@@ -53,7 +53,7 @@ const app: Software = {
   artworkUrl: '',
   screenshotUrls: [],
   minimumOsVersion: '15.0',
-  releaseDate: '2026-06-12T00:00:00Z',
+  releaseDate: '2025-01-01T00:00:00Z',
   primaryGenreName: 'Utilities',
 };
 
@@ -75,7 +75,7 @@ describe('apple store download fallback', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(latestIOSVersionId).mockResolvedValue('98765');
-    vi.mocked(apiPost).mockResolvedValue({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'info-plist' });
+    vi.mocked(apiPost).mockResolvedValue({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'file-modified' });
     vi.mocked(fetchBag).mockResolvedValue({
       authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
     });
@@ -229,7 +229,7 @@ describe('apple store download fallback', () => {
                 softwareVersionBundleId: app.bundleID,
                 softwareVersionExternalIdentifier: '55555',
                 bundleShortVersionString: 'stale',
-                releaseDate: '2026-06-12T00:00:00Z',
+                releaseDate: '2025-01-01T00:00:00Z',
               },
             },
           ],
@@ -238,7 +238,7 @@ describe('apple store download fallback', () => {
 
     const result = await getVersionMetadata(account, app, '55555');
 
-    expect(result.metadata).toEqual({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'info-plist' });
+    expect(result.metadata).toEqual({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'file-modified' });
     expect(apiPost).toHaveBeenCalledWith('/api/apple/version-metadata', { downloadURL: 'https://apps.apple.com/version.ipa' });
     const retryPayload = parsePlist(
       vi.mocked(appleRequest).mock.calls[1][0].body ?? '',
@@ -282,7 +282,7 @@ describe('empty volumeStore response regression (ipatool #538)', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(latestIOSVersionId).mockResolvedValue('98765');
-    vi.mocked(apiPost).mockResolvedValue({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'info-plist' });
+    vi.mocked(apiPost).mockResolvedValue({ displayVersion: '3.0', date: '2026-06-12T00:00:00Z', dateSource: 'file-modified' });
     vi.mocked(fetchBag).mockResolvedValue({
       authURL: 'https://auth.itunes.apple.com/auth/v1/native/fast/',
     });

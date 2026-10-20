@@ -81,8 +81,7 @@
       "noAccountsForRegion": "해당 지역의 계정을 찾을 수 없습니다"
     },
     "versions": {
-      "fileModifiedDate": "파일 수정일 (출시일 아님)",
-      "packageReleaseDate": "출시일 (패키지 필드)",
+      "fileModifiedDate": "IPA ZIP 수정일",
       "title": "버전 기록",
       "unavailable": "앱 정보를 사용할 수 없습니다. 검색 페이지에서 접근하세요.",
       "loadFailed": "버전 불러오기 실패",

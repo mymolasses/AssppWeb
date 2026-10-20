@@ -1,5 +1,18 @@
 # Agent Instructions for AssppWeb
 
+## Git Commit Identity
+
+- All commits created for this project must use **Codex <noreply@openai.com>** as both the author and the committer.
+- Explicitly set the identity when committing; do not rely on the machine's default Git identity:
+
+  ```bash
+  git -c user.name=Codex -c user.email=noreply@openai.com commit --author='Codex <noreply@openai.com>' -m 'Commit message'
+  ```
+
+- Apply the same identity when amending commits and when creating annotated release tags. Do not rewrite unrelated existing commits.
+- Before pushing, verify both fields with `git log -1 --format='%an <%ae> | %cn <%ce>'`. Both must be `Codex <noreply@openai.com>`.
+- Any persistent identity configuration must be repository-local; do not change the user's global Git identity.
+
 ## TypeScript Code Style
 
 - **Indentation**: 2 spaces

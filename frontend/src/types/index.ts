@@ -89,7 +89,7 @@ export interface DownloadOutput {
 export interface VersionMetadata {
   displayVersion: string;
   date: string;
-  dateSource: 'info-plist' | 'file-modified';
+  dateSource: 'file-modified';
 }
 
 export interface DownloadTask {

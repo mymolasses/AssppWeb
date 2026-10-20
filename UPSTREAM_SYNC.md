@@ -140,7 +140,7 @@ and bounded fallbacks. Frontend/backend suites, type checks and builds, plus
 Go helper tests/build are checked. Protocol tests use fixtures and injected
 native generators; they do not establish success with a live Apple account or
 exercise the downloaded Apple StoreAgent binary against a real account.
-## Historical version metadata — 2026-10-19
+## Historical version metadata — 2026-10-20 (v1.1.1)
 
 Historical version details now follow ipatool's IPA reader instead of trusting
 `songList[0].metadata`, which can contain stale version numbers and dates. The
@@ -149,10 +149,19 @@ Store session, then passes only that URL to the authenticated backend metadata
 route. The backend uses HTTP Range requests to read the ZIP directory and the
 main `Payload/*.app/Info.plist`, supporting XML and binary plists without a full
 IPA download. Version numbers come from `CFBundleShortVersionString` (with
-`bundleShortVersionString` fallback). Dates come from `releaseDate`/`ReleaseDate`,
-with the ZIP entry modification date as fallback, as in ipatool.
+`bundleShortVersionString` fallback).
 
-Deliberate UI difference: the response carries `dateSource`; a ZIP timestamp is
-labelled “File modified (not release date)”, while a package date is labelled
-“Release date (package field)”. Metadata failures do not fall back to stale Store
-metadata. Range responses, redirect hosts, read size, and plist size are checked.
+Deliberate difference from pinned ipatool v2.7.0's `appstore_partial_zip.go`:
+ipatool prefers plist `releaseDate`/`ReleaseDate`, then falls back to the main
+Info.plist ZIP entry's `Modified` timestamp. At the project owner's request,
+AssppWeb always uses that ZIP timestamp; both plist fields and Store dates are
+ignored, including malformed plist date values. ZIP extra fields follow Go's
+`archive/zip` reader: extended Unix (0x5455), Unix (0x000d/0x5855), and NTFS
+(0x000a) timestamps take precedence over DOS time in archive order. Unix values
+are unsigned 32-bit seconds. DOS timestamps are interpreted in UTC, and the UI
+shows the UTC calendar date to avoid browser time-zone shifts.
+
+The response retains `dateSource: 'file-modified'` and the UI labels it “IPA ZIP
+modified date”; it is not claimed to be the App Store publication date.
+Metadata failures do not fall back to stale Store metadata or plist dates.
+Range responses, redirect hosts, read size, and plist size remain checked.

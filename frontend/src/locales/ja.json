@@ -81,8 +81,7 @@
       "noAccountsForRegion": "この地域のアカウントがありません"
     },
     "versions": {
-      "fileModifiedDate": "ファイル更新日時（公開日ではありません）",
-      "packageReleaseDate": "公開日（パッケージ内の値）",
+      "fileModifiedDate": "IPA ZIP 更新日",
       "title": "バージョン履歴",
       "unavailable": "アプリ情報が利用できません。検索ページからアクセスしてください。",
       "loadFailed": "バージョンの読み込みに失敗しました",

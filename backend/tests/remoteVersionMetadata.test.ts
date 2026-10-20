@@ -16,22 +16,56 @@ describe('IPA version dates', () => {
     expect(zipModificationDate({ getLastMod: () => modified, extraFields: [{ id: 0x5455, data }] }))
       .toEqual(new Date(1700000000000));
   });
-  it.each(['xml', 'binary'])('reads %s plist release date ahead of ZIP modification date', (format) => {
-    const info = { CFBundleShortVersionString: '3.2', releaseDate: '2024-04-02T12:00:00Z' };
-    const data = format === 'xml' ? Buffer.from(plist.build(info)) : bplistCreator(info);
-    expect(metadataFromPlist(data, modified)).toEqual({ displayVersion: '3.2', date: new Date(info.releaseDate).toISOString(), dateSource: 'info-plist' });
+  it('keeps DOS timestamps in UTC when no extension is present', () => {
+    expect(zipModificationDate({ getLastMod: () => modified, extraFields: [] })).toEqual(modified);
   });
-  it('labels file modification fallback separately', () => {
+  it('reads extended timestamps after 2038 as unsigned seconds like Go', () => {
+    const data = Buffer.alloc(5);
+    data[0] = 1;
+    data.writeUInt32LE(2200000000, 1);
+    expect(zipModificationDate({ getLastMod: () => modified, extraFields: [{ id: 0x5455, data }] }))
+      .toEqual(new Date(2200000000000));
+  });
+  it.each([0x000d, 0x5855])('reads Unix ZIP extra field %i modification time', (id) => {
+    const data = Buffer.alloc(8);
+    data.writeUInt32LE(1700000000, 4);
+    expect(zipModificationDate({ getLastMod: () => modified, extraFields: [{ id, data }] }))
+      .toEqual(new Date(1700000000000));
+  });
+  it('reads NTFS modification time and skips malformed timestamp fields', () => {
+    const data = Buffer.alloc(32);
+    data.writeUInt16LE(1, 4);
+    data.writeUInt16LE(24, 6);
+    data.writeBigUInt64LE((1700000000123n + 11644473600000n) * 10000n, 8);
+    expect(zipModificationDate({ getLastMod: () => modified, extraFields: [
+      { id: 0x000a, data },
+      { id: 0x5455, data: Buffer.from([1]) },
+      { id: 0x000d, data: Buffer.alloc(4) },
+    ] })).toEqual(new Date(1700000000123));
+  });
+  it.each(['xml', 'binary'])('ignores both release date fields in %s plists', (format) => {
+    const info = { CFBundleShortVersionString: '3.2', releaseDate: '2024-04-02T12:00:00Z', ReleaseDate: '2025-01-01' };
+    const data = format === 'xml' ? Buffer.from(plist.build(info)) : bplistCreator(info);
+    expect(metadataFromPlist(data, modified)).toEqual({ displayVersion: '3.2', date: modified.toISOString(), dateSource: 'file-modified' });
+  });
+  it('uses the ZIP date when the plist has no release date', () => {
     expect(metadataFromPlist(Buffer.from(plist.build({ CFBundleShortVersionString: '2.1' })), modified))
       .toEqual({ displayVersion: '2.1', date: modified.toISOString(), dateSource: 'file-modified' });
   });
-  it('rejects malformed explicit dates instead of hiding them with fallback', () => {
-    expect(() => metadataFromPlist(Buffer.from(plist.build({ CFBundleShortVersionString: '1', releaseDate: 'invalid' })), modified)).toThrow();
+  it.each(['releaseDate', 'ReleaseDate'])('ignores malformed %s fields', (key) => {
+    expect(metadataFromPlist(Buffer.from(plist.build({ CFBundleShortVersionString: '1', [key]: 'invalid' })), modified))
+      .toEqual({ displayVersion: '1', date: modified.toISOString(), dateSource: 'file-modified' });
   });
-  it('reads only ranges and selects the main app rather than extension plist', async () => {
+  it('rejects invalid ZIP dates without falling back to plist release dates', () => {
+    expect(() => metadataFromPlist(Buffer.from(plist.build({ CFBundleShortVersionString: '1', releaseDate: '2025-01-01' })), new Date(NaN)))
+      .toThrow('Invalid package ZIP date');
+  });
+  it.each(['xml', 'binary'])('reads ranges and the main app ZIP timestamp with a %s plist', async (format) => {
     const zip = new AdmZip();
     zip.addFile('Payload/App.app/PlugIns/Ext.appex/Info.plist', Buffer.from(plist.build({ CFBundleShortVersionString: 'wrong' })));
-    zip.addFile('Payload/App.app/Info.plist', Buffer.from(plist.build({ CFBundleShortVersionString: '4.0', ReleaseDate: '2025-03-01' })));
+    const info = { CFBundleShortVersionString: '4.0', ReleaseDate: '2025-03-01' };
+    zip.addFile('Payload/App.app/Info.plist', format === 'xml' ? Buffer.from(plist.build(info)) : bplistCreator(info));
+    zip.getEntry('Payload/App.app/Info.plist')!.header.time = new Date(2020, 0, 2, 3, 4, 6);
     zip.addFile('Payload/App.app/padding', randomBytes(200000));
     const data = zip.toBuffer();
     const fetchMock = vi.fn(async (_url, options) => {
@@ -41,7 +75,7 @@ describe('IPA version dates', () => {
       return new Response(data.subarray(start, end + 1), { status: 206, headers: { 'Content-Range': `bytes ${start}-${end}/${data.length}` } });
     });
     vi.stubGlobal('fetch', fetchMock);
-    expect(await readRemoteVersionMetadata('https://apps.apple.com/test.ipa')).toEqual({ displayVersion: '4.0', date: '2025-03-01T00:00:00.000Z', dateSource: 'info-plist' });
+    expect(await readRemoteVersionMetadata('https://apps.apple.com/test.ipa')).toEqual({ displayVersion: '4.0', date: modified.toISOString(), dateSource: 'file-modified' });
     expect(fetchMock.mock.calls.length).toBeGreaterThan(1);
     const requestedBytes = fetchMock.mock.calls.reduce((sum, [, options]) => {
       const [, start, end] = options.headers.Range.match(/^bytes=(\d+)-(\d+)$/)!;

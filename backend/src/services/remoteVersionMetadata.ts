@@ -71,7 +71,9 @@ export function zipModificationDate(entry: { getLastMod(): Date; extraFields: Ar
   let modified = entry.getLastMod();
   for (const { id, data } of entry.extraFields) {
     if (id === 0x5455 && data.length >= 5 && (data[0] & 1)) {
-      modified = new Date(data.readInt32LE(1) * 1000);
+      modified = new Date(data.readUInt32LE(1) * 1000);
+    } else if ((id === 0x000d || id === 0x5855) && data.length >= 8) {
+      modified = new Date(data.readUInt32LE(4) * 1000);
     } else if (id === 0x000a) {
       for (let offset = 4; offset + 4 <= data.length;) {
         const tag = data.readUInt16LE(offset);
@@ -94,12 +96,10 @@ export function metadataFromPlist(data: Buffer, modified: Date) {
     : plist.parse(data.toString('utf8'))) as Record<string, unknown>;
   const displayVersion = String(info.CFBundleShortVersionString ?? info.bundleShortVersionString ?? '').trim();
   if (!displayVersion) throw new Error('Missing package display version');
-  const raw = info.releaseDate ?? info.ReleaseDate;
-  const dateSource = raw === undefined ? 'file-modified' : 'info-plist';
-  const date = raw === undefined ? modified : raw instanceof Date ? raw
-    : typeof raw === 'number' ? new Date(raw * 1000) : new Date(String(raw).trim());
-  if (!Number.isFinite(date.getTime())) throw new Error('Invalid package date');
-  return { displayVersion, date: date.toISOString(), dateSource };
+  // Plist and Store release dates can describe a different version. Only use
+  // the selected IPA's main Info.plist ZIP entry timestamp for history dates.
+  if (!Number.isFinite(modified.getTime())) throw new Error('Invalid package ZIP date');
+  return { displayVersion, date: modified.toISOString(), dateSource: 'file-modified' as const };
 }
 
 export async function readRemoteVersionMetadata(url: string) {
