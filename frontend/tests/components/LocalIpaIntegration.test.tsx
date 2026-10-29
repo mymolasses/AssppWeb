@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   analyzeSigning: vi.fn(),
   updateDisplayName: vi.fn(),
   updateVisibility: vi.fn(),
+  updateFavorite: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -36,6 +37,7 @@ vi.mock('../../src/api/downloads', () => ({
   analyzeDownloadSigning: mocks.analyzeSigning,
   updateDownloadDisplayName: mocks.updateDisplayName,
   updateDownloadVisibility: mocks.updateVisibility,
+  updateDownloadFavorite: mocks.updateFavorite,
 }));
 vi.mock('../../src/apple/versionFinder', () => ({
   listVersions: vi.fn(),
@@ -110,6 +112,7 @@ describe('upstream UI with local IPA protection', () => {
     mocks.analyzeSigning.mockReset();
     mocks.updateDisplayName.mockReset();
     mocks.updateVisibility.mockReset();
+    mocks.updateFavorite.mockReset();
   });
 
   it('opens the downloaded app in its account storefront, including compound storefront IDs', () => {
@@ -230,6 +233,16 @@ describe('upstream UI with local IPA protection', () => {
     fireEvent.click(toggle);
     await waitFor(() => expect(mocks.updateVisibility).toHaveBeenCalledWith(task.id, 'store-owner', true));
     await waitFor(() => expect(mocks.fetchTasks).toHaveBeenCalledOnce());
+  });
+
+  it('favorites a package and places global visibility last', async () => {
+    renderTaskDetail({ ...task, accountHash: 'store-owner', canManage: true });
+    const switches = screen.getAllByRole('switch');
+    expect(switches[switches.length - 1]).toHaveAccessibleName('downloads.visibility.title');
+    const favorite = screen.getByRole('switch', { name: 'downloads.favorite.title' });
+    expect(favorite).not.toBeChecked();
+    fireEvent.click(favorite);
+    await waitFor(() => expect(mocks.updateFavorite).toHaveBeenCalledWith(task.id, 'store-owner', true));
   });
 
   it('shows quick actions to a visitor without owner controls', () => {

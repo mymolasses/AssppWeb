@@ -73,7 +73,7 @@ export default function DownloadItem({
                 to={detailsHref}
                 className="block truncate text-sm font-semibold text-gray-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
               >
-                {displayName}
+                {task.favorite && <span aria-label={t('downloads.favorite.title')} className="mr-1 text-amber-500">★</span>}{displayName}
               </Link>
               <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
                 {task.software.artistName}

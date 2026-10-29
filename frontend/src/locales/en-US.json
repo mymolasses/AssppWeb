@@ -152,6 +152,7 @@
     }
   },
   "downloads": {
+    "favorite": {"title":"Favorite (keep from cleanup)","help":"Favorites are exempt from automatic cleanup. Other packages are kept for 14 days by default. Unfavoriting restarts the timer. Existing packages get a 14-day grace period from this upgrade.","failed":"Could not save favorite."},
     "visibility": {"title":"Visible to everyone","help":"Off by default. Other devices can find this app on the home and downloads pages, download, install, and share it without an Apple account. The site access password still applies.","failed":"Could not save visibility. Please retry.","sharedApps":"Shared apps"},
     "title": "Downloads",
     "new": "New Download",

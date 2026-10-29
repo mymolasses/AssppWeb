@@ -24,6 +24,7 @@ import {
   analyzeDownloadSigning,
   updateDownloadDisplayName,
   updateDownloadVisibility,
+  updateDownloadFavorite,
 } from '../../api/downloads';
 import { formatBytes } from '../../utils/format';
 import { getAccountContext } from '../../utils/toast';
@@ -49,6 +50,7 @@ function PackageDetailContent() {
   const { startDownload } = useDownloadAction();
   const addToast = useToastStore((state) => state.addToast);
 
+  const [savingFavorite, setSavingFavorite] = useState(false);
   const [savingVisibility, setSavingVisibility] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -101,6 +103,16 @@ function PackageDetailContent() {
       'info',
       t('downloads.preview.badge'),
     );
+  }
+
+  async function handleFavoriteChange() {
+    if (!task || !canManage || savingFavorite) return;
+    setSavingFavorite(true);
+    try {
+      await updateDownloadFavorite(task.id, task.accountHash, !task.favorite);
+      await fetchTasks();
+    } catch { addToast(t('downloads.favorite.failed'), 'error'); }
+    finally { setSavingFavorite(false); }
   }
 
   async function handleVisibilityChange() {
@@ -405,21 +417,7 @@ function PackageDetailContent() {
           )}
         </section>
 
-        {isCompleted && task.hasFile && !isLocalUpload && !isPreview && canManage && (
-          <section className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-            <label className="flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-gray-900 dark:text-white">{t('downloads.visibility.title')}</span>
-              <span className="relative inline-flex h-6 w-11 shrink-0">
-                <input type="checkbox" role="switch" checked={task.globallyVisible === true}
-                  disabled={savingVisibility} onChange={handleVisibilityChange}
-                  className="peer sr-only" />
-                <span aria-hidden="true" className="absolute inset-0 rounded-full bg-gray-300 peer-checked:bg-blue-600 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-disabled:opacity-50 dark:bg-gray-700" />
-                <span aria-hidden="true" className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm peer-checked:translate-x-5" />
-              </span>
-            </label>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('downloads.visibility.help')}</p>
-          </section>
-        )}
+
 
         <section
           aria-labelledby="package-actions-title"
@@ -501,6 +499,38 @@ function PackageDetailContent() {
         </section>
 
         {task.signingInfo && <SigningInfoPanel signingInfo={task.signingInfo} />}
+
+        {isCompleted && task.hasFile && !isPreview && canManage && (
+          <section className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <label className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-gray-900 dark:text-white">{t('downloads.favorite.title')}</span>
+              <span className="relative inline-flex h-6 w-11 shrink-0">
+                <input type="checkbox" role="switch" checked={task.favorite === true}
+                  disabled={savingFavorite} onChange={handleFavoriteChange}
+                  className="peer sr-only" />
+                <span aria-hidden="true" className="absolute inset-0 rounded-full bg-gray-300 peer-checked:bg-blue-600 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-disabled:opacity-50 dark:bg-gray-700" />
+                <span aria-hidden="true" className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm peer-checked:translate-x-5" />
+              </span>
+            </label>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('downloads.favorite.help')}</p>
+          </section>
+        )}
+
+        {isCompleted && task.hasFile && !isLocalUpload && !isPreview && canManage && (
+          <section className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <label className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-gray-900 dark:text-white">{t('downloads.visibility.title')}</span>
+              <span className="relative inline-flex h-6 w-11 shrink-0">
+                <input type="checkbox" role="switch" checked={task.globallyVisible === true}
+                  disabled={savingVisibility} onChange={handleVisibilityChange}
+                  className="peer sr-only" />
+                <span aria-hidden="true" className="absolute inset-0 rounded-full bg-gray-300 peer-checked:bg-blue-600 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-disabled:opacity-50 dark:bg-gray-700" />
+                <span aria-hidden="true" className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm peer-checked:translate-x-5" />
+              </span>
+            </label>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('downloads.visibility.help')}</p>
+          </section>
+        )}
       </div>
 
       <Modal

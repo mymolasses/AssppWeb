@@ -19,6 +19,7 @@ import {
   sanitizeTaskForResponse,
   updateTaskDisplayName,
   updateTaskVisibility,
+  updateTaskFavorite,
   updateTaskSigningInfo,
   validateDownloadURL,
 } from "../services/downloadManager.js";
@@ -327,6 +328,26 @@ router.post("/downloads/:id/display-name", (req: Request, res: Response) => {
     normalizeDisplayName(req.body?.displayName),
   );
   res.json(sanitizeTaskForResponse(updated!));
+});
+
+router.post('/downloads/:id/favorite', (req: Request, res: Response) => {
+  const hash = requireAccountHash(req, res);
+  if (!hash) return;
+  const task = getTask(getIdParam(req));
+  if (!task) { res.status(404).json({ error: 'Download not found' }); return; }
+  if (!verifyTaskOwnership(task, hash, res)) return;
+  if (task.accountHash === LOCAL_UPLOAD_ACCOUNT_HASH &&
+      (typeof req.headers['x-local-ipa-token'] !== 'string' || !verifyLocalIpaToken(req.headers['x-local-ipa-token']))) {
+    res.status(403).json({ error: 'Local IPA password required' }); return;
+  }
+  if (task.status !== 'completed' || !task.filePath || !fs.existsSync(task.filePath)) {
+    res.status(400).json({ error: 'Only completed packages can be favorited' }); return;
+  }
+  if (typeof req.body?.favorite !== 'boolean') {
+    res.status(400).json({ error: 'favorite must be a boolean' }); return;
+  }
+  updateTaskFavorite(task.id, req.body.favorite);
+  res.json(taskForViewer(task, true));
 });
 
 // Only completed Store packages can be made visible across devices.

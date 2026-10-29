@@ -8,7 +8,10 @@ export const config = {
   disableHttpsRedirect:
     process.env.UNSAFE_DANGEROUSLY_DISABLE_HTTPS_REDIRECT === "true",
   // Auto-cleanup: 0 disables
-  autoCleanupDays: parseInt(process.env.AUTO_CLEANUP_DAYS || "0", 10) || 0,
+  autoCleanupDays: (() => {
+    const days = Number(process.env.AUTO_CLEANUP_DAYS ?? 14);
+    return Number.isFinite(days) && days >= 0 ? days : 14;
+  })(),
   autoCleanupMaxMB: parseInt(process.env.AUTO_CLEANUP_MAX_MB || "0", 10) || 0,
   // Max download file size in MB (0 disables)
   maxDownloadMB: parseInt(process.env.MAX_DOWNLOAD_MB || "0", 10) || 0,

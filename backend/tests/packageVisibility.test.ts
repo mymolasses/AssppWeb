@@ -8,7 +8,7 @@ import downloads from '../src/routes/downloads.js';
 import packages from '../src/routes/packages.js';
 import { config } from '../src/config.js';
 import { LOCAL_UPLOAD_ACCOUNT_HASH } from '../src/constants.js';
-import { createUploadedTask, deleteTask } from '../src/services/downloadManager.js';
+import { createUploadedTask, deleteTask, runTimeCleanup, runSpaceCleanup, getTask } from '../src/services/downloadManager.js';
 import type { Software } from '../src/types/index.js';
 
 const owner = 'a'.repeat(64);
@@ -54,4 +54,39 @@ it('rejects non-owner changes, invalid values, unfinished packages and local upl
   task.status = 'completed';
   const local = fixture(LOCAL_UPLOAD_ACCOUNT_HASH);
   expect((await request(app).post(`/api/downloads/${local.id}/visibility?accountHash=${LOCAL_UPLOAD_ACCOUNT_HASH}`).send({ globallyVisible: true })).status).toBe(400);
+});
+
+it('protects favorites from time and space cleanup, and restarts retention when unfavorited', async () => {
+  const task = fixture();
+  const oldDays = config.autoCleanupDays;
+  const oldMax = config.autoCleanupMaxMB;
+  try {
+    config.autoCleanupDays = 14;
+    task.retentionStartedAt = new Date(Date.now() - 15 * 86400000).toISOString();
+    const endpoint = `/api/downloads/${task.id}/favorite?accountHash=${owner}`;
+    expect((await request(app).post(endpoint).send({ favorite: true })).status).toBe(200);
+    const saved = JSON.parse(fs.readFileSync(path.join(config.dataDir, 'tasks.json'), 'utf8'));
+    expect(saved.find((item: any) => item.id === task.id).favorite).toBe(true);
+    runTimeCleanup();
+    config.autoCleanupMaxMB = 0.000001;
+    runSpaceCleanup();
+    expect(getTask(task.id)?.favorite).toBe(true);
+    expect(fs.existsSync(task.filePath!)).toBe(true);
+    expect((await request(app).post(endpoint).send({ favorite: false })).status).toBe(200);
+    expect(Date.parse(task.retentionStartedAt!)).toBeGreaterThan(Date.now() - 5000);
+    runTimeCleanup();
+    expect(getTask(task.id)).toBeDefined();
+    task.retentionStartedAt = new Date(Date.now() - 15 * 86400000).toISOString();
+    runTimeCleanup();
+    expect(getTask(task.id)).toBeUndefined();
+    expect(fs.existsSync(task.filePath!)).toBe(false);
+  } finally { config.autoCleanupDays = oldDays; config.autoCleanupMaxMB = oldMax; }
+});
+
+it('restricts favorite changes to owners and retains the local IPA password gate', async () => {
+  const task = fixture();
+  expect((await request(app).post(`/api/downloads/${task.id}/favorite?accountHash=${'b'.repeat(64)}`).send({ favorite: true })).status).toBe(403);
+  expect((await request(app).post(`/api/downloads/${task.id}/favorite?accountHash=${owner}`).send({ favorite: 'true' })).status).toBe(400);
+  const local = fixture(LOCAL_UPLOAD_ACCOUNT_HASH);
+  expect((await request(app).post(`/api/downloads/${local.id}/favorite?accountHash=${LOCAL_UPLOAD_ACCOUNT_HASH}`).send({ favorite: true })).status).toBe(403);
 });

@@ -94,6 +94,8 @@ export interface VersionMetadata {
 
 export interface DownloadTask {
   globallyVisible?: boolean;
+  favorite?: boolean;
+  retentionStartedAt?: string;
   canManage?: boolean;
   id: string;
   software: Software;

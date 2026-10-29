@@ -76,7 +76,7 @@ The checked-in Compose file builds the local source and tags it as `ghcr.io/mymo
 | `DATA_DIR`                                  | `./data`        | Directory for storing compiled IPAs                                                         |
 | `PUBLIC_BASE_URL`                           | _(auto-detect)_ | Public URL for generating install manifests (e.g. `https://asspp.example.com`)              |
 | `UNSAFE_DANGEROUSLY_DISABLE_HTTPS_REDIRECT` | `false`         | Disable HTTPS redirect (see warning below)                                                  |
-| `AUTO_CLEANUP_DAYS`                         | `0`             | Automatically delete cached IPA files older than specified days (0 to disable)              |
+| `AUTO_CLEANUP_DAYS`                         | `14`             | Automatically delete cached IPA files older than specified days (0 to disable)              |
 | `AUTO_CLEANUP_MAX_MB`                       | `0`             | Automatically delete oldest cached IPA files when size exceeds this MB limit (0 to disable) |
 | `MAX_DOWNLOAD_MB`                           | `0`             | Reject downloads exceeding this size in MB to prevent out-of-memory errors (0 to disable)   |
 | `DOWNLOAD_THREADS`                          | `8`             | Number of parallel threads for IPA downloads (1–32)                                         |

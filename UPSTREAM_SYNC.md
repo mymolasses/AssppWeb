@@ -178,3 +178,19 @@ the existing account-hash checks. Local IPA uploads retain their password gate
 and cannot be made globally visible. Existing installation-share URLs keep their
 previous behavior; disabling visibility removes discovery and guest file access,
 but does not revoke previously issued installation links or downloaded files.
+
+## Favorites and retention — 2026-10-29
+
+Package details now end with the favorite switch followed by global visibility.
+Favorites are package-wide owner settings persisted alongside task metadata and
+are exempt from both age-based and size-based automatic cleanup. Local IPA
+favorite changes also require the existing local IPA token. Manual deletion
+remains available.
+
+The default `AUTO_CLEANUP_DAYS` is 14 (explicit 0 still disables age cleanup).
+Retention begins after download completion or local upload. Existing task records
+without `retentionStartedAt` receive one full retention period on their first
+startup with this version; this timestamp is saved before cleanup, so restarts do
+not reset the grace period. Unfavoriting restarts retention. Expired non-favorites
+are checked at startup and daily. Global visibility does not exempt a package
+from cleanup; users must favorite packages they want to keep.

@@ -96,6 +96,8 @@ function persistTasks() {
       displayName: t.displayName,
       originalFileName: t.originalFileName,
       globallyVisible: t.globallyVisible === true,
+      favorite: t.favorite === true,
+      retentionStartedAt: t.retentionStartedAt,
       accountHash: t.accountHash,
       downloadURL: "",
       sinfs: [],
@@ -120,12 +122,13 @@ export function runTimeCleanup() {
   for (const task of tasks.values()) {
     if (
       task.status === "completed" &&
+      !task.favorite &&
       task.filePath &&
       fs.existsSync(task.filePath)
     ) {
       try {
-        const stat = fs.statSync(task.filePath);
-        if (stat.mtimeMs < cutoff) {
+        const retainedSince = Date.parse(task.retentionStartedAt || task.createdAt);
+        if (retainedSince < cutoff) {
           expiredIds.push(task.id);
         }
       } catch {
@@ -158,7 +161,7 @@ export function runSpaceCleanup() {
       try {
         const stat = fs.statSync(task.filePath);
         totalBytes += stat.size;
-        fileTasks.push({ id: task.id, size: stat.size, mtimeMs: stat.mtimeMs });
+        if (!task.favorite) fileTasks.push({ id: task.id, size: stat.size, mtimeMs: stat.mtimeMs });
       } catch {
         // File inaccessible — skip
       }
@@ -227,6 +230,9 @@ function initOnStartup() {
               displayName: item.displayName,
               originalFileName: item.originalFileName,
               globallyVisible: item.globallyVisible === true,
+              favorite: item.favorite === true,
+              // Existing packages receive a one-time full retention period.
+              retentionStartedAt: item.retentionStartedAt || new Date().toISOString(),
               accountHash: item.accountHash,
               downloadURL: "",
               sinfs: [],
@@ -248,6 +254,8 @@ function initOnStartup() {
 
   // Clean up orphaned IPA files (files without a task)
   cleanOrphanedPackages();
+
+  if (tasks.size > 0) persistTasks();
 
   // Run time-based cleanup once on startup, then schedule daily
   runTimeCleanup();
@@ -344,6 +352,15 @@ export function updateTaskSigningInfo(
   task.signingInfo = signingInfo;
   persistTasks();
   notifyProgress(task);
+  return task;
+}
+
+export function updateTaskFavorite(id: string, favorite: boolean): DownloadTask | undefined {
+  const task = tasks.get(id);
+  if (!task) return undefined;
+  if (task.favorite && !favorite) task.retentionStartedAt = new Date().toISOString();
+  task.favorite = favorite;
+  persistTasks();
   return task;
 }
 
@@ -499,6 +516,7 @@ export function createUploadedTask(
     downloadURL: "",
     sinfs: [],
     status: "completed",
+    retentionStartedAt: new Date().toISOString(),
     progress: 100,
     speed: "0 B/s",
     signingInfo,
@@ -609,6 +627,7 @@ async function startDownload(task: DownloadTask) {
     }
 
     task.status = "completed";
+    task.retentionStartedAt = new Date().toISOString();
     task.progress = 100;
     abortControllers.delete(task.id);
     clearTimeout(timeout);

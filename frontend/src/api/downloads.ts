@@ -130,3 +130,15 @@ export function updateDownloadVisibility(id: string, accountHash: string, global
   const params = new URLSearchParams({ accountHash });
   return apiPost<DownloadTask>(`/api/downloads/${id}/visibility?${params}`, { globallyVisible });
 }
+
+export async function updateDownloadFavorite(id: string, accountHash: string, favorite: boolean): Promise<DownloadTask> {
+  const params = new URLSearchParams({ accountHash });
+  const token = sessionStorage.getItem('local-ipa-token');
+  const response = await fetch(`/api/downloads/${id}/favorite?${params}`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json', ...(token ? { 'X-Local-IPA-Token': token } : {}) },
+    body: JSON.stringify({ favorite }),
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+}
