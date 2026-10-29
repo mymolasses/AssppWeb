@@ -23,6 +23,7 @@ export async function startDownload(data: {
   accountHash: string;
   downloadURL: string;
   artworkURL?: string;
+  storefrontId?: string;
   sinfs: Sinf[];
   iTunesMetadata?: string;
 }): Promise<DownloadTask> {
@@ -141,4 +142,8 @@ export async function updateDownloadFavorite(id: string, accountHash: string, fa
   });
   if (!response.ok) throw new Error(await response.text());
   return response.json();
+}
+
+export function backfillDownloadRegions(accounts: { accountHash: string; storefrontId: string }[]): Promise<{ updated: number }> {
+  return apiPost('/api/downloads/regions/backfill', { accounts });
 }

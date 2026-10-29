@@ -10,7 +10,7 @@ it('gives old packages one grace period, preserves favorites across restarts, th
   const filePath = path.join(dir, 'packages', 'old.ipa');
   fs.mkdirSync(path.dirname(filePath)); fs.writeFileSync(filePath, 'fixture');
   const store = path.join(dir, 'tasks.json');
-  const task = { id: 'old', software: {}, accountHash: 'owner', status: 'completed', filePath, createdAt: '2020-01-01T00:00:00Z' };
+  const task = { id: 'old', storefrontId: '143463', storefrontSource: 'download', software: {}, accountHash: 'owner', status: 'completed', filePath, createdAt: '2020-01-01T00:00:00Z' };
   fs.writeFileSync(store, JSON.stringify([task]));
   const moduleURL = pathToFileURL(path.resolve('src/services/downloadManager.ts')).href;
   const restart = () => {
@@ -23,6 +23,8 @@ it('gives old packages one grace period, preserves favorites across restarts, th
   try {
     const first = restart();
     expect(first).toHaveLength(1);
+    expect(first[0].storefrontId).toBe('143463');
+    expect(first[0].storefrontSource).toBe('download');
     const started = first[0].retentionStartedAt;
     expect(Date.parse(started)).toBeGreaterThan(Date.now() - 10000);
     expect(restart()[0].retentionStartedAt).toBe(started);

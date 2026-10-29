@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.1 — 2026-10-29
+
+- Persist normalized download storefront IDs and provenance with package records,
+  including across restarts and public sharing without exposing owner identities.
+- Show saved regions and region-specific App Store links on other devices;
+  region filters include public packages. Missing/unrecognized regions show Unknown.
+- Recover explicit storefront metadata from existing IPA files at startup.
+  Devices with matching saved accounts also backfill missing regions in the
+  background; account-derived regions are labelled as inferred in details.
+- Preserve saved regions over later account changes. Keep favorites, sharing,
+  original retention timestamps and local IPA protection unchanged.
+
 ## 1.2.0 — 2026-10-29
 
 - Backport ipatool 7578671: when iOS catalogs confirm HTTP 404, allow one

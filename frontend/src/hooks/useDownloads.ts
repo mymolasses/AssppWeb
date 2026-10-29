@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDownloadsStore } from "../store/downloads";
 import { useAccounts } from "./useAccounts";
+import { backfillDownloadRegions } from '../api/downloads';
 import { accountHash } from "../utils/account";
 import { LOCAL_UPLOAD_ACCOUNT_HASH } from "../constants/downloads";
 
@@ -26,7 +27,7 @@ export function useDownloads() {
       const hashes = await Promise.all(accounts.map((a) => accountHash(a)));
       // Use slice() before sort() so we don't mutate the original 'hashes' array
       const allHashes = [...hashes, LOCAL_UPLOAD_ACCOUNT_HASH];
-      const key = allHashes.slice().sort().join(",");
+      const key = allHashes.slice().sort().join(",") + accounts.map(a => a.store).join(",");
       if (cancelled || key === hashesRef.current) return;
       hashesRef.current = key;
 
@@ -40,7 +41,16 @@ export function useDownloads() {
 
       setAccountHashes(allHashes);
       // Fetch immediately after hashes are set so downloads appear on first visit
-      fetchTasks();
+      const hints = accounts.flatMap((account, index) => /^\d{6}(?:[-,].*)?$/.test(account.store?.trim() ?? '')
+        ? [{ accountHash: hashes[index], storefrontId: account.store }] : []);
+      if (cancelled) return;
+      await fetchTasks();
+      if (hints.length && !cancelled) {
+        try {
+          const result = await backfillDownloadRegions(hints);
+          if (result.updated > 0 && !cancelled) await fetchTasks();
+        } catch { /* Region backfill must not block ordinary browsing. */ }
+      }
     })();
     return () => {
       cancelled = true;

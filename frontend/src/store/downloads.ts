@@ -13,6 +13,7 @@ interface DownloadsState {
     accountHash: string;
     downloadURL: string;
     artworkURL?: string;
+    storefrontId?: string;
     sinfs: Sinf[];
     iTunesMetadata?: string;
   }) => Promise<void>;

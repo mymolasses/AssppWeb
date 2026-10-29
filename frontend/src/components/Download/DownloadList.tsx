@@ -19,6 +19,7 @@ import { useToastStore } from '../../store/toast';
 import { useUiPreferencesStore } from '../../store/uiPreferences';
 import { lookupApp } from '../../api/search';
 import { accountStoreCountry } from '../../utils/account';
+import { packageCountry } from '../../utils/packageRegion';
 import { getAccountContext } from '../../utils/toast';
 import { isNewerVersion } from '../../utils/version';
 import { LOCAL_UPLOAD_ACCOUNT_HASH } from '../../constants/downloads';
@@ -84,8 +85,7 @@ export default function DownloadList() {
   );
   const regions = Array.from(
     new Set(
-      accounts
-        .map((account) => accountStoreCountry(account))
+      [...accounts.map((account) => accountStoreCountry(account)), ...displayTasks.map(packageCountry)]
         .filter((country): country is string => Boolean(country)),
     ),
   ).sort((a, b) =>
@@ -96,12 +96,13 @@ export default function DownloadList() {
     const isLocal = task.accountHash === LOCAL_UPLOAD_ACCOUNT_HASH;
     const accountEmail = hashToEmail[task.accountHash];
     const account = accountByEmail.get(accountEmail);
-    const country = accountStoreCountry(account);
+    const country = task.storefrontId ? packageCountry(task) : accountStoreCountry(account);
 
     if (sourceFilter === 'local' && !isLocal) return false;
     if (sourceFilter === 'store' && isLocal) return false;
     if (accountFilter !== 'all' && accountEmail !== accountFilter) return false;
-    if (regionFilter !== 'all' && country !== regionFilter) return false;
+    if (regionFilter === 'unknown' && (country || isLocal)) return false;
+    if (regionFilter !== 'all' && regionFilter !== 'unknown' && country !== regionFilter) return false;
     return true;
   });
 
@@ -132,8 +133,8 @@ export default function DownloadList() {
     }
     if (isPreviewDownloadTask(task)) return t('countries.US');
     const email = hashToEmail[task.accountHash];
-    const country = accountStoreCountry(accountByEmail.get(email));
-    return country ? t(`countries.${country}`) : '—';
+    const country = task.storefrontId ? packageCountry(task) : accountStoreCountry(accountByEmail.get(email));
+    return country ? t(`countries.${country}`) : t('downloads.region.unknown');
   }
 
   async function handleLocalIpaUnlock() {
@@ -318,6 +319,7 @@ export default function DownloadList() {
             onChange={setRegionFilter}
           >
             <option value="all">{t('downloads.filters.allRegions')}</option>
+            <option value="unknown">{t('downloads.region.unknown')}</option>
             {regions.map((country) => (
               <option key={country} value={country}>
                 {t(`countries.${country}`)}

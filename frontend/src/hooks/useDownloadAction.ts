@@ -81,6 +81,7 @@ export function useDownloadAction() {
     await apiPost("/api/downloads", {
       software: { ...app, version: output.bundleShortVersionString },
       accountHash: hash,
+      storefrontId: currentAccount.store,
       downloadURL: output.downloadURL,
       artworkURL: output.artworkURL,
       sinfs: output.sinfs,

@@ -17,6 +17,8 @@ import bagRoutes from "./routes/bag.js";
 import appleAuthRoutes from "./routes/appleAuth.js";
 import versionMetadataRoutes from './routes/versionMetadata.js';
 
+import { backfillPackageRegions } from './services/packageRegions.js';
+
 const app = express();
 
 // Middleware
@@ -76,6 +78,7 @@ setupWsProxy(server);
 fs.mkdirSync(config.dataDir, { recursive: true });
 
 server.listen(config.port, () => {
+  void backfillPackageRegions().catch(() => console.error('Package region scan failed'));
   console.log(`Server listening on port ${config.port}`);
   console.log(`Data directory: ${path.resolve(config.dataDir)}`);
 });

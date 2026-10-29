@@ -97,6 +97,8 @@ function persistTasks() {
       displayName: t.displayName,
       originalFileName: t.originalFileName,
       globallyVisible: t.globallyVisible === true,
+      storefrontId: t.storefrontId,
+      storefrontSource: t.storefrontSource,
       favorite: t.favorite === true,
       retentionStartedAt: t.retentionStartedAt,
       accountHash: t.accountHash,
@@ -231,6 +233,8 @@ function initOnStartup() {
               displayName: item.displayName,
               originalFileName: item.originalFileName,
               globallyVisible: item.globallyVisible === true,
+              storefrontId: item.storefrontId,
+              storefrontSource: item.storefrontSource,
               favorite: item.favorite === true,
               // Existing packages receive a one-time full retention period.
               retentionStartedAt: item.retentionStartedAt || new Date().toISOString(),
@@ -356,6 +360,15 @@ export function updateTaskSigningInfo(
   return task;
 }
 
+export function updateTaskRegion(id: string, storefrontId: string, source: 'ipa-metadata' | 'account'): boolean {
+  const task = tasks.get(id);
+  if (!task || task.status !== 'completed' || task.storefrontId) return false;
+  task.storefrontId = storefrontId;
+  task.storefrontSource = source;
+  persistTasks();
+  return true;
+}
+
 export function updateTaskFavorite(id: string, favorite: boolean): DownloadTask | undefined {
   const task = tasks.get(id);
   if (!task) return undefined;
@@ -467,6 +480,7 @@ export function createTask(
   sinfs: Sinf[],
   iTunesMetadata?: string,
   artworkURL?: string,
+  storefrontId?: string,
 ): DownloadTask {
   // Validate download URL
   validateDownloadURL(downloadURL);
@@ -485,6 +499,8 @@ export function createTask(
     artworkURL,
     sinfs,
     iTunesMetadata,
+    storefrontId,
+    storefrontSource: storefrontId ? 'download' : undefined,
     status: "pending",
     progress: 0,
     speed: "0 B/s",

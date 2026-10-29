@@ -8,7 +8,7 @@ import { APP_VERSION } from '../../src/utils/appVersion';
 const accounts: any[] = [];
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en-US', changeLanguage: vi.fn() } }) }));
 vi.mock('../../src/hooks/useAccounts', () => ({ useAccounts: () => ({ accounts }) }));
-vi.mock('../../src/api/client', () => ({ apiGet: vi.fn(async (url: string) => url === '/api/settings' ? { appVersion: '1.2.0' } : [{ id: 'shared', globallyVisible: true, software: { name: 'Shared app fixture' } }]) }));
+vi.mock('../../src/api/client', () => ({ apiGet: vi.fn(async (url: string) => url === '/api/settings' ? { appVersion: '1.2.1' } : [{ id: 'shared', globallyVisible: true, software: { name: 'Shared app fixture' } }]) }));
 afterEach(cleanup);
 it('shows the package version on home without rendering shared app cards', async () => {
   render(<MemoryRouter><HomePage /></MemoryRouter>);

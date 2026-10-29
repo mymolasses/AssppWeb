@@ -27,6 +27,7 @@ import {
   updateDownloadFavorite,
 } from '../../api/downloads';
 import { formatBytes } from '../../utils/format';
+import { packageCountry } from '../../utils/packageRegion';
 import { getAccountContext } from '../../utils/toast';
 import { isNewerVersion } from '../../utils/version';
 import { storeIdToCountry } from '../../apple/config';
@@ -91,6 +92,7 @@ function PackageDetailContent() {
       ? t('downloads.upload.localSource')
       : hashToEmail[task.accountHash];
   const account = accounts.find((item) => item.email === accountEmail);
+  const country = task.storefrontId ? packageCountry(task) : (account && storeIdToCountry(account.store));
   const accountLabel = accountEmail || task.accountHash || t('downloads.visibility.title');
   const appName = task.displayName || task.software.name;
   const taskId = task.id;
@@ -280,7 +282,7 @@ function PackageDetailContent() {
           {!isLocalUpload && !isPreview && (
             <AppStoreLink
               appId={task.software.id}
-              country={account && storeIdToCountry(account.store)}
+              country={country}
             />
           )}
 
@@ -373,6 +375,10 @@ function PackageDetailContent() {
             >
               {accountLabel}
             </PackageDetailRow>
+            {!isLocalUpload && <PackageDetailRow label={t('downloads.filters.region')}>
+              {country ? t(`countries.${country}`) : t('downloads.region.unknown')}
+              {task.storefrontSource === 'account' && country && <span className="ml-1 text-xs text-gray-500">({t('downloads.region.inferred')})</span>}
+            </PackageDetailRow>}
             <PackageDetailRow label={t('downloads.package.created')}>
               {new Date(task.createdAt).toLocaleString()}
             </PackageDetailRow>

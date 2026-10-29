@@ -34,6 +34,8 @@ import { analyzeIpaSigning } from "../services/ipaSigning.js";
 
 import { isGloballyVisible, taskForViewer } from '../services/packageVisibility.js';
 
+import { backfillPackageRegions, normalizeStorefrontId } from '../services/packageRegions.js';
+
 const router = Router();
 
 const PACKAGES_DIR = path.join(config.dataDir, "packages");
@@ -138,6 +140,7 @@ router.post("/downloads", async (req: Request, res: Response) => {
     accountHash,
     downloadURL,
     artworkURL,
+    storefrontId,
     sinfs,
     iTunesMetadata,
   } = req.body;
@@ -148,6 +151,11 @@ router.post("/downloads", async (req: Request, res: Response) => {
         "Missing required fields: software, accountHash, downloadURL, sinfs",
     });
     return;
+  }
+
+  const normalizedStorefront = normalizeStorefrontId(storefrontId);
+  if (storefrontId != null && !normalizedStorefront) {
+    res.status(400).json({ error: 'Invalid storefrontId' }); return;
   }
 
   // Validate download URL before creating task
@@ -194,6 +202,7 @@ router.post("/downloads", async (req: Request, res: Response) => {
       sinfs,
       iTunesMetadata,
       artworkURL,
+      normalizedStorefront,
     );
     res.status(201).json(sanitizeTaskForResponse(task));
   } catch (err) {
@@ -328,6 +337,26 @@ router.post("/downloads/:id/display-name", (req: Request, res: Response) => {
     normalizeDisplayName(req.body?.displayName),
   );
   res.json(sanitizeTaskForResponse(updated!));
+});
+
+// Account/device hints contain only public owner hashes and storefront IDs.
+router.post('/downloads/regions/backfill', async (req: Request, res: Response) => {
+  const entries = req.body?.accounts;
+  if (!Array.isArray(entries) || entries.length > 100 || entries.some(entry =>
+    !entry || typeof entry.accountHash !== 'string' || entry.accountHash.length < 16 || !normalizeStorefrontId(entry.storefrontId))) {
+    res.status(400).json({ error: 'Invalid region hints' }); return;
+  }
+  const hints = new Map<string, string>();
+  const conflicts = new Set<string>();
+  for (const entry of entries) {
+    const id = normalizeStorefrontId(entry.storefrontId)!;
+    if (hints.has(entry.accountHash) && hints.get(entry.accountHash) !== id) conflicts.add(entry.accountHash);
+    else hints.set(entry.accountHash, id);
+  }
+  for (const hash of conflicts) hints.delete(hash);
+  if (!hints.size) { res.json({ updated: 0 }); return; }
+  try { res.json({ updated: await backfillPackageRegions(hints) }); }
+  catch { res.status(500).json({ error: 'Could not backfill regions' }); }
 });
 
 router.post('/downloads/:id/favorite', (req: Request, res: Response) => {

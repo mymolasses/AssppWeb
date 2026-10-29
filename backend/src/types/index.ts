@@ -53,6 +53,8 @@ export interface IpaSigningInfo {
 }
 
 export interface DownloadTask {
+  storefrontId?: string;
+  storefrontSource?: 'download' | 'ipa-metadata' | 'account';
   globallyVisible?: boolean;
   favorite?: boolean;
   retentionStartedAt?: string;
@@ -84,6 +86,8 @@ export interface DownloadTask {
 }
 
 export interface PackageInfo {
+  storefrontId?: string;
+  storefrontSource?: 'download' | 'ipa-metadata' | 'account';
   id: string;
   software: Software;
   displayName?: string;

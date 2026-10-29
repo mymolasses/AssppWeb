@@ -245,6 +245,18 @@ describe('upstream UI with local IPA protection', () => {
     await waitFor(() => expect(mocks.updateFavorite).toHaveBeenCalledWith(task.id, 'store-owner', true));
   });
 
+  it('shows a saved shared region and region-specific links without the owner account', () => {
+    renderTaskDetail({ ...task, accountHash: '', canManage: false, globallyVisible: true, storefrontId: '143463', storefrontSource: 'download', software: { ...task.software, id: 123456 } });
+    expect(screen.getByText('countries.HK')).toBeInTheDocument();
+    expect(document.querySelector('a[href^="https://apps.apple.com/hk/app/id123456"]')).not.toBeNull();
+  });
+
+  it('shows unknown instead of assuming US for unrecognized saved regions', () => {
+    renderTaskDetail({ ...task, accountHash: '', canManage: false, globallyVisible: true, storefrontId: '999999', software: { ...task.software, id: 123456 } });
+    expect(screen.getByText('downloads.region.unknown')).toBeInTheDocument();
+    expect(document.querySelector('a[href^="https://apps.apple.com/"]')).toBeNull();
+  });
+
   it('shows quick actions to a visitor without owner controls', () => {
     renderTaskDetail({ ...task, accountHash: '', globallyVisible: true, canManage: false });
     expect(screen.getByTestId('package-quick-actions')).toBeInTheDocument();

@@ -220,3 +220,22 @@ frontend package version; the backend settings route reads its own package.
 Global app cards are no longer rendered on Home; Downloads discovery, favorites,
 retention timestamps and cleanup behavior are preserved. The version-tag workflow
 validates both applications and the unchanged SAP helper before image publication.
+
+## Shared package regions — v1.2.1 (2026-10-29)
+
+The browser submits its actual download account storefront, not the search UI's
+country. The backend normalizes it to a six-digit storefront ID and saves
+storefrontId/storefrontSource with task metadata. Both public download and package
+lists return these non-secret fields while still omitting the owner's hash.
+
+Legacy recovery first inspects explicit storefront/storefrontId fields in the IPA
+root iTunesMetadata.plist (XML or binary, bounded size). Missing/conflicting
+metadata is not guessed. At startup this runs in the background. Original devices
+with saved matching accounts can also submit account-hash/storefront hints; these
+are marked as account-derived in details. Existing saved regions are immutable to
+later hints. No emails, passwords, DSIDs, or tokens are sent by the backfill route.
+
+Cards, filters, details and App Store links prefer saved regions. Unknown
+storefronts display Unknown without a US fallback. Local IPA gating remains
+unchanged; local uploads are excluded from storefront backfill. Region writes do
+not change favorites, global visibility, creation dates or retention start dates.

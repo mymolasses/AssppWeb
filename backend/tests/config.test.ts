@@ -3,7 +3,7 @@ import { config } from "../src/config.js";
 
 describe("config", () => {
   it('exposes the release package version', () => {
-    expect(config.appVersion).toBe('1.2.0');
+    expect(config.appVersion).toBe('1.2.1');
   });
   it("should have default port 8080", () => {
     expect(config.port).toBe(8080);

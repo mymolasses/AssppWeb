@@ -37,6 +37,8 @@ router.get("/packages", (req: Request, res: Response) => {
     const stats = fs.statSync(task.filePath);
     packages.push({
       id: task.id,
+      storefrontId: task.storefrontId,
+      storefrontSource: task.storefrontSource,
       software: task.software,
       displayName: task.displayName,
       originalFileName: task.originalFileName,
