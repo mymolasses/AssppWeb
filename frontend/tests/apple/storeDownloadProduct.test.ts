@@ -2,14 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchStoreDownloadProduct } from '../../src/apple/storeDownloadProduct';
 import { appleRequest } from '../../src/apple/request';
 import { fetchBag } from '../../src/apple/bag';
-import { latestIOSVersionId } from '../../src/apple/platformVersion';
+import { IOSCatalogAppNotFoundError, latestIOSVersionId } from '../../src/apple/platformVersion';
 import { cachedKBSync, generateKBSync, invalidateKBSync, storeKBSync } from '../../src/apple/kbsync';
 import { buildPlist, parsePlist } from '../../src/apple/plist';
 import type { Account, Software } from '../../src/types';
 
 vi.mock('../../src/apple/request', () => ({ appleRequest: vi.fn() }));
 vi.mock('../../src/apple/bag', () => ({ fetchBag: vi.fn() }));
-vi.mock('../../src/apple/platformVersion', () => ({ latestIOSVersionId: vi.fn() }));
+vi.mock('../../src/apple/platformVersion', async (original) => ({
+  ...await original<typeof import('../../src/apple/platformVersion')>(), latestIOSVersionId: vi.fn(),
+}));
 vi.mock('../../src/apple/kbsync', () => ({
   cachedKBSync: vi.fn(), generateKBSync: vi.fn(), invalidateKBSync: vi.fn(),
   storeKBSync: vi.fn(), entSerialNumber: () => 'serial',
@@ -193,5 +195,63 @@ describe('preferred download and bounded recovery', () => {
     vi.mocked(appleRequest).mockResolvedValue(response({ songList: [] }));
     await expect(fetchStoreDownloadProduct(account, app, '98765')).rejects.toThrow();
     expect(appleRequest).toHaveBeenCalledTimes(3);
+  });
+});
+
+
+describe('delisted iOS recovery (ipatool 7578671)', () => {
+  it('tries exactly one unpinned redownload in the same account after confirmed catalog absence', async () => {
+    vi.mocked(latestIOSVersionId).mockRejectedValue(new IOSCatalogAppNotFoundError());
+    vi.mocked(appleRequest)
+      .mockResolvedValueOnce({ ...response({ songList: [] }), rawHeaders: [['set-cookie', 'session=new; Domain=.itunes.apple.com; Path=/; Secure']] })
+      .mockResolvedValueOnce(product());
+    const result = await fetchStoreDownloadProduct(account, app);
+    expect(result.dict.songList[0].URL).toBeTruthy();
+    expect(latestIOSVersionId).toHaveBeenCalledOnce();
+    expect(generateKBSync).not.toHaveBeenCalled();
+    const calls = vi.mocked(appleRequest).mock.calls;
+    expect(calls).toHaveLength(2);
+    const req = calls[1][0];
+    expect(req.path).toContain('/r/redownload');
+    expect(req.headers?.['X-Dsid']).toBe(account.directoryServicesIdentifier);
+    expect(req.headers?.['X-Token']).toBeUndefined();
+    expect(parsePlist(req.body!)).not.toHaveProperty('appExtVrsId');
+    expect(parsePlist(req.body!)).not.toHaveProperty('externalVersionId');
+    expect(req.cookies).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'session', value: 'new' })]));
+  });
+
+  it.each([new Error('HTTP 500'), new Error('invalid metadata'), new Error('connection reset')])('does not treat other catalog failures as delisting: %s', async (error) => {
+    vi.mocked(fetchBag).mockResolvedValue({ authURL: '' });
+    vi.mocked(latestIOSVersionId).mockRejectedValue(error);
+    vi.mocked(appleRequest).mockResolvedValueOnce(response({ songList: [] }));
+    await expect(fetchStoreDownloadProduct(account, app)).rejects.toThrow(error.message);
+    expect(appleRequest).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { itemId: 99 }, { softwareVersionBundleId: 'com.other.app' },
+    { softwareVersionBundleId: undefined }, { 'software-platform': 'tvos' },
+  ])('rejects an unpinned redownload identity/platform mismatch %j', async (changes) => {
+    vi.mocked(fetchBag).mockResolvedValue({ authURL: '', updateProductURL: updateURL });
+    vi.mocked(latestIOSVersionId).mockRejectedValue(new IOSCatalogAppNotFoundError());
+    vi.mocked(appleRequest).mockResolvedValueOnce(response({ songList: [] })).mockResolvedValueOnce(product(changes));
+    await expect(fetchStoreDownloadProduct(account, app)).rejects.toThrow();
+    expect(appleRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['2034', '2042', '9610'])('keeps auth/license failure %s for existing recovery', async (failureType) => {
+    vi.mocked(fetchBag).mockResolvedValue({ authURL: '' });
+    vi.mocked(latestIOSVersionId).mockRejectedValue(new IOSCatalogAppNotFoundError());
+    vi.mocked(appleRequest).mockResolvedValueOnce(response({ songList: [] })).mockResolvedValueOnce(response({ failureType }));
+    expect((await fetchStoreDownloadProduct(account, app)).dict.failureType).toBe(failureType);
+    expect(appleRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([response({ songList: [] }), response({}, 500), response({ customerMessage: 'App No Longer Available' }), response({ songList: [{ metadata: { itemId: app.id, softwareVersionBundleId: app.bundleID } }] })])('terminates invalid unpinned responses without updateProduct', async (last) => {
+    vi.mocked(fetchBag).mockResolvedValue({ authURL: '', updateProductURL: updateURL });
+    vi.mocked(latestIOSVersionId).mockRejectedValue(new IOSCatalogAppNotFoundError());
+    vi.mocked(appleRequest).mockResolvedValueOnce(response({ songList: [] })).mockResolvedValueOnce(last);
+    await expect(fetchStoreDownloadProduct(account, app)).rejects.toThrow();
+    expect(appleRequest).toHaveBeenCalledTimes(2);
   });
 });

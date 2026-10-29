@@ -1,7 +1,9 @@
+import { createRequire } from 'node:module';
 import { createHash } from "crypto";
 import { timingSafeEqual } from "crypto";
 
 export const config = {
+  appVersion: createRequire(import.meta.url)('../package.json').version as string,
   port: parseInt(process.env.PORT || "8080"),
   dataDir: process.env.DATA_DIR || "./data",
   publicBaseUrl: process.env.PUBLIC_BASE_URL || "",

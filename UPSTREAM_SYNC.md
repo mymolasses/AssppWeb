@@ -194,3 +194,29 @@ startup with this version; this timestamp is saved before cleanup, so restarts d
 not reset the grace period. Unfavoriting restarts retention. Expired non-favorites
 are checked at startup and daily. Global visibility does not exempt a package
 from cleanup; users must favorite packages they want to keep.
+
+## Selective ipatool compatibility backports — v1.2.0 (2026-10-29)
+
+Sources: majd/ipatool commits 7578671482fb71e045745ed783bfc7bd2580672e
+and 1b9ff28eb467cb37f803f8e4b9f0ea20f0b09f4a. The Go dependency remains
+2.7.0; the new framework-backed login architecture is not adopted.
+
+The browser version catalog signals confirmed absence only after consumer
+catalog HTTP 404 responses. On that signal, a legacy recovery request may make
+one unpinned redownload with the same account, device, cookies and storefront.
+Malformed catalogs, network errors and other HTTP failures do not enable it.
+App ID, known bundle ID, item count and package URL remain required; unpinned
+failures do not trigger updateProduct. Explicit historical pins are preserved.
+
+The backend checks the downloaded main app plist before injection/publication:
+the bundle ID must match and any platform declaration must include iPhoneOS.
+An absent CFBundleSupportedPlatforms is accepted for legacy iOS only; present
+empty/malformed/conflicting declarations are rejected. Invalid packages are
+removed and remain failed tasks, never published. Local upload parsing remains
+on its existing gated path.
+
+Frontend/backend marketing versions are 1.2.0. Home and Settings read the same
+frontend package version; the backend settings route reads its own package.
+Global app cards are no longer rendered on Home; Downloads discovery, favorites,
+retention timestamps and cleanup behavior are preserved. The version-tag workflow
+validates both applications and the unchanged SAP helper before image publication.

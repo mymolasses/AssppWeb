@@ -2,11 +2,10 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageContainer from '../Layout/PageContainer';
-import DownloadItem from '../Download/DownloadItem';
-import { useDownloads } from '../../hooks/useDownloads';
 import { useAccounts } from '../../hooks/useAccounts';
 import { apiGet } from '../../api/client';
 import { accountHash } from '../../utils/account';
+import { APP_VERSION } from '../../utils/appVersion';
 
 interface Stats {
   accounts: number;
@@ -17,8 +16,6 @@ interface Stats {
 export default function HomePage() {
   const { t } = useTranslation();
   const { accounts } = useAccounts();
-  const { tasks } = useDownloads();
-  const sharedTasks = tasks.filter((task) => task.globallyVisible && task.status === 'completed' && task.hasFile);
   const [stats, setStats] = useState<Stats>({
     accounts: 0,
     downloads: 0,
@@ -71,15 +68,6 @@ export default function HomePage() {
   return (
     <PageContainer>
       <div className="space-y-8 pb-4">
-        {sharedTasks.length > 0 && (
-          <section aria-label={t('downloads.visibility.sharedApps')}>
-            <h2 className="mb-3 text-lg font-medium text-gray-900 dark:text-white">{t('downloads.visibility.sharedApps')}</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              {sharedTasks.map((task) => <DownloadItem key={task.id} task={task} compact
-                onPause={() => {}} onResume={() => {}} onDelete={() => {}} />)}
-            </div>
-          </section>
-        )}
         <section className="relative isolate min-h-80 overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 px-6 py-8 sm:min-h-96 sm:px-10 sm:py-10 dark:from-blue-700 dark:via-blue-600 dark:to-indigo-700">
           <div
             aria-hidden="true"
@@ -93,7 +81,7 @@ export default function HomePage() {
           <div className="relative z-10 flex min-h-64 max-w-xl flex-col items-start justify-center sm:min-h-76">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-white" />
-              App Store
+              App Store · AssppWeb v{APP_VERSION}
             </div>
             <h1 className="max-w-full whitespace-nowrap text-[clamp(1.5rem,7vw,1.875rem)] font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">
               {t('home.welcome')}

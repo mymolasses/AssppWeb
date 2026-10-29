@@ -1,3 +1,4 @@
+import { readIpaInfo } from './ipaMetadata.js';
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
@@ -614,6 +615,15 @@ async function startDownload(task: DownloadTask) {
 
     chunkDownloaders.delete(task.id);
 
+    // Verify the downloaded main app before injection or publication. Legacy
+    // iOS plists may omit platform declarations, but conflicting ones fail.
+    try {
+      await readIpaInfo(filePath, task.software.name, task.software.bundleID);
+    } catch (error) {
+      await fs.promises.rm(filePath, { force: true });
+      task.filePath = undefined;
+      throw error;
+    }
     const artwork = await downloadArtwork(task.artworkURL, controller.signal);
 
     // Add any available license data, metadata, and artwork. Some Apple device

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.0 — 2026-10-29
+
+- Backport ipatool 7578671: when iOS catalogs confirm HTTP 404, allow one
+  same-account redownload without a version pin. Keep identity checks, bounded
+  requests, structured auth/license errors, and explicit historical version pins.
+- Backport ipatool 1b9ff28: accept legacy iOS IPAs with a missing platform
+  declaration. Reject empty, malformed, or incompatible declarations and wrong
+  bundle IDs before publishing a downloaded package.
+- Keep the server-side SAP login helper pinned at ipatool 2.7.0; retain favorites,
+  14-day cleanup/grace, global visibility, local IPA gating and existing accounts.
+- Show the package version on Home and Settings and expose it through settings.
+  Shared app cards remain in Downloads and are removed from Home.
+- Publish versioned/latest images only from version tags, with complete Linux
+  frontend/backend/SAP validation required before the image build.
+
 ## 1.1.1 — 2026-10-20
 
 - Read historical app version numbers from the selected IPA's main

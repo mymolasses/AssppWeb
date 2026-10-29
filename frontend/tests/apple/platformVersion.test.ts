@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { latestIOSVersionId } from '../../src/apple/platformVersion';
+import { IOSCatalogAppNotFoundError, latestIOSVersionId } from '../../src/apple/platformVersion';
 import { appleRequest } from '../../src/apple/request';
 import type { Account, Software } from '../../src/types';
 
@@ -106,4 +106,18 @@ describe('iOS version catalogs', () => {
     await expect(latestIOSVersionId(account, { ...app, kind: 'mac-software' })).rejects.toThrow('Mac');
     expect(appleRequest).not.toHaveBeenCalled();
   });
+});
+
+
+it('marks confirmed consumer catalog absence separately from malformed data', async () => {
+  vi.mocked(appleRequest)
+    .mockResolvedValueOnce(response({ results: {} })).mockResolvedValueOnce(response({ results: {} })).mockResolvedValueOnce(response({ results: {} }))
+    .mockResolvedValueOnce(response({}, 404)).mockResolvedValueOnce(response({}, 404));
+  await expect(latestIOSVersionId(account, app)).rejects.toBeInstanceOf(IOSCatalogAppNotFoundError);
+});
+it('does not mark successful but empty catalog metadata as a confirmed delisting', async () => {
+  vi.mocked(appleRequest)
+    .mockResolvedValueOnce(response({ results: {} })).mockResolvedValueOnce(response({ results: {} })).mockResolvedValueOnce(response({ results: {} }))
+    .mockResolvedValueOnce(response({ data: [] }));
+  await expect(latestIOSVersionId(account, app)).rejects.not.toBeInstanceOf(IOSCatalogAppNotFoundError);
 });

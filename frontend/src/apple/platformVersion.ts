@@ -2,6 +2,10 @@ import { appleRequest } from './request';
 import { storeIdToCountry } from './config';
 import type { Account, Software } from '../types';
 
+export class IOSCatalogAppNotFoundError extends Error {
+  constructor() { super('iOS catalog lookup returned HTTP 404'); }
+}
+
 function versionIdentifier(value: unknown): string | undefined {
   if (typeof value === 'number' && !Number.isSafeInteger(value)) return;
   if (typeof value !== 'string' && typeof value !== 'number') return;
@@ -64,6 +68,7 @@ export async function latestIOSVersionId(
   }
 
   // Apple Arcade apps may be absent from every MDM catalog.
+  let allCatalogsMissing = true;
   for (const platform of ['iphone', 'ipad']) {
     const response = await appleRequest({
       method: 'GET',
@@ -72,6 +77,7 @@ export async function latestIOSVersionId(
       signal: AbortSignal.timeout(30_000),
     });
     if (response.status === 404) continue;
+    allCatalogsMissing = false;
     if (response.status !== 200) {
       throw new Error(`App Store catalog lookup failed (HTTP ${response.status})`);
     }
@@ -96,5 +102,6 @@ export async function latestIOSVersionId(
     if (!id) throw new Error('App Store catalog returned no valid version identifier');
     return id;
   }
+  if (allCatalogsMissing) throw new IOSCatalogAppNotFoundError();
   throw new Error('App Store catalog has no offer for this iOS app');
 }

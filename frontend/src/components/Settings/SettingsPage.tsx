@@ -7,6 +7,7 @@ import { useToastStore } from '../../store/toast';
 import { useSettingsStore, type EntityType } from '../../store/settings';
 import { apiGet } from '../../api/client';
 import { encryptData, decryptData } from '../../utils/crypto';
+import { APP_VERSION } from '../../utils/appVersion';
 import { countryCodeMap } from '../../apple/config';
 import type { Account } from '../../types';
 
@@ -188,6 +189,7 @@ export default function SettingsPage() {
 
   return (
     <PageContainer title={t('settings.title')}>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">AssppWeb v{APP_VERSION}</p>
       <div className="min-w-0 space-y-6">
         <section className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">

@@ -7,7 +7,7 @@ import {
   invalidateKBSync,
   storeKBSync,
 } from './kbsync';
-import { latestIOSVersionId } from './platformVersion';
+import { IOSCatalogAppNotFoundError, latestIOSVersionId } from './platformVersion';
 import { buildPlist, parsePlist } from './plist';
 import { appleRequest } from './request';
 import {
@@ -33,6 +33,15 @@ export async function fetchStoreDownloadProduct(
   const deviceId = account.deviceIdentifier;
   let cookies = [...account.cookies];
   const bag = await fetchBag(deviceId);
+  let catalogMissing = false;
+  async function resolveVersion() {
+    if (catalogMissing) throw new IOSCatalogAppNotFoundError();
+    try { return await latestIOSVersionId(account, app); }
+    catch (error) {
+      if (error instanceof IOSCatalogAppNotFoundError) catalogMissing = true;
+      throw error;
+    }
+  }
 
   async function send(endpoint: StoreDownloadEndpoint, kbsync?: string) {
     let host = endpoint.host;
@@ -120,7 +129,7 @@ export async function fetchStoreDownloadProduct(
   );
   if (preferred) {
     try {
-      externalVersionId ||= await latestIOSVersionId(account, app);
+      externalVersionId ||= await resolveVersion();
       const requestWithBlob = async (blob: string) => {
         const result = await send(preferred, blob);
         if (
@@ -153,10 +162,25 @@ export async function fetchStoreDownloadProduct(
   let usedUpdate = false;
   if (shouldUseRedownload(result.response.status, result.dict)) {
     // Unpinned redownloads can select another platform of a universal app.
-    externalVersionId ||= await latestIOSVersionId(account, app);
+    let unpinned = false;
+    try { externalVersionId ||= await resolveVersion(); }
+    catch (error) {
+      if (!(error instanceof IOSCatalogAppNotFoundError) || app.kind === 'mac-software') throw error;
+      unpinned = true;
+    }
     const endpoint = dispatchEndpoint(bag.redownloadURL, '/r/redownload', deviceId)
       ?? redownloadEndpoint(deviceId);
     result = await send(endpoint);
+    if (unpinned) {
+      // A confirmed delisting gets one same-account request without a version.
+      // Do not hide errors by trying updateProduct or another account/region.
+      if (result.response.status !== 200) throw new Error(`Store request failed (HTTP ${result.response.status})`);
+      if (result.dict.failureType) return { dict: result.dict, updatedCookies: cookies };
+      if (result.dict.customerMessage) throw new Error(String(result.dict.customerMessage));
+      validateSelection(result.dict, app, undefined, true);
+      if (!result.dict.songList[0].URL) throw new Error('Missing package URL');
+      return { dict: result.dict, updatedCookies: cookies };
+    }
     if (shouldUseUpdateProduct(
       result.response.status, result.dict, result.response.body,
     )) {

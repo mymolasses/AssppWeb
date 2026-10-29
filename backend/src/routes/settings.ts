@@ -6,6 +6,7 @@ const startedAt = Date.now();
 
 router.get("/settings", (_req: Request, res: Response) => {
   res.json({
+    appVersion: config.appVersion,
     uptime: Math.floor((Date.now() - startedAt) / 1000),
     buildCommit: config.buildCommit,
     buildDate: config.buildDate,

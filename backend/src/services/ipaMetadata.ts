@@ -61,6 +61,7 @@ function stringValue(
 export async function readIpaInfo(
   ipaPath: string,
   fallbackName: string,
+  expectedBundleID?: string,
 ): Promise<IpaInfo> {
   const zip = await openZip(ipaPath);
   try {
@@ -71,6 +72,7 @@ export async function readIpaInfo(
         !filename.includes("/Watch/");
       if (!isMainInfoPlist) continue;
 
+      if (expectedBundleID && entry.uncompressedSize > 2 * 1024 * 1024) throw new Error('IPA Info.plist is too large');
       const stream = await entry.openReadStream();
       const data = await streamToBuffer(stream);
       const info = parsePlistBuffer(data);
@@ -79,6 +81,17 @@ export async function readIpaInfo(
       const bundleID = stringValue(info, ["CFBundleIdentifier"]);
       if (!bundleID) {
         throw new Error("IPA Info.plist is missing CFBundleIdentifier");
+      }
+
+      if (expectedBundleID) {
+        if (bundleID !== expectedBundleID) throw new Error('IPA does not match the requested bundle identifier');
+        // Backport ipatool 1b9ff28: only an absent declaration qualifies as legacy.
+        if (Object.prototype.hasOwnProperty.call(info, 'CFBundleSupportedPlatforms')) {
+          const platforms = info.CFBundleSupportedPlatforms;
+          if (!Array.isArray(platforms) || !platforms.every(p => typeof p === 'string') || !platforms.includes('iPhoneOS')) {
+            throw new Error('IPA does not declare iPhoneOS support');
+          }
+        }
       }
 
       const name =

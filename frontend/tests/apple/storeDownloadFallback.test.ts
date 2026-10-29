@@ -20,7 +20,9 @@ vi.mock('../../src/apple/request', () => ({
   appleRequest: vi.fn(),
 }));
 
-vi.mock('../../src/apple/platformVersion', () => ({ latestIOSVersionId: vi.fn() }));
+vi.mock('../../src/apple/platformVersion', async (original) => ({
+  ...await original<typeof import('../../src/apple/platformVersion')>(), latestIOSVersionId: vi.fn(),
+}));
 
 vi.mock('../../src/apple/bag', () => ({
   fetchBag: vi.fn(),

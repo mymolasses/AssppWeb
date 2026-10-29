@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import { config } from "../src/config.js";
 
 describe("config", () => {
+  it('exposes the release package version', () => {
+    expect(config.appVersion).toBe('1.2.0');
+  });
   it("should have default port 8080", () => {
     expect(config.port).toBe(8080);
   });
