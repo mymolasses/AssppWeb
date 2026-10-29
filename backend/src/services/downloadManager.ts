@@ -95,6 +95,7 @@ function persistTasks() {
       software: t.software,
       displayName: t.displayName,
       originalFileName: t.originalFileName,
+      globallyVisible: t.globallyVisible === true,
       accountHash: t.accountHash,
       downloadURL: "",
       sinfs: [],
@@ -225,6 +226,7 @@ function initOnStartup() {
               software: item.software,
               displayName: item.displayName,
               originalFileName: item.originalFileName,
+              globallyVisible: item.globallyVisible === true,
               accountHash: item.accountHash,
               downloadURL: "",
               sinfs: [],
@@ -342,6 +344,14 @@ export function updateTaskSigningInfo(
   task.signingInfo = signingInfo;
   persistTasks();
   notifyProgress(task);
+  return task;
+}
+
+export function updateTaskVisibility(id: string, globallyVisible: boolean): DownloadTask | undefined {
+  const task = tasks.get(id);
+  if (!task) return undefined;
+  task.globallyVisible = globallyVisible;
+  persistTasks();
   return task;
 }
 

@@ -18,6 +18,7 @@ import {
   removeProgressListener,
   sanitizeTaskForResponse,
   updateTaskDisplayName,
+  updateTaskVisibility,
   updateTaskSigningInfo,
   validateDownloadURL,
 } from "../services/downloadManager.js";
@@ -29,6 +30,8 @@ import {
 } from "../utils/route.js";
 import { buildUploadedSoftware, readIpaInfo } from "../services/ipaMetadata.js";
 import { analyzeIpaSigning } from "../services/ipaSigning.js";
+
+import { isGloballyVisible, taskForViewer } from '../services/packageVisibility.js';
 
 const router = Router();
 
@@ -326,33 +329,47 @@ router.post("/downloads/:id/display-name", (req: Request, res: Response) => {
   res.json(sanitizeTaskForResponse(updated!));
 });
 
+// Only completed Store packages can be made visible across devices.
+router.post('/downloads/:id/visibility', (req: Request, res: Response) => {
+  const hash = requireAccountHash(req, res);
+  if (!hash) return;
+  const task = getTask(getIdParam(req));
+  if (!task) { res.status(404).json({ error: 'Download not found' }); return; }
+  if (!verifyTaskOwnership(task, hash, res)) return;
+  if (task.accountHash === LOCAL_UPLOAD_ACCOUNT_HASH || task.status !== 'completed' || !task.filePath || !fs.existsSync(task.filePath)) {
+    res.status(400).json({ error: 'Only completed Store packages can be shared globally' }); return;
+  }
+  if (typeof req.body?.globallyVisible !== 'boolean') {
+    res.status(400).json({ error: 'globallyVisible must be a boolean' }); return;
+  }
+  updateTaskVisibility(task.id, req.body.globallyVisible);
+  res.json(taskForViewer(task, true));
+});
+
 // List downloads filtered by account hashes
 router.get("/downloads", (req: Request, res: Response) => {
   const hashesParam = req.query.accountHashes;
-  if (!hashesParam || typeof hashesParam !== "string") {
-    res.json([]);
-    return;
-  }
-  const hashes = new Set(hashesParam.split(",").filter(Boolean));
-  if (hashes.size === 0) {
-    res.json([]);
-    return;
-  }
+  const hashes = new Set(typeof hashesParam === 'string' ? hashesParam.split(',').filter(Boolean) : []);
   const localIpaToken = req.headers["x-local-ipa-token"];
   const canViewLocalIpas =
     typeof localIpaToken === "string" && verifyLocalIpaToken(localIpaToken);
   const filtered = getAllTasks()
     .filter(
       (t) =>
-        hashes.has(t.accountHash) &&
+        (isGloballyVisible(t) || hashes.has(t.accountHash)) &&
         (t.accountHash !== LOCAL_UPLOAD_ACCOUNT_HASH || canViewLocalIpas),
     )
-    .map(sanitizeTaskForResponse);
+    .map((task) => taskForViewer(task, hashes.has(task.accountHash)));
   res.json(filtered);
 });
 
 // Get single download (requires accountHash)
 router.get("/downloads/:id", (req: Request, res: Response) => {
+  const shared = getTask(getIdParam(req));
+  if (shared && isGloballyVisible(shared)) {
+    res.json(taskForViewer(shared, req.query.accountHash === shared.accountHash));
+    return;
+  }
   const accountHash = requireAccountHash(req, res);
   if (!accountHash) return;
 

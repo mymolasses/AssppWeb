@@ -152,6 +152,7 @@
     }
   },
   "downloads": {
+    "visibility": {"title":"Visible to everyone","help":"Off by default. Other devices can find this app on the home and downloads pages, download, install, and share it without an Apple account. The site access password still applies.","failed":"Could not save visibility. Please retry.","sharedApps":"Shared apps"},
     "title": "Downloads",
     "new": "New Download",
     "warning": "Packages are temporary and will be cleared on server restart. Download or install promptly.",

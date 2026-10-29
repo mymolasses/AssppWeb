@@ -164,13 +164,13 @@ export default function DownloadItem({
             {t('downloads.package.title')}
           </Link>
         )}
-        <button
+        {task.canManage !== false && <button
           type="button"
           onClick={() => onDelete(task.id)}
           className="min-h-10 min-w-0 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
         >
           {t('downloads.package.delete')}
-        </button>
+        </button>}
       </div>
     </article>
   );

@@ -7,6 +7,8 @@ import { getAllTasks } from "../services/downloadManager.js";
 import { getIdParam } from "../utils/route.js";
 import type { PackageInfo } from "../types/index.js";
 
+import { isGloballyVisible } from '../services/packageVisibility.js';
+
 const router = Router();
 
 // Sanitize filename for Content-Disposition to prevent header injection
@@ -22,19 +24,11 @@ function sanitizeFilename(name: string): string {
 // List packages filtered by account hashes
 router.get("/packages", (req: Request, res: Response) => {
   const hashesParam = req.query.accountHashes;
-  if (!hashesParam || typeof hashesParam !== "string") {
-    res.json([]);
-    return;
-  }
-  const hashes = new Set(hashesParam.split(",").filter(Boolean));
-  if (hashes.size === 0) {
-    res.json([]);
-    return;
-  }
+  const hashes = new Set(typeof hashesParam === 'string' ? hashesParam.split(',').filter(Boolean) : []);
 
   const packages: Omit<PackageInfo, "filePath">[] = [];
   const completedTasks = getAllTasks().filter(
-    (t) => t.status === "completed" && t.filePath && hashes.has(t.accountHash),
+    (t) => t.status === "completed" && t.filePath && (hashes.has(t.accountHash) || isGloballyVisible(t)),
   );
 
   for (const task of completedTasks) {
@@ -46,7 +40,7 @@ router.get("/packages", (req: Request, res: Response) => {
       software: task.software,
       displayName: task.displayName,
       originalFileName: task.originalFileName,
-      accountHash: task.accountHash,
+      accountHash: hashes.has(task.accountHash) ? task.accountHash : '',
       fileSize: stats.size,
       createdAt: task.createdAt,
     });
@@ -55,10 +49,11 @@ router.get("/packages", (req: Request, res: Response) => {
   res.json(packages);
 });
 
-// Stream IPA file (requires accountHash)
+// Public packages may be downloaded without an Apple account.
 router.get("/packages/:id/file", (req: Request, res: Response) => {
   const accountHash = req.query.accountHash as string;
-  if (!accountHash || accountHash.length < MIN_ACCOUNT_HASH_LENGTH) {
+  const publicTask = getAllTasks().find((t) => t.id === getIdParam(req) && isGloballyVisible(t));
+  if (!publicTask && (!accountHash || accountHash.length < MIN_ACCOUNT_HASH_LENGTH)) {
     res.status(400).json({ error: "Missing or invalid accountHash" });
     return;
   }
@@ -73,7 +68,7 @@ router.get("/packages/:id/file", (req: Request, res: Response) => {
     return;
   }
 
-  if (task.accountHash !== accountHash) {
+  if (!isGloballyVisible(task) && task.accountHash !== accountHash) {
     res.status(403).json({ error: "Access denied" });
     return;
   }

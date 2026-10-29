@@ -63,21 +63,21 @@ export const useDownloadsStore = create<DownloadsState>((set, get) => ({
 
   pauseDownload: async (id) => {
     const task = get().tasks.find((t) => t.id === id);
-    if (!task) return;
+    if (!task || task.canManage === false) return;
     await downloadsApi.pauseDownload(id, task.accountHash);
     await get().fetchTasks();
   },
 
   resumeDownload: async (id) => {
     const task = get().tasks.find((t) => t.id === id);
-    if (!task) return;
+    if (!task || task.canManage === false) return;
     await downloadsApi.resumeDownload(id, task.accountHash);
     await get().fetchTasks();
   },
 
   deleteDownload: async (id) => {
     const task = get().tasks.find((t) => t.id === id);
-    if (!task) return;
+    if (!task || task.canManage === false) return;
     await downloadsApi.deleteDownload(id, task.accountHash);
     set({ tasks: get().tasks.filter((t) => t.id !== id) });
   },

@@ -93,6 +93,8 @@ export interface VersionMetadata {
 }
 
 export interface DownloadTask {
+  globallyVisible?: boolean;
+  canManage?: boolean;
   id: string;
   software: Software;
   displayName?: string;

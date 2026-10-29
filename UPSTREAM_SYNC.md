@@ -165,3 +165,16 @@ The response retains `dateSource: 'file-modified'` and the UI labels it “IPA Z
 modified date”; it is not claimed to be the App Store publication date.
 Metadata failures do not fall back to stale Store metadata or plist dates.
 Range responses, redirect hosts, read size, and plist size remain checked.
+
+## Cross-device package visibility — 2026-10-29
+
+Completed Store downloads now have a persisted `globallyVisible` flag, off by
+default for new and existing tasks. The owner can change it from package details.
+Shared packages appear on the home page and downloads list without an Apple
+account, and the IPA file route permits downloading them without an account hash.
+Site access-password protection still applies. Guest responses omit the owner's
+account hash and set `canManage: false`; owner-only actions remain restricted to
+the existing account-hash checks. Local IPA uploads retain their password gate
+and cannot be made globally visible. Existing installation-share URLs keep their
+previous behavior; disabling visibility removes discovery and guest file access,
+but does not revoke previously issued installation links or downloaded files.

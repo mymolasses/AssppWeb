@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   fetchTasks: vi.fn(),
   analyzeSigning: vi.fn(),
   updateDisplayName: vi.fn(),
+  updateVisibility: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -34,6 +35,7 @@ vi.mock('../../src/hooks/useDownloadAction', () => ({
 vi.mock('../../src/api/downloads', () => ({
   analyzeDownloadSigning: mocks.analyzeSigning,
   updateDownloadDisplayName: mocks.updateDisplayName,
+  updateDownloadVisibility: mocks.updateVisibility,
 }));
 vi.mock('../../src/apple/versionFinder', () => ({
   listVersions: vi.fn(),
@@ -107,6 +109,7 @@ describe('upstream UI with local IPA protection', () => {
     mocks.fetchTasks.mockReset();
     mocks.analyzeSigning.mockReset();
     mocks.updateDisplayName.mockReset();
+    mocks.updateVisibility.mockReset();
   });
 
   it('opens the downloaded app in its account storefront, including compound storefront IDs', () => {
@@ -218,6 +221,23 @@ describe('upstream UI with local IPA protection', () => {
     expect(
       screen.getByRole('button', { name: 'downloads.package.delete' }),
     ).toBeInTheDocument();
+  });
+
+  it('keeps visibility off by default and lets the owner enable it', async () => {
+    renderTaskDetail({ ...task, accountHash: 'store-owner', canManage: true });
+    const toggle = screen.getByRole('switch', { name: 'downloads.visibility.title' });
+    expect(toggle).not.toBeChecked();
+    fireEvent.click(toggle);
+    await waitFor(() => expect(mocks.updateVisibility).toHaveBeenCalledWith(task.id, 'store-owner', true));
+    await waitFor(() => expect(mocks.fetchTasks).toHaveBeenCalledOnce());
+  });
+
+  it('shows quick actions to a visitor without owner controls', () => {
+    renderTaskDetail({ ...task, accountHash: '', globallyVisible: true, canManage: false });
+    expect(screen.getByTestId('package-quick-actions')).toBeInTheDocument();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'downloads.package.delete' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'downloads.package.checkUpdate' })).not.toBeInTheDocument();
   });
 
   it('shows the original filename and saves an editable display name', async () => {

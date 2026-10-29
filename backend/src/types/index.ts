@@ -53,6 +53,8 @@ export interface IpaSigningInfo {
 }
 
 export interface DownloadTask {
+  globallyVisible?: boolean;
+  canManage?: boolean;
   id: string;
   software: Software;
   /** User-facing title. The IPA's embedded app name remains in software.name. */

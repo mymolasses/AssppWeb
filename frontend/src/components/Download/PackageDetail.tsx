@@ -23,6 +23,7 @@ import { lookupApp } from '../../api/search';
 import {
   analyzeDownloadSigning,
   updateDownloadDisplayName,
+  updateDownloadVisibility,
 } from '../../api/downloads';
 import { formatBytes } from '../../utils/format';
 import { getAccountContext } from '../../utils/toast';
@@ -48,6 +49,7 @@ function PackageDetailContent() {
   const { startDownload } = useDownloadAction();
   const addToast = useToastStore((state) => state.addToast);
 
+  const [savingVisibility, setSavingVisibility] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [latestApp, setLatestApp] = useState<Software | null>(null);
@@ -78,6 +80,7 @@ function PackageDetailContent() {
   const isActive = task.status === 'downloading' || task.status === 'injecting';
   const isPaused = task.status === 'paused';
   const isCompleted = task.status === 'completed';
+  const canManage = task.canManage !== false;
   const isLocalUpload = task.accountHash === LOCAL_UPLOAD_ACCOUNT_HASH;
   const isPreview = isPreviewDownloadTask(task);
   const accountEmail = isPreview
@@ -86,7 +89,7 @@ function PackageDetailContent() {
       ? t('downloads.upload.localSource')
       : hashToEmail[task.accountHash];
   const account = accounts.find((item) => item.email === accountEmail);
-  const accountLabel = accountEmail || task.accountHash;
+  const accountLabel = accountEmail || task.accountHash || t('downloads.visibility.title');
   const appName = task.displayName || task.software.name;
   const taskId = task.id;
   const bundleID = task.software.bundleID;
@@ -98,6 +101,17 @@ function PackageDetailContent() {
       'info',
       t('downloads.preview.badge'),
     );
+  }
+
+  async function handleVisibilityChange() {
+    if (!task || !canManage || savingVisibility) return;
+    setSavingVisibility(true);
+    try {
+      await updateDownloadVisibility(task.id, task.accountHash, !task.globallyVisible);
+      await fetchTasks();
+    } catch {
+      addToast(t('downloads.visibility.failed'), 'error');
+    } finally { setSavingVisibility(false); }
   }
 
   async function handleDelete() {
@@ -391,6 +405,22 @@ function PackageDetailContent() {
           )}
         </section>
 
+        {isCompleted && task.hasFile && !isLocalUpload && !isPreview && canManage && (
+          <section className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <label className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-gray-900 dark:text-white">{t('downloads.visibility.title')}</span>
+              <span className="relative inline-flex h-6 w-11 shrink-0">
+                <input type="checkbox" role="switch" checked={task.globallyVisible === true}
+                  disabled={savingVisibility} onChange={handleVisibilityChange}
+                  className="peer sr-only" />
+                <span aria-hidden="true" className="absolute inset-0 rounded-full bg-gray-300 peer-checked:bg-blue-600 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-disabled:opacity-50 dark:bg-gray-700" />
+                <span aria-hidden="true" className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm peer-checked:translate-x-5" />
+              </span>
+            </label>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('downloads.visibility.help')}</p>
+          </section>
+        )}
+
         <section
           aria-labelledby="package-actions-title"
           className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:p-5"
@@ -414,7 +444,7 @@ function PackageDetailContent() {
             </p>
           )}
 
-          <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3">
+          {canManage && <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3">
             {isCompleted && !isLocalUpload && (
               <button
                 type="button"
@@ -452,7 +482,7 @@ function PackageDetailContent() {
             >
               {t('downloads.package.delete')}
             </button>
-          </div>
+          </div>}
 
           {isCompleted && task.hasFile && isLocalUpload && !isPreview && (
             <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">

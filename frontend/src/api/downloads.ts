@@ -4,7 +4,6 @@ import type { DownloadTask, Software, Sinf } from "../types";
 export async function fetchDownloads(
   accountHashes: string[],
 ): Promise<DownloadTask[]> {
-  if (accountHashes.length === 0) return [];
   const params = new URLSearchParams({
     accountHashes: accountHashes.join(","),
   });
@@ -125,4 +124,9 @@ export async function deleteDownload(
 ): Promise<void> {
   const params = new URLSearchParams({ accountHash });
   await apiDelete(`/api/downloads/${id}?${params}`);
+}
+
+export function updateDownloadVisibility(id: string, accountHash: string, globallyVisible: boolean): Promise<DownloadTask> {
+  const params = new URLSearchParams({ accountHash });
+  return apiPost<DownloadTask>(`/api/downloads/${id}/visibility?${params}`, { globallyVisible });
 }
