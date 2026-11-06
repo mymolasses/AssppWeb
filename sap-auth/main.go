@@ -25,6 +25,7 @@ type inputCookie struct {
 }
 
 type request struct {
+	PackagePath     string        `json:"packagePath,omitempty"`
 	Operation       string        `json:"operation,omitempty"`
 	DSID            string        `json:"dsid,omitempty"`
 	Email           string        `json:"email"`
@@ -48,6 +49,7 @@ type accountResponse struct {
 }
 
 type response struct {
+	Prepared     bool             `json:"prepared,omitempty"`
 	KBSync       string           `json:"kbsync,omitempty"`
 	Account      *accountResponse `json:"account,omitempty"`
 	Error        string           `json:"error,omitempty"`
@@ -85,6 +87,14 @@ func main() {
 	}
 	if payload.Operation == "kbsync" {
 		_ = encoder.Encode(kbsyncResponse(payload, generateDownloadKBSync))
+		return
+	}
+	if payload.Operation == "prepare-ipa" {
+		if err := prepareIPA(payload.PackagePath); err != nil {
+			_ = encoder.Encode(response{Error: "IPA streaming preparation failed"})
+		} else {
+			_ = encoder.Encode(response{Prepared: true})
+		}
 		return
 	}
 	if payload.Operation != "" {

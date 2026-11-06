@@ -9,6 +9,7 @@ interface IpaInfo {
   bundleID: string;
   name: string;
   version: string;
+  bundleVersion?: string;
   minimumOsVersion: string;
 }
 
@@ -72,7 +73,7 @@ export async function readIpaInfo(
         !filename.includes("/Watch/");
       if (!isMainInfoPlist) continue;
 
-      if (expectedBundleID && entry.uncompressedSize > 2 * 1024 * 1024) throw new Error('IPA Info.plist is too large');
+      if (entry.uncompressedSize > 2 * 1024 * 1024) throw new Error('IPA Info.plist is too large');
       const stream = await entry.openReadStream();
       const data = await streamToBuffer(stream);
       const info = parsePlistBuffer(data);
@@ -104,7 +105,7 @@ export async function readIpaInfo(
         stringValue(info, ["MinimumOSVersion", "LSMinimumSystemVersion"]) ||
         "";
 
-      return { bundleID, name, version, minimumOsVersion };
+      return { bundleID, name, version, minimumOsVersion, bundleVersion: stringValue(info, ['CFBundleVersion']) };
     }
   } finally {
     await zip.close();

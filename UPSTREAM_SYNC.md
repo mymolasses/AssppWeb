@@ -239,3 +239,33 @@ Cards, filters, details and App Store links prefer saved regions. Unknown
 storefronts display Unknown without a US fallback. Local IPA gating remains
 unchanged; local uploads are excluded from storefront backfill. Region writes do
 not change favorites, global visibility, creation dates or retention start dates.
+
+## SINF validation and OTA/file transfer — 2026-11-06
+
+SINF records remain paired with the main app's SinfPaths in Apple's response
+order, matching ipatool v2.7.0. IDs are not array indexes. Nested/Watch manifests
+cannot select the main app destinations. Malformed records, manifests, unsafe
+paths and count mismatches fail rather than silently skipping license data;
+injected files are read back and compared byte for byte. Responses with no SINF
+remain supported, as in ipatool's device-download path.
+
+After injection, the existing Go helper's backend-only prepare-ipa operation
+reuses pinned ipatool ReplicateSinf with no new SINF records to normalize ZIP
+framing for OTA streaming. It preserves compressed bytes, dates, modes and
+local/central extra fields. This operation performs no login or Store requests.
+A staging file keeps the original intact on preparation failure. Existing stored
+IPAs are not automatically rewritten. Future Store downloads pass through this
+step before publication; local uploads retain their existing behavior.
+
+OTA manifests read the main IPA's actual CFBundleVersion rather than the App
+Store marketing version. Payload and authenticated file routes support HEAD and
+byte ranges and discourage proxy buffering/transformation. Browser IPA downloads
+use authenticated XHR with byte progress and cancellation; unknown totals do not
+show a fabricated percentage. The final browser save still uses a blob. Installation
+requests explicitly direct users to the Home Screen: ordinary websites cannot
+confirm native installation completion or display its true percentage.
+
+Read-only inspection of three stored Klook 7.52.0 packages found their declared
+main SINF files present and nonempty. That establishes structural presence only,
+not device FairPlay authorization or the cause of a launch crash. Device launch
+verification and a crash/device log are still required to resolve that question.

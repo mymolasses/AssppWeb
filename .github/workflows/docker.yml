@@ -41,7 +41,7 @@ jobs:
         with:
           go-version-file: sap-auth/go.mod
           cache-dependency-path: sap-auth/go.sum
-      - name: Validate unchanged SAP helper
+      - name: Validate SAP and IPA helper
         working-directory: sap-auth
         run: |
           go test ./...

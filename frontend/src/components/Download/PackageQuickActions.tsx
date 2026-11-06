@@ -1,10 +1,12 @@
-import { type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
+import ProgressBar from '../common/ProgressBar';
 import { isPreviewDownloadTask } from './previewTasks';
 import { useToastStore } from '../../store/toast';
-import { authHeaders } from '../../api/client';
 import { getInstallInfo } from '../../api/install';
+import { downloadPackage, type PackageDownloadProgress } from '../../api/packageDownload';
+import { formatBytes } from '../../utils/format';
 import type { DownloadTask } from '../../types';
 
 interface PackageQuickActionsProps {
@@ -20,6 +22,10 @@ export default function PackageQuickActions({
 }: PackageQuickActionsProps) {
   const { t } = useTranslation();
   const addToast = useToastStore((state) => state.addToast);
+  const [downloadProgress, setDownloadProgress] = useState<PackageDownloadProgress | null>(null);
+  const downloadController = useRef<AbortController | null>(null);
+  const [installRequested, setInstallRequested] = useState(false);
+  useEffect(() => () => downloadController.current?.abort(), []);
 
   if (task.status !== 'completed' || !task.hasFile) return null;
 
@@ -43,6 +49,8 @@ export default function PackageQuickActions({
       showPreviewNotice();
       return;
     }
+
+    setInstallRequested(true);
 
     addToast(
       task.displayName || task.software.name,
@@ -86,6 +94,10 @@ export default function PackageQuickActions({
       showPreviewNotice();
       return;
     }
+    if (downloadController.current) return;
+    const controller = new AbortController();
+    downloadController.current = controller;
+    setDownloadProgress({ loaded: 0 });
 
     addToast(
       task.displayName || task.software.name,
@@ -94,13 +106,7 @@ export default function PackageQuickActions({
     );
 
     try {
-      const params = new URLSearchParams({ accountHash: task.accountHash });
-      const response = await fetch(`/api/packages/${task.id}/file?${params}`, {
-        headers: authHeaders(),
-      });
-      if (!response.ok) throw new Error('Download failed');
-
-      const blob = await response.blob();
+      const blob = await downloadPackage(task.id, task.accountHash, setDownloadProgress, controller.signal);
       const blobUrl = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = blobUrl;
@@ -108,13 +114,18 @@ export default function PackageQuickActions({
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      URL.revokeObjectURL(blobUrl);
-    } catch {
+      // Safari may consume the object URL after the click handler has returned.
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (error) {
+      if (controller.signal.aborted) return;
       addToast(
         t('downloads.package.downloadFailed'),
         'error',
         t('downloads.package.downloadIpa'),
       );
+    } finally {
+      downloadController.current = null;
+      setDownloadProgress(null);
     }
   }
 
@@ -169,12 +180,26 @@ export default function PackageQuickActions({
       <button
         type="button"
         onClick={handleDownload}
+        disabled={downloadProgress !== null}
         className={secondaryButton}
         aria-label={t('downloads.package.downloadIpa')}
       >
         <DownloadIcon />
         <span className="truncate">{t('downloads.package.downloadShort')}</span>
       </button>
+      {downloadProgress && (
+        <div className="col-span-3 min-w-0 space-y-2" role="status">
+          {downloadProgress.total ? <ProgressBar
+            progress={downloadProgress.loaded / downloadProgress.total * 100}
+            label={t('downloads.package.downloadIpa')}
+          /> : <span className="block text-xs text-gray-500 dark:text-gray-400">{t('downloads.package.receiving')}</span>}
+          <div className="flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <span>{formatBytes(String(downloadProgress.loaded))}{downloadProgress.total ? ` / ${formatBytes(String(downloadProgress.total))} · ${Math.min(100, Math.floor(downloadProgress.loaded / downloadProgress.total * 100))}%` : ''}</span>
+            <button type="button" onClick={() => downloadController.current?.abort()} className="text-blue-600 dark:text-blue-400">{t('downloads.package.cancelDownload')}</button>
+          </div>
+        </div>
+      )}
+      {installRequested && <p role="status" className="col-span-3 text-xs text-gray-500 dark:text-gray-400">{t('downloads.package.installHint')}</p>}
     </div>
   );
 }

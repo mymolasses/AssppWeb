@@ -6,6 +6,7 @@ import { MIN_ACCOUNT_HASH_LENGTH } from "../config.js";
 import { getAllTasks } from "../services/downloadManager.js";
 import { getIdParam } from "../utils/route.js";
 import type { PackageInfo } from "../types/index.js";
+import { sendPackageFile } from '../utils/packageFile.js';
 
 import { isGloballyVisible } from '../services/packageVisibility.js';
 
@@ -52,7 +53,7 @@ router.get("/packages", (req: Request, res: Response) => {
 });
 
 // Public packages may be downloaded without an Apple account.
-router.get("/packages/:id/file", (req: Request, res: Response) => {
+router.get("/packages/:id/file", (req: Request, res: Response, next) => {
   const accountHash = req.query.accountHash as string;
   const publicTask = getAllTasks().find((t) => t.id === getIdParam(req) && isGloballyVisible(t));
   if (!publicTask && (!accountHash || accountHash.length < MIN_ACCOUNT_HASH_LENGTH)) {
@@ -87,13 +88,7 @@ router.get("/packages/:id/file", (req: Request, res: Response) => {
   const safeVersion = sanitizeFilename(task.software.version);
   const fileName = `${safeName}_${safeVersion}.ipa`;
   res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-  res.setHeader("Content-Type", "application/octet-stream");
-
-  const stats = fs.statSync(resolvedPath);
-  res.setHeader("Content-Length", stats.size);
-
-  const stream = fs.createReadStream(resolvedPath);
-  stream.pipe(res);
+  sendPackageFile(req, res, next, resolvedPath);
 });
 
 // Delete a package (requires accountHash)

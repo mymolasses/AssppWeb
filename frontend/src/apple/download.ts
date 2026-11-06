@@ -91,23 +91,26 @@ export async function getDownloadInfo(
 
   const sinfs: Sinf[] = [];
   const sinfData = item.sinfs as Record<string, any>[] | undefined;
-  if (sinfData) {
+  if (sinfData != null) {
+    if (!Array.isArray(sinfData)) throw new DownloadError(i18n.t('errors.download.invalidSinf'));
     for (const sinfItem of sinfData) {
-      const id = sinfItem.id as number;
-      const sinf = sinfItem.sinf;
-      if (id !== undefined && sinf) {
-        let sinfBase64: string;
-        if (sinf instanceof Uint8Array || sinf instanceof ArrayBuffer) {
-          const bytes =
-            sinf instanceof ArrayBuffer ? new Uint8Array(sinf) : sinf;
-          sinfBase64 = base64FromBytes(bytes);
-        } else if (typeof sinf === 'string') {
-          sinfBase64 = sinf;
-        } else {
-          throw new DownloadError(i18n.t('errors.download.invalidSinf'));
-        }
-        sinfs.push({ id, sinf: sinfBase64 });
+      const id = sinfItem?.id ?? 0;
+      const sinf = sinfItem?.sinf;
+      if (!Number.isSafeInteger(id) || id < 0 || !sinf) throw new DownloadError(i18n.t('errors.download.invalidSinf'));
+      let sinfBase64: string;
+      if (sinf instanceof Uint8Array || sinf instanceof ArrayBuffer) {
+        const bytes =
+          sinf instanceof ArrayBuffer ? new Uint8Array(sinf) : sinf;
+        sinfBase64 = base64FromBytes(bytes);
+      } else if (typeof sinf === 'string') {
+        sinfBase64 = sinf;
+      } else {
+        throw new DownloadError(i18n.t('errors.download.invalidSinf'));
       }
+      if (!sinfBase64 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(sinfBase64)) {
+        throw new DownloadError(i18n.t('errors.download.invalidSinf'));
+      }
+      sinfs.push({ id, sinf: sinfBase64 });
     }
   }
 

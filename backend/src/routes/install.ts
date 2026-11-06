@@ -5,6 +5,8 @@ import { config } from "../config.js";
 import { getAllTasks } from "../services/downloadManager.js";
 import { buildManifest, getWhitePng } from "../services/manifestBuilder.js";
 import { getIdParam } from "../utils/route.js";
+import { sendPackageFile } from '../utils/packageFile.js';
+import { readIpaInfo } from '../services/ipaMetadata.js';
 
 const router = Router();
 
@@ -52,7 +54,7 @@ function joinUrl(baseUrl: string, path: string): string {
 }
 
 // Manifest plist for iTMS installation
-router.get("/install/:id/manifest.plist", (req: Request, res: Response) => {
+router.get("/install/:id/manifest.plist", async (req: Request, res: Response, next) => {
   const id = getIdParam(req);
   const task = getAllTasks().find(
     (t) => t.id === id && t.status === "completed",
@@ -68,16 +70,20 @@ router.get("/install/:id/manifest.plist", (req: Request, res: Response) => {
   const smallIconUrl = joinUrl(baseUrl, `/api/install/${id}/icon-small.png`);
   const largeIconUrl = joinUrl(baseUrl, `/api/install/${id}/icon-large.png`);
 
-  const manifest = buildManifest(
-    task.software,
-    payloadUrl,
-    smallIconUrl,
-    largeIconUrl,
-    task.displayName,
-  );
+  try {
+    const info = await readIpaInfo(task.filePath, task.software.name);
+    const manifest = buildManifest(
+      { ...task.software, bundleID: info.bundleID, version: info.bundleVersion || info.version },
+      payloadUrl,
+      smallIconUrl,
+      largeIconUrl,
+      task.displayName,
+    );
 
-  res.setHeader("Content-Type", "application/xml");
-  res.send(manifest);
+    res.setHeader("Content-Type", "application/xml");
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(manifest);
+  } catch (error) { next(error); }
 });
 
 router.get("/install/:id/url", (req: Request, res: Response) => {
@@ -101,7 +107,7 @@ router.get("/install/:id/url", (req: Request, res: Response) => {
 });
 
 // Stream IPA payload for installation
-router.get("/install/:id/payload.ipa", (req: Request, res: Response) => {
+router.get("/install/:id/payload.ipa", (req: Request, res: Response, next) => {
   const id = getIdParam(req);
   const task = getAllTasks().find(
     (t) => t.id === id && t.status === "completed",
@@ -120,12 +126,7 @@ router.get("/install/:id/payload.ipa", (req: Request, res: Response) => {
     return;
   }
 
-  res.setHeader("Content-Type", "application/octet-stream");
-  const stats = fs.statSync(resolvedPath);
-  res.setHeader("Content-Length", stats.size);
-
-  const stream = fs.createReadStream(resolvedPath);
-  stream.pipe(res);
+  sendPackageFile(req, res, next, resolvedPath);
 });
 
 // Small icon placeholder (57x57)

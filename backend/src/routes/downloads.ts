@@ -154,6 +154,11 @@ router.post("/downloads", async (req: Request, res: Response) => {
   }
 
   const normalizedStorefront = normalizeStorefrontId(storefrontId);
+  if (!Array.isArray(sinfs) || sinfs.some(record =>
+    !record || !Number.isSafeInteger(record.id) || record.id < 0 || typeof record.sinf !== 'string' ||
+    !record.sinf || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(record.sinf))) {
+    res.status(400).json({ error: 'Invalid SINF records' }); return;
+  }
   if (storefrontId != null && !normalizedStorefront) {
     res.status(400).json({ error: 'Invalid storefrontId' }); return;
   }

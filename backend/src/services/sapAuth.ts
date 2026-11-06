@@ -61,9 +61,14 @@ export function runSAPKBSync(input: SAPKBSyncRequest): Promise<SAPKBSyncResult> 
   return runSAPHelper({ operation: 'kbsync', deviceId: input.deviceId, dsid: input.dsid });
 }
 
+export async function prepareIpaForOTA(packagePath: string): Promise<void> {
+  const result = await runSAPHelper({ operation: 'prepare-ipa', packagePath });
+  if (!result.prepared || result.error) throw new Error('IPA streaming preparation failed');
+}
+
 function runSAPHelper(
-  input: SAPAuthRequest | (SAPKBSyncRequest & { operation: 'kbsync' }),
-): Promise<SAPAuthResult & SAPKBSyncResult> {
+  input: SAPAuthRequest | (SAPKBSyncRequest & { operation: 'kbsync' }) | { operation: 'prepare-ipa'; packagePath: string },
+): Promise<SAPAuthResult & SAPKBSyncResult & { prepared?: boolean }> {
   return new Promise((resolve, reject) => {
     const child = spawn(config.sapAuthHelperPath, [], {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -118,7 +123,7 @@ function runSAPHelper(
           return;
         }
         try {
-          resolve(JSON.parse(stdout) as SAPAuthResult & SAPKBSyncResult);
+          resolve(JSON.parse(stdout) as SAPAuthResult & SAPKBSyncResult & { prepared?: boolean });
         } catch {
           reject(new Error('SAP authentication helper returned invalid JSON'));
         }

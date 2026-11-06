@@ -4,6 +4,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { config, DOWNLOAD_TIMEOUT_MS } from "../config.js";
 import { inject } from "./sinfInjector.js";
+import { prepareIpaForOTA } from './sapAuth.js';
 import { downloadArtwork, validateArtworkURL } from "./artwork.js";
 import { ChunkedDownloader } from "./chunkedDownloader.js";
 import type {
@@ -651,6 +652,12 @@ async function startDownload(task: DownloadTask) {
 
       await inject(task.sinfs, filePath, task.iTunesMetadata, artwork);
     }
+
+    // Required even for SINF-free packages: OTA installers consume a forward
+    // ZIP stream, unlike desktop tools which can first read the central directory.
+    task.status = "injecting";
+    notifyProgress(task);
+    await prepareIpaForOTA(filePath);
 
     task.status = "completed";
     task.retentionStartedAt = new Date().toISOString();

@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import plist from "plist";
+import bplistCreator from 'bplist-creator';
 
 const TEMP_DIR = path.join(os.tmpdir(), "sinf-injector-test");
 
@@ -56,6 +57,55 @@ function createMockIPA(
 }
 
 describe("sinfInjector", () => {
+  const record = { id: 9, sinf: Buffer.from('valid SINF fixture').toString('base64') };
+
+  it('ignores Watch and nested manifests even when they precede the main bundle', async () => {
+    const ipaPath = createMockIPA('zMain');
+    const zip = new AdmZip(ipaPath);
+    zip.addFile('Payload/aWatch.app/Watch/Nested.app/Info.plist', Buffer.from(plist.build({ CFBundleExecutable: 'wrong' })));
+    zip.addFile('Payload/aWatch.app/Watch/Nested.app/SC_Info/Manifest.plist', Buffer.from(plist.build({ SinfPaths: ['SC_Info/wrong.sinf'] })));
+    zip.addFile('Payload/zMain.app/SC_Info/Manifest.plist', bplistCreator({ SinfPaths: ['SC_Info/zMain.sinf'] }));
+    zip.writeZip(ipaPath);
+    await inject([record], ipaPath);
+    const result = new AdmZip(ipaPath);
+    expect(result.readFile('Payload/zMain.app/SC_Info/zMain.sinf')).toEqual(Buffer.from('valid SINF fixture'));
+    expect(result.getEntries().filter(entry => entry.entryName.endsWith('.sinf')).map(entry => entry.entryName))
+      .toEqual(['Payload/zMain.app/SC_Info/zMain.sinf']);
+  });
+
+  it.each([1, 3])('rejects %i SINF records for a two-path manifest without changing the IPA', async count => {
+    const ipaPath = createMockIPA(`Count${count}`, { addManifest: true, sinfPaths: ['SC_Info/a.sinf', 'SC_Info/b.sinf'] });
+    const before = fs.readFileSync(ipaPath);
+    await expect(inject(Array.from({ length: count }, () => record), ipaPath)).rejects.toThrow('count');
+    expect(fs.readFileSync(ipaPath)).toEqual(before);
+  });
+
+  it.each(['../outside.sinf', '/absolute.sinf', 'SC_Info/../../outside.sinf', 'SC_Info\\bad.sinf', 'SC_Info/a.txt'])('rejects invalid manifest destination %s', async destination => {
+    const ipaPath = createMockIPA('InvalidPath', { addManifest: true, sinfPaths: [destination] });
+    await expect(inject([record], ipaPath)).rejects.toThrow('path');
+  });
+
+  it('rejects a malformed main manifest rather than silently falling back', async () => {
+    const ipaPath = createMockIPA('BadManifest');
+    const zip = new AdmZip(ipaPath);
+    zip.addFile('Payload/BadManifest.app/SC_Info/Manifest.plist', Buffer.from('not a plist'));
+    zip.writeZip(ipaPath);
+    await expect(inject([record], ipaPath)).rejects.toThrow('manifest');
+  });
+
+  it('keeps record order rather than sorting SINF IDs', async () => {
+    const ipaPath = createMockIPA('Ordered', { addManifest: true, sinfPaths: ['SC_Info/a.sinf', 'SC_Info/b.sinf'] });
+    await inject([record, { id: 1, sinf: Buffer.from('second').toString('base64') }], ipaPath);
+    const zip = new AdmZip(ipaPath);
+    expect(zip.readFile('Payload/Ordered.app/SC_Info/a.sinf')?.toString()).toBe('valid SINF fixture');
+    expect(zip.readFile('Payload/Ordered.app/SC_Info/b.sinf')?.toString()).toBe('second');
+    expect(zip.readFile('Payload/Ordered.app/Ordered')?.toString()).toBe('fake executable');
+  });
+
+  it.each(['', '%%%%', 'YQ='])('rejects invalid or empty base64 data', async sinf => {
+    const ipaPath = createMockIPA('BadData');
+    await expect(inject([{ id: 1, sinf }], ipaPath)).rejects.toThrow('SINF data');
+  });
   it("should inject sinf via Info.plist fallback (no manifest)", async () => {
     const ipaPath = createMockIPA("TestApp", { executableName: "TestApp" });
     const sinfData = Buffer.from("fake sinf data for testing").toString(

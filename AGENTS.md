@@ -37,6 +37,7 @@ This fork already moved Apple authentication to a server-side SAP helper. Do not
 - Browser: continues purchase, download-info, and version requests using libcurl.js WASM TLS through the Wisp proxy. The Wisp relay does not decrypt those streams.
 - Backend: proxies public search/bag data, downloads IPA files, injects SINF/iTunesMetadata, and serves installation manifests.
 - Kbsync: `/api/apple/kbsync` passes only DSID and the per-account device ID to the native helper to generate a blob. Store requests remain in the browser. Successful blobs are cached only in browser memory per DSID/device pair; the backend must not persist them.
+- IPA preparation: the backend-only `prepare-ipa` helper operation normalizes completed Store downloads for OTA streaming using pinned ipatool's ZIP framing. It receives a package path and performs no login or network requests. It has no HTTP route; never forward client-supplied operation/path fields through the authentication routes.
 - Local IPA uploads/details retain `LocalIpaGate`; download-list quick actions must not bypass that gate. The backend checks the local IPA token for uploads and signing analysis.
 
 ipatool owns transient authentication retries (up to three sends for unexpected HTTP 204/404/5xx). The Go adapter must invoke Login only once. Account reauthentication may retain the fork's one fresh-cookie fallback.
