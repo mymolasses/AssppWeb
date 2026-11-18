@@ -91,7 +91,8 @@
       "loading": "読み込み中...",
       "loadDetails": "詳細を読み込む",
       "download": "ダウンロード",
-      "downloading": "ダウンロード中..."
+      "downloading": "ダウンロード中...",
+      "packageDate": "IPA package date"
     }
   },
   "accounts": {
@@ -114,6 +115,7 @@
       "codeHelp": "信頼できるデバイスからの確認コードを入力してください。",
       "signIn": "サインイン",
       "verify": "確認",
+      "retrying": "Apple から応答がありません（HTTP {{status}}）。{{seconds}} 秒後に再試行します（{{attempt}}/{{attempts}} 回目）…",
       "cancel": "キャンセル",
       "authFailed": "認証に失敗しました",
       "addSuccess": "アカウントが正常に追加されました。"
@@ -142,9 +144,21 @@
     }
   },
   "downloads": {
-    "region": {"unknown":"不明","inferred":"アカウントから補完"},
-    "favorite": {"title":"お気に入り（自動削除しない）","help":"お気に入りは自動削除されません。それ以外は既定で14日間保持されます。解除すると期間がリセットされます。既存パッケージは今回の更新から14日間保持します。","failed":"お気に入りを保存できませんでした。"},
-    "visibility": {"title":"全体に公開","help":"既定ではオフです。オンにすると、他の端末は Apple アカウントなしでホームとダウンロード一覧から閲覧・ダウンロード・インストール・共有できます。サイトのアクセスパスワードは引き続き必要です。","failed":"公開設定を保存できませんでした。","sharedApps":"共有アプリ"},
+    "region": {
+      "unknown": "不明",
+      "inferred": "アカウントから補完"
+    },
+    "favorite": {
+      "title": "お気に入り（自動削除しない）",
+      "help": "お気に入りは自動削除されません。それ以外は既定で14日間保持されます。解除すると期間がリセットされます。既存パッケージは今回の更新から14日間保持します。",
+      "failed": "お気に入りを保存できませんでした。"
+    },
+    "visibility": {
+      "title": "全体に公開",
+      "help": "既定ではオフです。オンにすると、他の端末は Apple アカウントなしでホームとダウンロード一覧から閲覧・ダウンロード・インストール・共有できます。サイトのアクセスパスワードは引き続き必要です。",
+      "failed": "公開設定を保存できませんでした。",
+      "sharedApps": "共有アプリ"
+    },
     "title": "ダウンロード",
     "new": "新規ダウンロード",
     "warning": "パッケージは一時的なもので、サーバーの再起動時にクリアされます。早めにダウンロードまたはインストールしてください。",
@@ -474,7 +488,9 @@
       "missingVersion": "必要なバージョン情報がありません",
       "invalidSinf": "無効な sinf 項目です",
       "noSinf": "レスポンスに sinf が見つかりません",
-      "tooManyRedirects": "リダイレクトが多すぎます"
+      "tooManyRedirects": "リダイレクトが多すぎます",
+      "versionLookupFailed": "このアカウントのストアで最新の iOS バージョンを取得できません。アプリがこの地域で利用できるか確認してください。",
+      "unexpectedItem": "Apple が別のアプリまたはバージョンを返したため、ダウンロードを停止しました。"
     },
     "purchase": {
       "paidNotSupported": "有料アプリの購入はサポートされていません",
@@ -492,7 +508,9 @@
       "emptyBody": "認証失敗: サーバーが空のボディでHTTP {{status}}を返しました",
       "missingAccountInfo": "レスポンスに accountInfo がありません",
       "missingAddress": "レスポンスに address がありません",
-      "unknownReason": "不明な理由により認証に失敗しました"
+      "unknownReason": "不明な理由により認証に失敗しました",
+      "transientFailure": "認証に失敗しました：{{attempts}} 回試行しましたが Apple から応答がありません（HTTP {{statuses}}）。しばらくしてから再度お試しください。",
+      "retryLater": "認証に失敗しました：Apple から {{seconds}} 秒待つよう求められました。しばらくしてから再度お試しください。"
     }
   },
   "toast": {
@@ -501,6 +519,7 @@
       "downloadSuccess": "ダウンロード成功",
       "downloadFailed": "ダウンロード失敗",
       "licenseSuccess": "ライセンス取得成功",
+      "licenseOwned": "License already owned",
       "licenseFailed": "ライセンス取得失敗",
       "installStarted": "インストールを要求しました",
       "shareAcquired": "リンク取得成功",
@@ -514,5 +533,23 @@
     "downloadLimit": {
       "message": "{{appName}}\nアプリのサイズ {{size}} MB がサーバーの制限 {{limit}} MB を超えています。\n管理者に連絡するか、ご自身でサーバーを展開して再試行してください。"
     }
+  },
+  "operation": {
+    "login": "Signing in",
+    "purchase": "Acquiring license",
+    "download": "Preparing download",
+    "versions": "Loading version history",
+    "metadata": "Reading version metadata",
+    "wait": "Contacting Apple. Please wait without submitting again. Initial authentication setup can take longer.",
+    "elapsed": "{{seconds}} seconds elapsed",
+    "retry": "Retrying request {{attempt}} after {{seconds}} seconds…",
+    "search": "Searching apps"
+  },
+  "authMode": {
+    "label": "Sign-in method",
+    "browser": "Browser SAP",
+    "native": "Server Anisette",
+    "help": "Browser SAP authenticates in your browser. Server Anisette sends sign-in data to this server. Modes never switch automatically.",
+    "legacy": "This account is from an older version. Refresh sign-in to enable the selected method."
   }
 }

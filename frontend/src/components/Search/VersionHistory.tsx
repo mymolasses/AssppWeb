@@ -197,7 +197,7 @@ export default function VersionHistory() {
                     </p>
                     {meta && (
                       <p className="text-xs text-gray-500 [overflow-wrap:anywhere] dark:text-gray-400">
-                        {t('search.versions.fileModifiedDate', 'IPA ZIP 修改日期')}
+                        {meta.dateSource === 'package' ? t('search.versions.packageDate') : t('search.versions.fileModifiedDate', 'IPA ZIP 修改日期')}
                         {': '}{new Date(meta.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}
                       </p>
                     )}

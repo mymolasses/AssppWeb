@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 — 2026-11-18
+
+- Integrate the official Browser SAP implementation, authentication URL/retry fixes, shared download recovery and already-owned license feedback.
+- Add explicit Browser SAP and Server Anisette account modes, with no silent fallback. Preserve GUIDs, 2FA continuity and encrypted account backups.
+- Pin ipatool after v2.8.1 at 3b02b4c: current local Anisette provisioning, framework Store signing, delisted recovery, dynamic storefronts, purchase terms/storefront repair, range hardening and runtime performance fixes.
+- Reuse native upstream Store operations in server mode; return rotated authentication state to the browser without server persistence.
+- Show loading dialogs for sign-in, licenses, downloads and historical queries, including elapsed time and browser authentication retry status.
+- Preserve existing shared packages, favorites, retention settings, saved regions and local IPA protection.
+
+
 ## 1.2.1 — 2026-10-29
 
 - Persist normalized download storefront IDs and provenance with package records,

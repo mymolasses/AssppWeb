@@ -5,7 +5,7 @@ import PageContainer from '../Layout/PageContainer';
 import Spinner from '../common/Spinner';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useToastStore } from '../../store/toast';
-import { authenticate, AuthenticationError } from '../../apple/authenticate';
+import { authenticate, AuthenticationError, clearAuthenticationSession } from '../../apple/authenticate';
 import { getErrorMessage } from '../../utils/error';
 import { generateDeviceId, normalizeDeviceId } from '../../apple/config';
 import type { Cookie } from '../../types';
@@ -16,6 +16,7 @@ export default function AddAccountForm() {
   const { t } = useTranslation();
   const addToast = useToastStore((s) => s.addToast);
 
+  const [authMethod, setAuthMethod] = useState<'browser' | 'native'>('native');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -41,6 +42,7 @@ export default function AddAccountForm() {
         needsCode && code ? code : undefined,
         authCookies,
         cleanedDeviceId,
+        authMethod,
       );
       await addAccount(account);
       addToast(t('accounts.addForm.addSuccess'), 'success');
@@ -69,6 +71,19 @@ export default function AddAccountForm() {
       <div className="max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-6">
           <section className="space-y-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10 sm:p-6">
+            <div>
+              <label htmlFor="auth-method" className="mb-1 block text-sm font-medium">{t('authMode.label')}</label>
+              <select id="auth-method" value={authMethod} disabled={loading || needsCode}
+                className={inputClassName} onChange={(e) => {
+                  clearAuthenticationSession(deviceId);
+                  setAuthMethod(e.target.value as 'browser' | 'native');
+                  setAuthCookies([]); setNeedsCode(false); setCode('');
+                }}>
+                <option value="browser">{t('authMode.browser')}</option>
+                <option value="native">{t('authMode.native')}</option>
+              </select>
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('authMode.help')}</p>
+            </div>
             <div>
               <label
                 htmlFor="email"

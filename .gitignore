@@ -137,3 +137,13 @@ references/
 mnt/
 tunnel/
 deploy.sh
+
+# Machine-local Go build overlay
+sap-auth/overlay.json
+
+sap-auth/.ipatool/
+sap-auth/bridge.mod
+sap-auth/bridge.sum
+
+# Local test-host data
+/backend/data/

@@ -41,6 +41,9 @@ describe('Wisp Proxy', () => {
     expect(allowed('p42-buy.itunes.apple.com')).toBe(true);
     expect(allowed('uclient-api.itunes.apple.com')).toBe(true);
     expect(allowed('apps.apple.com')).toBe(true);
+    expect(allowed('s.mzstatic.com')).toBe(true);
+    expect(allowed('fpinit.itunes.apple.com')).toBe(true);
+    expect(allowed('fpinit.itunes.apple.com.example.test')).toBe(false);
     expect(allowed('apps.apple.com.example.test')).toBe(false);
     expect(allowed('uclient-api.itunes.apple.com.example.test')).toBe(false);
     expect(allowed('downloaddispatch.itunes.apple.com.example.test')).toBe(

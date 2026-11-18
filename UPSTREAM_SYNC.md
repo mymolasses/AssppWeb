@@ -269,3 +269,51 @@ Read-only inspection of three stored Klook 7.52.0 packages found their declared
 main SINF files present and nonempty. That establishes structural presence only,
 not device FairPlay authorization or the cause of a launch crash. Device launch
 verification and a crash/device log are still required to resolve that question.
+
+
+## Official AssppWeb and complete ipatool dependency update — 2026-11-18 (1.3.0)
+
+Official source: Lakr233/AssppWeb `485be0b884e5d88bbd5379179064999992273614`.
+All seven commits since shared base `3bc9515` are merged. Conflict resolution
+preserves fork-only package sharing, favorites/retention, local IPA gates, SINF
+verification, OTA file transfers and region persistence. Browser sign-in/SAP and
+browser download recovery use official implementations; no blind whole-file
+replacement removes fork behavior. Repository-wide formatting is not a functional
+requirement and is limited to touched code.
+
+ipatool source: `3b02b4c55576562f2a55284cda9db9a4411d3067`, module version
+`v2.8.2-0.20261117234302-3b02b4c55576`. This incorporates every upstream commit
+since the previous `v2.7.0` pin, including both 2.8 releases and the subsequent six
+fixes: concurrent emulator timeouts, metadata read-ahead/hardening, purchase
+storefront recovery, updated terms and scoped-bag storefront discovery. The Go
+runtime requirement is now 1.26.5. Do not describe the pseudo-version as a released
+2.8.2 tag.
+
+The native helper directly delegates login, license acquisition, version metadata,
+and download-product recovery to that source. A tiny added public adapter exposes
+upstream's private download-info function; the verified module is copied into an
+ignored build directory, never patched in the shared module cache or copied into
+Git history. Source checksum pinning and all indirect dependencies stay in Go's
+normal lock files. CLI flags, MCP transport and additional native-platform screens
+remain CLI/UI concerns rather than new Web pages; underlying library updates are
+included. Web IPA transfers retain the existing validated multi-stream downloader.
+The Web Range reader additionally adopts bounded 1 MiB read-ahead and stricter
+Content-Range/encoding validation. Legacy/browser history retains its ZIP timestamp
+policy; native ipatool metadata is labelled as a package date rather than falsely
+claimed to be a ZIP-only or App Store publication date.
+
+The UI names are exactly “浏览器 SAP” and “服务器 Anisette” in Simplified Chinese.
+These are explicit per-account choices, not an automatic credential fallback.
+Old accounts retain GUIDs and remain readable. Refresh sign-in to upgrade their
+runtime state. Modern Anisette state is returned to the browser, preserved through
+2FA and encrypted account backups. It is not written to server storage. Native
+Store RPC omits login passwords; rotated state/cookies/storefront are saved even
+on typed Store failures. Per-account calls are serialized to avoid overwriting
+rotated state during concurrent version queries. kbsync cache state remains only
+in browser page memory and is excluded from account backups.
+
+Foreground login, purchase, download-info and version queries have loading dialogs
+with elapsed time; browser retries show their actual retry delay. There is no
+simulated success, native installation percentage or automatic switch of mode.
+Real-account login and download success require user/device validation; tests use
+fixtures and do not establish Apple account availability.

@@ -1,5 +1,5 @@
 # Stage 1: Build frontend
-FROM node:20-alpine AS frontend-build
+FROM node:22-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build backend
-FROM node:20-alpine AS backend-build
+FROM node:22-alpine AS backend-build
 RUN apk add --no-cache python3 make g++
 WORKDIR /app/backend
 COPY backend/package*.json ./
@@ -16,17 +16,17 @@ COPY backend/ ./
 RUN npm run build
 
 # Stage 3: Build the SAP helper against the ipatool revision pinned in go.mod
-FROM golang:1.25-alpine AS sap-auth-build
-RUN apk add --no-cache gcc musl-dev
+FROM golang:1.26-alpine AS sap-auth-build
+RUN apk add --no-cache gcc g++ musl-dev
 WORKDIR /src
 COPY sap-auth/go.mod sap-auth/go.sum ./
 RUN go mod download
 COPY sap-auth/ ./
-RUN CGO_ENABLED=1 go build -mod=readonly -trimpath -o /out/asspp-sap-auth .
+RUN go run ./tools/overlay && CGO_ENABLED=1 go build -modfile=bridge.mod -mod=readonly -trimpath -o /out/asspp-sap-auth .
 
 # Stage 4: Runtime
-FROM node:20-alpine
-RUN apk add --no-cache zip
+FROM node:22-alpine
+RUN apk add --no-cache zip libstdc++
 WORKDIR /app
 COPY --from=backend-build /app/backend/dist ./dist
 COPY --from=backend-build /app/backend/node_modules ./node_modules

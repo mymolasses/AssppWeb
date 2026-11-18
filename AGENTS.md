@@ -28,19 +28,16 @@
 - `references/ApplePackage/` — optional Swift protocol reference (not tracked in this checkout)
 - Multi-stage Docker build (single container serves both)
 
-## Architecture — SAP authentication and browser-side Store requests
+## Architecture — explicit Browser SAP and Server Anisette modes
 
-This fork already moved Apple authentication to a server-side SAP helper. Do not describe it as a server that never sees Apple credentials.
-
-- Browser: keeps accounts in IndexedDB and POSTs email, password, device ID, optional 2FA code, and cookies to `/api/apple/authenticate` over the site's HTTPS connection.
-- Backend: passes that request through stdin to `asspp-sap-auth`. The helper uses ipatool for Apple's bag, SAP signatures, and authentication. Its keychain and cookie jar are in memory; credentials must not be logged or deliberately persisted by the helper.
-- Browser: continues purchase, download-info, and version requests using libcurl.js WASM TLS through the Wisp proxy. The Wisp relay does not decrypt those streams.
-- Backend: proxies public search/bag data, downloads IPA files, injects SINF/iTunesMetadata, and serves installation manifests.
-- Kbsync: `/api/apple/kbsync` passes only DSID and the per-account device ID to the native helper to generate a blob. Store requests remain in the browser. Successful blobs are cached only in browser memory per DSID/device pair; the backend must not persist them.
-- IPA preparation: the backend-only `prepare-ipa` helper operation normalizes completed Store downloads for OTA streaming using pinned ipatool's ZIP framing. It receives a package path and performs no login or network requests. It has no HTTP route; never forward client-supplied operation/path fields through the authentication routes.
-- Local IPA uploads/details retain `LocalIpaGate`; download-list quick actions must not bypass that gate. The backend checks the local IPA token for uploads and signing analysis.
-
-ipatool owns transient authentication retries (up to three sends for unexpected HTTP 204/404/5xx). The Go adapter must invoke Login only once. Account reauthentication may retain the fork's one fresh-cookie fallback.
+- `frontend/src/apple/browserAuthenticate.ts` and `frontend/src/apple/sap/` track official AssppWeb commit `485be0b`.
+- Never silently fall back between modes. Browser SAP does not POST credentials to backend authentication routes. Reuse its in-memory Authenticator across 2FA submissions.
+- Server Anisette uses ipatool commit `3b02b4c55576562f2a55284cda9db9a4411d3067`, pinned in `sap-auth/go.mod`. The Go helper receives credentials/session data over site HTTPS. Do not claim the server never sees credentials in this mode.
+- Account `authMethod` and `nativeState` are browser-side IndexedDB data and may be included in encrypted backups; preserve per-account GUIDs. Native kbsync cache state is kept only in page memory and cleared on account deletion, never exported or persisted by the server.
+- `sap-auth/tools/overlay` prepares an isolated writable copy of the exactly pinned module and adds the thin `bridge/asspp_web.go.txt` API. It never edits GOMODCACHE. Run `go run ./tools/overlay`, then `go test -modfile=bridge.mod ./...` and `go build -modfile=bridge.mod ./...`.
+- Native download-info, purchasing, versions and metadata call upstream implementations rather than reimplementing their protocol. Serialize native operations per account to preserve rotated state. Backend routes whitelist fields and operations; never forward login passwords to Store-operation RPC.
+- Browser SAP uses official download recovery and purchase handling. Existing pre-migration accounts retain their legacy browser Store path until refreshed. Preserve local IPA gates, sharing, favorites, retention and saved regions during integration.
+- Wrap foreground async operations in `withOperation`; show real waiting state and elapsed time, never fabricated percentages.
 
 ## Reference Implementation
 
@@ -122,7 +119,7 @@ The backend proxies the bag endpoint via `GET /api/bag?guid=<deviceId>` using No
 - `libcurl.js` (WASM) for browser-side TLS 1.3 via Mbed TLS — connects through Wisp protocol
 - `appleRequest()` in `frontend/src/apple/request.ts` wraps `libcurl.fetch` for browser-side Store API calls and forces HTTP/1.1 (`_libcurl_http_version: 1.1`)
 - Bag endpoint (`frontend/src/apple/bag.ts`) uses backend proxy (`/api/bag`) and falls back to `https://auth.itunes.apple.com/auth/v1/native/fast/` when `authenticateAccount` is missing or bag fetch fails
-- Authentication (`frontend/src/apple/authenticate.ts`) calls the backend SAP route; it does not authenticate via Wisp.
+- Authentication (`frontend/src/apple/authenticate.ts`) selects the saved method: Browser SAP authenticates through Wisp; Server Anisette calls the native backend route.
 - Plist build/parse (`frontend/src/apple/plist.ts`) uses native XML builder and browser-native `DOMParser`
 - Cookie helper (`frontend/src/apple/cookies.ts`) — `extractAndMergeCookies(rawHeaders, existingCookies)` replaces the repeated extract-and-merge pattern across all Apple protocol files
 
@@ -205,7 +202,7 @@ cd frontend && npx vitest run   # jsdom environment with fake-indexeddb
 
 ### E2E Tests (Playwright, upstream reference)
 
-The following upstream commands require files/services not present in this checkout. Use the actual frontend/backend unit suites and `cd sap-auth && go test ./... && go build ./...` here; do not report the upstream E2E suite as run.
+The following upstream commands require files/services not present in this checkout. Use the actual frontend/backend unit suites and `cd sap-auth && go run ./tools/overlay && go test -modfile=bridge.mod ./... && go build -modfile=bridge.mod ./...` here; do not report the upstream E2E suite as run.
 
 ```bash
 cd e2e && pnpm test                            # Local (requires Docker on port 8080)

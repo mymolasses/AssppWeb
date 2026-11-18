@@ -60,6 +60,7 @@ describe('Apple SAP authentication route', () => {
         password: 'secret',
         deviceId: 'aabbccddeeff',
       }),
+      expect.any(AbortSignal),
     );
   });
 

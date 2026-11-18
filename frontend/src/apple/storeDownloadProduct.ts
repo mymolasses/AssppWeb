@@ -1,3 +1,5 @@
+import { downloadProduct } from './downloadProduct';
+import { nativeStore, usesNativeStore } from './nativeStore';
 import { fetchBag } from './bag';
 import { extractAndMergeCookies } from './cookies';
 import {
@@ -30,6 +32,12 @@ export async function fetchStoreDownloadProduct(
   app: Software,
   externalVersionId?: string,
 ): Promise<{ dict: Record<string, any>; updatedCookies: typeof account.cookies }> {
+  if (usesNativeStore(account)) {
+    const result = await nativeStore('download-info', account, app, externalVersionId);
+    if (!result.plist) throw new Error('Store returned no download response');
+    return { dict: parsePlist(result.plist) as Record<string, any>, updatedCookies: result.cookies ?? account.cookies };
+  }
+  if (account.authMethod === 'browser') return downloadProduct(account, app, externalVersionId);
   const deviceId = account.deviceIdentifier;
   let cookies = [...account.cookies];
   const bag = await fetchBag(deviceId);

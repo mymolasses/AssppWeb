@@ -1,5 +1,5 @@
-node_modules
-dist
+**/node_modules
+**/dist
 .git
 .github
 *.md
@@ -12,3 +12,8 @@ icon.jpg
 references
 compose*.yml
 .DS_Store
+
+**/.ipatool
+**/bridge.mod
+**/bridge.sum
+**/overlay.json

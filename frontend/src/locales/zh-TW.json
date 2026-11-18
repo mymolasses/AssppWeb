@@ -91,7 +91,8 @@
       "loading": "載入中...",
       "loadDetails": "載入詳情",
       "download": "下載",
-      "downloading": "下載中..."
+      "downloading": "下載中...",
+      "packageDate": "IPA 包内日期"
     }
   },
   "accounts": {
@@ -114,6 +115,7 @@
       "codeHelp": "輸入來自您受信任裝置的驗證碼。",
       "signIn": "登入",
       "verify": "驗證",
+      "retrying": "Apple 暫未回應（HTTP {{status}}），{{seconds}} 秒後重試（第 {{attempt}}/{{attempts}} 次）…",
       "cancel": "取消",
       "authFailed": "認證失敗",
       "addSuccess": "帳號新增成功。"
@@ -142,9 +144,21 @@
     }
   },
   "downloads": {
-    "region": {"unknown":"未知","inferred":"依帳號補齊"},
-    "favorite": {"title":"收藏（免自動清理）","help":"收藏後不會被自動清理。未收藏的套件預設保留 14 天；取消收藏後重新計時。現有套件自本次升級起先保留 14 天。","failed":"儲存收藏失敗，請重試"},
-    "visibility": {"title":"全域可見","help":"預設關閉。開啟後，其他裝置無需登入 Apple 帳號即可在首頁和下載列表看到此 App，並下載、安裝或分享。網站存取密碼仍然有效。","failed":"儲存可見性失敗，請重試","sharedApps":"共享 App"},
+    "region": {
+      "unknown": "未知",
+      "inferred": "依帳號補齊"
+    },
+    "favorite": {
+      "title": "收藏（免自動清理）",
+      "help": "收藏後不會被自動清理。未收藏的套件預設保留 14 天；取消收藏後重新計時。現有套件自本次升級起先保留 14 天。",
+      "failed": "儲存收藏失敗，請重試"
+    },
+    "visibility": {
+      "title": "全域可見",
+      "help": "預設關閉。開啟後，其他裝置無需登入 Apple 帳號即可在首頁和下載列表看到此 App，並下載、安裝或分享。網站存取密碼仍然有效。",
+      "failed": "儲存可見性失敗，請重試",
+      "sharedApps": "共享 App"
+    },
     "title": "下載",
     "new": "新增下載",
     "warning": "安裝包是暫時的，將在伺服器重啟時被清除。請及時下載或安裝。",
@@ -474,7 +488,9 @@
       "missingVersion": "缺少所需的版本資訊",
       "invalidSinf": "無效的 sinf 項目",
       "noSinf": "回應中找不到 sinf",
-      "tooManyRedirects": "重新導向次數過多"
+      "tooManyRedirects": "重新導向次數過多",
+      "versionLookupFailed": "無法查詢帳號所在商店的最新 iOS 版本，請確認應用在該地區可用。",
+      "unexpectedItem": "Apple 回傳的應用或版本與請求不符，已停止下載。"
     },
     "purchase": {
       "paidNotSupported": "不支援購買付費應用程式",
@@ -492,7 +508,9 @@
       "emptyBody": "認證失敗：伺服器傳回 HTTP {{status}} 且回應主體為空",
       "missingAccountInfo": "回應中缺少 accountInfo",
       "missingAddress": "回應中缺少 address",
-      "unknownReason": "未知原因導致認證失敗"
+      "unknownReason": "未知原因導致認證失敗",
+      "transientFailure": "認證失敗：嘗試 {{attempts}} 次後 Apple 仍未回應（HTTP {{statuses}}），請稍後再試。",
+      "retryLater": "認證失敗：Apple 要求等待 {{seconds}} 秒後再試，請稍後再試。"
     }
   },
   "toast": {
@@ -501,6 +519,7 @@
       "downloadSuccess": "下載成功",
       "downloadFailed": "下載失敗",
       "licenseSuccess": "獲取授權成功",
+      "licenseOwned": "已拥有许可证",
       "licenseFailed": "獲取授權失敗",
       "installStarted": "已請求系統安裝",
       "shareAcquired": "連結已獲取",
@@ -514,5 +533,23 @@
     "downloadLimit": {
       "message": "{{appName}}\n應用程式大小 {{size}} MB 超過伺服器限制 {{limit}} MB。\n請聯絡管理員或自行部署後再嘗試。"
     }
+  },
+  "operation": {
+    "login": "正在登录",
+    "purchase": "正在获取许可证",
+    "download": "正在请求下载",
+    "versions": "正在查询历史版本",
+    "metadata": "正在读取版本信息",
+    "wait": "正在与 Apple 通信，请稍候，请勿重复提交。首次准备认证环境可能需要较长时间。",
+    "elapsed": "已等待 {{seconds}} 秒",
+    "retry": "正在重试第 {{attempt}} 次请求，等待 {{seconds}} 秒…",
+    "search": "正在搜索 App"
+  },
+  "authMode": {
+    "label": "登录方式",
+    "browser": "浏览器 SAP",
+    "native": "服务器 Anisette",
+    "help": "浏览器 SAP 直接在浏览器认证；服务器 Anisette 会将登录信息发送给本服务器。不会自动切换方式。",
+    "legacy": "此账号来自旧版本；刷新登录后启用所选认证方式。"
   }
 }

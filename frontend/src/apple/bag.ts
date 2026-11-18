@@ -7,6 +7,7 @@ export { defaultAuthURL, normalizeAuthURL };
 export interface BagOutput {
   authURL: string;
   updateProductURL?: string;
+  updateURL?: string;
   redownloadURL?: string;
   entDownloadURL?: string;
 }
@@ -36,10 +37,10 @@ export async function fetchBag(deviceId: string): Promise<BagOutput> {
     const authURL =
       (dict.authenticateAccount as string | undefined) ??
       (urlBag?.authenticateAccount as string | undefined);
-    const updateProductURL = urlBag?.updateProduct as string | undefined;
-    const redownloadURL = urlBag?.redownloadProduct as string | undefined;
-    const entDownloadURL = urlBag?.volumeStoreDownloadProduct as string | undefined;
-    const downloadEndpoints = { updateProductURL, redownloadURL, entDownloadURL };
+    const updateProductURL = (dict.updateProduct ?? urlBag?.updateProduct) as string | undefined;
+    const redownloadURL = (dict.redownloadProduct ?? urlBag?.redownloadProduct) as string | undefined;
+    const entDownloadURL = (dict.volumeStoreDownloadProduct ?? urlBag?.volumeStoreDownloadProduct) as string | undefined;
+    const downloadEndpoints = { updateProductURL, updateURL: updateProductURL, redownloadURL, entDownloadURL };
 
     if (!authURL) {
       console.warn(

@@ -91,7 +91,8 @@
       "loading": "Загрузка...",
       "loadDetails": "Загрузить детали",
       "download": "Загрузить",
-      "downloading": "Загрузка..."
+      "downloading": "Загрузка...",
+      "packageDate": "IPA package date"
     }
   },
   "accounts": {
@@ -114,6 +115,7 @@
       "codeHelp": "Введите код проверки с вашего доверенного устройства.",
       "signIn": "Войти",
       "verify": "Проверить",
+      "retrying": "Apple не ответил (HTTP {{status}}). Повтор через {{seconds}} с (попытка {{attempt}} из {{attempts}})…",
       "cancel": "Отмена",
       "authFailed": "Ошибка аутентификации",
       "addSuccess": "Аккаунт успешно добавлен."
@@ -142,9 +144,21 @@
     }
   },
   "downloads": {
-    "region": {"unknown":"Неизвестно","inferred":"По данным аккаунта"},
-    "favorite": {"title":"Избранное (не удалять автоматически)","help":"Избранное защищено от автоочистки. Остальные пакеты хранятся 14 дней. Снятие отметки перезапускает срок. Для существующих пакетов предусмотрено 14 дней с обновления.","failed":"Не удалось сохранить избранное."},
-    "visibility": {"title":"Видно всем","help":"По умолчанию выключено. Другие устройства смогут видеть приложение на главной странице и в загрузках, скачивать, устанавливать и делиться без аккаунта Apple. Пароль доступа к сайту остаётся в силе.","failed":"Не удалось сохранить настройку.","sharedApps":"Общие приложения"},
+    "region": {
+      "unknown": "Неизвестно",
+      "inferred": "По данным аккаунта"
+    },
+    "favorite": {
+      "title": "Избранное (не удалять автоматически)",
+      "help": "Избранное защищено от автоочистки. Остальные пакеты хранятся 14 дней. Снятие отметки перезапускает срок. Для существующих пакетов предусмотрено 14 дней с обновления.",
+      "failed": "Не удалось сохранить избранное."
+    },
+    "visibility": {
+      "title": "Видно всем",
+      "help": "По умолчанию выключено. Другие устройства смогут видеть приложение на главной странице и в загрузках, скачивать, устанавливать и делиться без аккаунта Apple. Пароль доступа к сайту остаётся в силе.",
+      "failed": "Не удалось сохранить настройку.",
+      "sharedApps": "Общие приложения"
+    },
     "title": "Загрузки",
     "new": "Новая загрузка",
     "warning": "Пакеты являются временными и будут удалены при перезапуске сервера. Скачивайте или устанавливайте их своевременно.",
@@ -474,7 +488,9 @@
       "missingVersion": "Отсутствует необходимая информация о версии",
       "invalidSinf": "Недействительный элемент sinf",
       "noSinf": "В ответе не найден sinf",
-      "tooManyRedirects": "Слишком много перенаправлений"
+      "tooManyRedirects": "Слишком много перенаправлений",
+      "versionLookupFailed": "Не удалось найти последнюю версию для iOS в магазине этого аккаунта. Проверьте доступность приложения в этом регионе.",
+      "unexpectedItem": "Apple вернула другое приложение или версию. Загрузка остановлена."
     },
     "purchase": {
       "paidNotSupported": "Покупка платных приложений не поддерживается",
@@ -492,7 +508,9 @@
       "emptyBody": "Ошибка аутентификации: сервер вернул HTTP {{status}} с пустым телом",
       "missingAccountInfo": "В ответе отсутствует accountInfo",
       "missingAddress": "В ответе отсутствует address",
-      "unknownReason": "Аутентификация не удалась по неизвестной причине"
+      "unknownReason": "Аутентификация не удалась по неизвестной причине",
+      "transientFailure": "Ошибка аутентификации: Apple не ответил (HTTP {{statuses}}), попыток: {{attempts}}. Повторите попытку позже.",
+      "retryLater": "Ошибка аутентификации: Apple просит подождать {{seconds}} с. Повторите попытку позже."
     }
   },
   "toast": {
@@ -501,6 +519,7 @@
       "downloadSuccess": "Успешная загрузка",
       "downloadFailed": "Ошибка загрузки",
       "licenseSuccess": "Лицензия получена",
+      "licenseOwned": "License already owned",
       "licenseFailed": "Ошибка получения лицензии",
       "installStarted": "Установка запрошена",
       "shareAcquired": "Ссылка получена",
@@ -514,5 +533,23 @@
     "downloadLimit": {
       "message": "{{appName}}\nРазмер приложения {{size}} МБ превышает лимит сервера {{limit}} МБ.\nПожалуйста, свяжитесь с администратором или разверните свой собственный сервер."
     }
+  },
+  "operation": {
+    "login": "Signing in",
+    "purchase": "Acquiring license",
+    "download": "Preparing download",
+    "versions": "Loading version history",
+    "metadata": "Reading version metadata",
+    "wait": "Contacting Apple. Please wait without submitting again. Initial authentication setup can take longer.",
+    "elapsed": "{{seconds}} seconds elapsed",
+    "retry": "Retrying request {{attempt}} after {{seconds}} seconds…",
+    "search": "Searching apps"
+  },
+  "authMode": {
+    "label": "Sign-in method",
+    "browser": "Browser SAP",
+    "native": "Server Anisette",
+    "help": "Browser SAP authenticates in your browser. Server Anisette sends sign-in data to this server. Modes never switch automatically.",
+    "legacy": "This account is from an older version. Refresh sign-in to enable the selected method."
   }
 }

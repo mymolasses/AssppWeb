@@ -99,7 +99,8 @@
       "loading": "Loading...",
       "loadDetails": "Load details",
       "download": "Download",
-      "downloading": "Downloading..."
+      "downloading": "Downloading...",
+      "packageDate": "IPA package date"
     }
   },
   "accounts": {
@@ -124,7 +125,8 @@
       "verify": "Verify",
       "cancel": "Cancel",
       "authFailed": "Authentication failed",
-      "addSuccess": "Account added successfully."
+      "addSuccess": "Account added successfully.",
+      "retrying": "Apple did not respond (HTTP {{status}}). Retrying in {{seconds}}s (attempt {{attempt}} of {{attempts}})…"
     },
     "detail": {
       "title": "Account Details",
@@ -152,9 +154,21 @@
     }
   },
   "downloads": {
-    "region": {"unknown":"Unknown","inferred":"Inferred from account"},
-    "favorite": {"title":"Favorite (keep from cleanup)","help":"Favorites are exempt from automatic cleanup. Other packages are kept for 14 days by default. Unfavoriting restarts the timer. Existing packages get a 14-day grace period from this upgrade.","failed":"Could not save favorite."},
-    "visibility": {"title":"Visible to everyone","help":"Off by default. Other devices can find this app on the home and downloads pages, download, install, and share it without an Apple account. The site access password still applies.","failed":"Could not save visibility. Please retry.","sharedApps":"Shared apps"},
+    "region": {
+      "unknown": "Unknown",
+      "inferred": "Inferred from account"
+    },
+    "favorite": {
+      "title": "Favorite (keep from cleanup)",
+      "help": "Favorites are exempt from automatic cleanup. Other packages are kept for 14 days by default. Unfavoriting restarts the timer. Existing packages get a 14-day grace period from this upgrade.",
+      "failed": "Could not save favorite."
+    },
+    "visibility": {
+      "title": "Visible to everyone",
+      "help": "Off by default. Other devices can find this app on the home and downloads pages, download, install, and share it without an Apple account. The site access password still applies.",
+      "failed": "Could not save visibility. Please retry.",
+      "sharedApps": "Shared apps"
+    },
     "title": "Downloads",
     "new": "New Download",
     "warning": "Packages are temporary and will be cleared on server restart. Download or install promptly.",
@@ -535,7 +549,9 @@
       "missingVersion": "Missing required version information",
       "invalidSinf": "Invalid sinf item",
       "noSinf": "No sinf found in response",
-      "tooManyRedirects": "Too many redirects"
+      "tooManyRedirects": "Too many redirects",
+      "versionLookupFailed": "Unable to resolve the latest iOS version in this account’s storefront. Check app availability in that region.",
+      "unexpectedItem": "Apple returned a different app or version; download stopped."
     },
     "purchase": {
       "paidNotSupported": "Purchasing paid apps is not supported",
@@ -556,7 +572,9 @@
       "missingAccountInfo": "Missing accountInfo in response",
       "missingAddress": "Missing address in response",
       "missingSessionToken": "Login response did not include an App Store session token",
-      "unknownReason": "Authentication failed for an unknown reason"
+      "unknownReason": "Authentication failed for an unknown reason",
+      "transientFailure": "Authentication failed: Apple did not respond after {{attempts}} attempts (HTTP {{statuses}}). Please try again later.",
+      "retryLater": "Authentication failed: Apple asked to wait {{seconds}} seconds before trying again. Please try again later."
     }
   },
   "toast": {
@@ -570,7 +588,8 @@
       "shareAcquired": "Link Acquired",
       "downloadIpaStarted": "Downloading IPA",
       "deleteSuccess": "Delete Success",
-      "downloadLimit": "Size Limit Exceeded"
+      "downloadLimit": "Size Limit Exceeded",
+      "licenseOwned": "License already owned"
     },
     "msg": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}",
     "msgShare": "{{appName}}\n{{userName}} / {{appleId}} - {{country}}\n\nYou can use AirDrop to share it with your friends.",
@@ -578,5 +597,23 @@
     "downloadLimit": {
       "message": "{{appName}}\nApp size {{size}} MB exceeds the server limit of {{limit}} MB.\nPlease contact the administrator or deploy your own instance."
     }
+  },
+  "operation": {
+    "login": "Signing in",
+    "purchase": "Acquiring license",
+    "download": "Preparing download",
+    "versions": "Loading version history",
+    "metadata": "Reading version metadata",
+    "wait": "Contacting Apple. Please wait without submitting again. Initial authentication setup can take longer.",
+    "elapsed": "{{seconds}} seconds elapsed",
+    "retry": "Retrying request {{attempt}} after {{seconds}} seconds…",
+    "search": "Searching apps"
+  },
+  "authMode": {
+    "label": "Sign-in method",
+    "browser": "Browser SAP",
+    "native": "Server Anisette",
+    "help": "Browser SAP authenticates in your browser. Server Anisette sends sign-in data to this server. Modes never switch automatically.",
+    "legacy": "This account is from an older version. Refresh sign-in to enable the selected method."
   }
 }

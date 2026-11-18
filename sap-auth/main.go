@@ -25,17 +25,25 @@ type inputCookie struct {
 }
 
 type request struct {
-	PackagePath     string        `json:"packagePath,omitempty"`
-	Operation       string        `json:"operation,omitempty"`
-	DSID            string        `json:"dsid,omitempty"`
-	Email           string        `json:"email"`
-	Password        string        `json:"password"`
-	AuthCode        string        `json:"authCode,omitempty"`
-	DeviceID        string        `json:"deviceId"`
-	ExistingCookies []inputCookie `json:"existingCookies,omitempty"`
+	Platform        appstore.Platform `json:"platform,omitempty"`
+	CacheState      []byte            `json:"cacheState,omitempty"`
+	Account         *accountResponse  `json:"account,omitempty"`
+	App             appstore.App      `json:"app,omitempty"`
+	VersionID       string            `json:"versionId,omitempty"`
+	NativeState     []byte            `json:"nativeState,omitempty"`
+	PackagePath     string            `json:"packagePath,omitempty"`
+	Operation       string            `json:"operation,omitempty"`
+	DSID            string            `json:"dsid,omitempty"`
+	Email           string            `json:"email"`
+	Password        string            `json:"password"`
+	AuthCode        string            `json:"authCode,omitempty"`
+	DeviceID        string            `json:"deviceId"`
+	ExistingCookies []inputCookie     `json:"existingCookies,omitempty"`
 }
 
 type accountResponse struct {
+	StoreCountry                string        `json:"storeCountry,omitempty"`
+	NativeState                 []byte        `json:"nativeState,omitempty"`
 	Email                       string        `json:"email"`
 	AppleID                     string        `json:"appleId"`
 	Store                       string        `json:"store"`
@@ -49,12 +57,21 @@ type accountResponse struct {
 }
 
 type response struct {
-	Prepared     bool             `json:"prepared,omitempty"`
-	KBSync       string           `json:"kbsync,omitempty"`
-	Account      *accountResponse `json:"account,omitempty"`
-	Error        string           `json:"error,omitempty"`
-	CodeRequired bool             `json:"codeRequired,omitempty"`
-	Cookies      []inputCookie    `json:"cookies,omitempty"`
+	StoreCountry string            `json:"storeCountry,omitempty"`
+	CacheState   []byte            `json:"cacheState,omitempty"`
+	NativeState  []byte            `json:"nativeState,omitempty"`
+	Plist        string            `json:"plist,omitempty"`
+	ErrorCode    string            `json:"errorCode,omitempty"`
+	AlreadyOwned bool              `json:"alreadyOwned,omitempty"`
+	Storefront   string            `json:"storefront,omitempty"`
+	Versions     []string          `json:"versions,omitempty"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
+	Prepared     bool              `json:"prepared,omitempty"`
+	KBSync       string            `json:"kbsync,omitempty"`
+	Account      *accountResponse  `json:"account,omitempty"`
+	Error        string            `json:"error,omitempty"`
+	CodeRequired bool              `json:"codeRequired,omitempty"`
+	Cookies      []inputCookie     `json:"cookies"`
 }
 
 type memoryKeychain struct{}
@@ -89,6 +106,10 @@ func main() {
 		_ = encoder.Encode(kbsyncResponse(payload, generateDownloadKBSync))
 		return
 	}
+	if payload.Operation == "warmup" {
+		_ = encoder.Encode(warmupRuntime())
+		return
+	}
 	if payload.Operation == "prepare-ipa" {
 		if err := prepareIPA(payload.PackagePath); err != nil {
 			_ = encoder.Encode(response{Error: "IPA streaming preparation failed"})
@@ -97,13 +118,13 @@ func main() {
 		}
 		return
 	}
-	if payload.Operation != "" {
+	if payload.Operation != "" && payload.Operation != "download-info" && payload.Operation != "purchase" && payload.Operation != "versions" && payload.Operation != "metadata" {
 		_ = encoder.Encode(response{Error: "unsupported helper operation"})
 		return
 	}
 
 	payload.DeviceID = strings.ToLower(strings.TrimSpace(payload.DeviceID))
-	if payload.Email == "" || payload.Password == "" || len(payload.DeviceID) != 12 {
+	if (payload.Operation == "" && (payload.Email == "" || payload.Password == "")) || len(payload.DeviceID) != 12 {
 		_ = encoder.Encode(response{Error: "email, password, and a 12-character device ID are required"})
 		return
 	}
@@ -116,16 +137,33 @@ func main() {
 	cookieJar := &memoryCookieJar{Jar: jar}
 	seedCookies(cookieJar, payload.ExistingCookies)
 
+	keychain := &volatileKeychain{values: make(map[string][]byte)}
+	state := payload.NativeState
+	if payload.Account != nil {
+		state = payload.Account.NativeState
+	}
+	if len(state) > 0 {
+		_ = keychain.Set("anisette-v4", state)
+	}
+	if len(payload.CacheState) > 0 {
+		_ = keychain.Set("kbsync-v1", payload.CacheState)
+	}
 	store := appstore.NewAppStore(appstore.Args{
 		CookieJar:       cookieJar,
 		OperatingSystem: operatingsystem.New(),
-		Keychain:        memoryKeychain{},
+		Keychain:        keychain,
 		Machine:         fixedMachine{deviceID: payload.DeviceID},
 	})
 
+	if payload.Operation != "" {
+		_ = encoder.Encode(storeOperation(store, payload, keychain, cookieJar))
+		return
+	}
 	result, err := login(store, payload)
 	if err != nil {
-		_ = encoder.Encode(authenticationFailure(err, cookieJar))
+		failure := authenticationFailure(err, cookieJar)
+		failure.NativeState, _ = keychain.Get("anisette-v4")
+		_ = encoder.Encode(failure)
 		return
 	}
 
@@ -143,6 +181,8 @@ func main() {
 		DeviceIdentifier:            payload.DeviceID,
 		Pod:                         account.Pod,
 	}
+	output.NativeState, _ = keychain.Get("anisette-v4")
+	output.StoreCountry, _ = appstore.AssppStorefrontCountry(store, account.StoreFront)
 	_ = encoder.Encode(response{Account: &output})
 }
 

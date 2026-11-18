@@ -28,6 +28,8 @@ export function useDownloadAction() {
       undefined,
       account.cookies,
       account.deviceIdentifier,
+      account.authMethod ?? 'native',
+      account.nativeState,
     );
     await updateAccount(renewed);
     return renewed;
@@ -118,7 +120,7 @@ export function useDownloadAction() {
     addToast(
       t("toast.msg", { appName, ...ctx }),
       "success",
-      t("toast.title.licenseSuccess"),
+      t(result.alreadyOwned ? "toast.title.licenseOwned" : "toast.title.licenseSuccess"),
     );
   }
 

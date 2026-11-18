@@ -1,0 +1,30 @@
+// This thin adapter is compiled into an isolated copy of the exactly pinned
+// upstream package. All recovery, signing and validation stay in ipatool.
+package appstore
+
+import (
+	"context"
+	"errors"
+	"howett.net/plist"
+	"strings"
+)
+
+func AssppDownloadProduct(client AppStore, ctx context.Context, account Account, app App, guid, version string, platform Platform) ([]byte, error) {
+	implementation, ok := client.(*appstore)
+	if !ok {
+		return nil, errors.New("unsupported Store client")
+	}
+	result, _, err := implementation.sendDownloadProduct(ctx, account, app, strings.ToUpper(guid), version, platform)
+	if err != nil {
+		return nil, err
+	}
+	return plist.Marshal(result.Data, plist.XMLFormat)
+}
+
+func AssppStorefrontCountry(client AppStore, storefront string) (string, error) {
+	implementation, ok := client.(*appstore)
+	if !ok {
+		return "", errors.New("unsupported Store client")
+	}
+	return implementation.countryCodeFromStoreFront(storefront)
+}

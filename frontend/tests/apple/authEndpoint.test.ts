@@ -19,10 +19,10 @@ describe("apple/authEndpoint", () => {
     ).toBe("https://auth.itunes.apple.com/auth/v1/native/fast/");
   });
 
-  it("keeps legacy auth endpoints unchanged", () => {
+  it("normalizes legacy auth endpoint trailing slash", () => {
     const endpoint =
       "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate";
-    expect(normalizeAuthURL(endpoint)).toBe(endpoint);
+    expect(normalizeAuthURL(endpoint)).toBe(endpoint + "/");
   });
 
   it("extracts native auth endpoints from escaped response text", () => {

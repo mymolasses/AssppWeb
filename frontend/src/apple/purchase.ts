@@ -1,7 +1,9 @@
+import { nativeStore, usesNativeStore, NativeStoreError } from './nativeStore';
+import { withOperation } from '../store/operations';
+import i18n from '../i18n';
 import { appleRequest } from './request';
 import { buildPlist, parsePlist } from './plist';
 import { extractAndMergeCookies } from './cookies';
-import i18n from '../i18n';
 import { purchaseAPIHost } from './config';
 import type { Account, Software } from '../types';
 
@@ -15,41 +17,33 @@ export class PurchaseError extends Error {
   }
 }
 
-export function isPurchaseAuthExpired(error: unknown): boolean {
-  return (
-    error instanceof PurchaseError &&
-    (error.code === '2034' || error.code === '2042' || error.code === '1008')
-  );
+export interface PurchaseResult {
+  updatedCookies: Account['cookies'];
+  /** Apple reported the account already holds this license (failureType 5002). */
+  alreadyOwned: boolean;
 }
 
-export async function purchaseApp(
-  account: Account,
-  app: Software,
-): Promise<{ updatedCookies: typeof account.cookies }> {
+async function purchaseAppInternal(account: Account, app: Software): Promise<PurchaseResult> {
   if ((app.price ?? 0) > 0) {
     throw new PurchaseError(i18n.t('errors.purchase.paidNotSupported'));
   }
 
+  if (usesNativeStore(account)) {
+    const result = await nativeStore('purchase', account, app);
+    return { updatedCookies: result.cookies ?? account.cookies, alreadyOwned: result.alreadyOwned === true };
+  }
   try {
     return await purchaseWithParams(account, app, 'STDQ');
   } catch (e) {
     // Rely on error code instead of translated message string to prevent matching issues
-    if (
-      app.kind !== 'mac-software' &&
-      e instanceof PurchaseError &&
-      e.code === '2059'
-    ) {
+    if (app.kind !== 'mac-software' && e instanceof PurchaseError && e.code === '2059') {
       return await purchaseWithParams(account, app, 'GAME');
     }
     throw e;
   }
 }
 
-async function purchaseWithParams(
-  account: Account,
-  app: Software,
-  pricingParameters: string,
-): Promise<{ updatedCookies: typeof account.cookies }> {
+async function purchaseWithParams(account: Account, app: Software, pricingParameters: string): Promise<PurchaseResult> {
   const deviceId = account.deviceIdentifier;
   const host = purchaseAPIHost(account.pod);
   const path = '/WebObjects/MZFinance.woa/wa/buyProduct';
@@ -75,9 +69,7 @@ async function purchaseWithParams(
     'Content-Type': 'application/x-apple-plist',
     'iCloud-DSID': account.directoryServicesIdentifier,
     'X-Dsid': account.directoryServicesIdentifier,
-    'X-Apple-Store-Front': `${account.store}-${
-      app.kind === 'mac-software' ? '6' : '1'
-    }`,
+    'X-Apple-Store-Front': `${account.store}-1`,
     'X-Token': account.passwordToken,
   };
 
@@ -90,11 +82,7 @@ async function purchaseWithParams(
     cookies: account.cookies,
   });
 
-  const updatedCookies = extractAndMergeCookies(
-    response.rawHeaders,
-    account.cookies,
-    host,
-  );
+  const updatedCookies = extractAndMergeCookies(response.rawHeaders, account.cookies);
 
   const dict = parsePlist(response.body) as Record<string, any>;
 
@@ -102,55 +90,38 @@ async function purchaseWithParams(
     const failureType = String(dict.failureType);
     const customerMessage = dict.customerMessage as string | undefined;
     switch (failureType) {
+      // buyProduct answers an already-licensed app with 5002 and the generic
+      // "An unknown error has occurred"; the license exists, so this succeeds.
+      case '5002':
+        return { updatedCookies, alreadyOwned: true };
       case '2059':
         throw new PurchaseError(i18n.t('errors.purchase.unavailable'), '2059');
       case '2034':
       case '2042':
-      case '1008':
-        throw new PurchaseError(
-          i18n.t('errors.purchase.passwordExpired'),
-          failureType,
-        );
-      case '5002':
-        return { updatedCookies };
+        throw new PurchaseError(i18n.t('errors.purchase.passwordExpired'), failureType);
       default: {
         if (customerMessage === 'Your password has changed.') {
-          throw new PurchaseError(
-            i18n.t('errors.purchase.passwordExpired'),
-            failureType,
-          );
+          throw new PurchaseError(i18n.t('errors.purchase.passwordExpired'), failureType);
         }
         if (customerMessage === 'Subscription Required') {
-          throw new PurchaseError(
-            i18n.t('errors.purchase.subscriptionRequired'),
-            failureType,
-          );
+          throw new PurchaseError(i18n.t('errors.purchase.subscriptionRequired'), failureType);
         }
         // Check for terms page action
         const action = dict.action as Record<string, any> | undefined;
         if (action) {
           const actionUrl = (action.url || action.URL) as string | undefined;
           if (actionUrl && actionUrl.endsWith('termsPage')) {
-            throw new PurchaseError(
-              i18n.t('errors.purchase.termsRequired', { url: actionUrl }),
-              failureType,
-            );
+            throw new PurchaseError(i18n.t('errors.purchase.termsRequired', { url: actionUrl }), failureType);
           }
         }
 
         // Handle unknown error specific fallback mappings
         let msg = customerMessage;
-        if (
-          msg === 'An unknown error has occurred' ||
-          msg === 'An unknown error has occurred.'
-        ) {
+        if (msg === 'An unknown error has occurred' || msg === 'An unknown error has occurred.') {
           msg = i18n.t('errors.purchase.unknownError');
         }
 
-        throw new PurchaseError(
-          msg ?? i18n.t('errors.purchase.failed', { failureType }),
-          failureType,
-        );
+        throw new PurchaseError(msg ?? i18n.t('errors.purchase.failed', { failureType }), failureType);
       }
     }
   }
@@ -162,5 +133,15 @@ async function purchaseWithParams(
     throw new PurchaseError(i18n.t('errors.purchase.failedGeneral'));
   }
 
-  return { updatedCookies };
+  return { updatedCookies, alreadyOwned: false };
+}
+
+export function isPurchaseAuthExpired(error: unknown): boolean {
+  return (
+    (error instanceof PurchaseError || error instanceof NativeStoreError) &&
+    ['2034', '2042', '1008'].includes(error.code ?? '')
+  );
+}
+export function purchaseApp(account: Account, app: Software) {
+  return withOperation('purchase', () => purchaseAppInternal(account, app));
 }

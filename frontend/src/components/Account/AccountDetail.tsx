@@ -6,7 +6,7 @@ import Spinner from '../common/Spinner';
 import Alert from '../common/Alert';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useToastStore } from '../../store/toast';
-import { authenticate, AuthenticationError } from '../../apple/authenticate';
+import { authenticate, AuthenticationError, clearAuthenticationSession } from '../../apple/authenticate';
 import { getErrorMessage } from '../../utils/error';
 import {
   generateDeviceId,
@@ -28,6 +28,7 @@ export default function AccountDetail() {
   } = useAccounts();
   const addToast = useToastStore((s) => s.addToast);
 
+  const [chosenMethod, setChosenMethod] = useState<'browser' | 'native'>();
   const [showDelete, setShowDelete] = useState(false);
   const [reauthing, setReauthing] = useState(false);
   const [reauthCode, setReauthCode] = useState('');
@@ -39,6 +40,7 @@ export default function AccountDetail() {
 
   useEffect(() => {
     loadAccounts();
+    setChosenMethod(undefined);
     setAuthCookies(undefined);
     setAuthDeviceId(undefined);
     setNeedsCode(false);
@@ -100,6 +102,8 @@ export default function AccountDetail() {
         code,
         cookies,
         deviceId,
+        chosenMethod ?? currentAccount.authMethod ?? 'native',
+        currentAccount.nativeState,
       );
       await updateAccount(updated);
       setNeedsCode(false);
@@ -188,6 +192,7 @@ export default function AccountDetail() {
       <div className="max-w-2xl space-y-6">
         <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10 sm:p-6">
           <dl className="divide-y divide-gray-100 dark:divide-gray-800">
+            <DetailRow label={t('authMode.label')} value={account.authMethod ? t('authMode.' + account.authMethod) : t('authMode.native')} />
             <DetailRow
               label={t('accounts.detail.name')}
               value={`${account.firstName} ${account.lastName}`}
@@ -218,6 +223,20 @@ export default function AccountDetail() {
           </dl>
         </section>
 
+        <section className="rounded-3xl bg-white p-5 ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10">
+          <label htmlFor="reauth-method" className="mb-2 block text-sm font-medium">{t('authMode.label')}</label>
+          <select id="reauth-method" disabled={reauthing || needsCode} value={chosenMethod ?? account.authMethod ?? 'native'}
+            className="w-full rounded-xl bg-gray-100 p-3 text-base dark:bg-gray-800" onChange={(e) => {
+              clearAuthenticationSession(account.deviceIdentifier);
+              setChosenMethod(e.target.value as 'browser' | 'native');
+              setAuthCookies(undefined); setNeedsCode(false); setReauthCode(''); setFreshReauth(false);
+            }}>
+            <option value="browser">{t('authMode.browser')}</option>
+            <option value="native">{t('authMode.native')}</option>
+          </select>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('authMode.help')}</p>
+          {!account.authMethod && <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{t('authMode.legacy')}</p>}
+        </section>
         {reauthError && <Alert type="error">{reauthError}</Alert>}
         {needsCode && (
           <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10 sm:p-6">

@@ -9,6 +9,14 @@ export function normalizeAuthURL(...authURLs: Array<string | undefined>): string
     const authURL = rawAuthURL?.trim();
     if (!authURL) continue;
 
+    try {
+      const legacy = new URL(authURL);
+      if (/^(?:buy|p\d+-buy)\.itunes\.apple\.com$/.test(legacy.hostname) &&
+          /^\/WebObjects\/MZFinance\.woa\/wa\/authenticate\/*$/.test(legacy.pathname)) {
+        legacy.pathname = '/WebObjects/MZFinance.woa/wa/authenticate/';
+        return legacy.toString();
+      }
+    } catch { /* Preserve the established invalid-URL behavior below. */ }
     const nativeAuthURL = normalizeNativeAuthURL(authURL);
     if (nativeAuthURL) return nativeAuthURL;
 

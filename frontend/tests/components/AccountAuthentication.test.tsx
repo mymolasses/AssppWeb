@@ -43,7 +43,7 @@ describe('two-step account authentication', () => {
     await waitFor(() => expect(mocks.save).toHaveBeenCalledWith(account));
     expect(vi.mocked(authenticate).mock.calls[1]).toEqual([
       account.email, account.password, '123456', cookies,
-      vi.mocked(authenticate).mock.calls[0][4],
+      vi.mocked(authenticate).mock.calls[0][4], 'native',
     ]);
   });
 
@@ -60,7 +60,7 @@ describe('two-step account authentication', () => {
     await screen.findByText('HTTP 403');
     expect(mocks.authenticate).toHaveBeenCalledTimes(2);
     expect(mocks.authenticate.mock.calls[1]).toEqual([
-      account.email, account.password, '123456', cookies, account.deviceIdentifier,
+      account.email, account.password, '123456', cookies, account.deviceIdentifier, 'native', undefined,
     ]);
     expect(mocks.save).not.toHaveBeenCalled();
   });

@@ -27,8 +27,11 @@ async function fetchRange(url: string, start: number, length: number) {
       continue;
     }
     const match = response.headers.get('content-range')?.match(/^bytes (\d+)-(\d+)\/(\d+)$/);
+    const encoding = response.headers.get('content-encoding');
     if (response.status !== 206 || !match || Number(match[1]) !== start ||
-        Number(match[2]) !== start + length - 1) {
+        Number(match[2]) !== start + length - 1 ||
+        !Number.isSafeInteger(Number(match[3])) || Number(match[3]) <= start + length - 1 ||
+        (encoding !== null && encoding.toLowerCase() !== 'identity')) {
       await response.body?.cancel();
       throw new Error('Invalid package Range response');
     }
@@ -47,18 +50,29 @@ async function fetchRange(url: string, start: number, length: number) {
 }
 
 class PackageReader extends Reader {
+  private windowStart = 0;
+  private window = Buffer.alloc(0);
   private remaining = 16 * 1024 * 1024;
   private requests = 0;
   private deadline = Date.now() + 60000;
   constructor(private url: string, private size: number) { super(); }
   async _read(start: number, length: number): Promise<Buffer> {
-    this.remaining -= length;
+    if (start >= this.windowStart && start + length <= this.windowStart + this.window.length) {
+      return this.window.subarray(start - this.windowStart, start - this.windowStart + length);
+    }
+    // Match ipatool's bounded read-ahead: ZIP readers otherwise turn small
+    // central-directory reads into hundreds of network round trips.
+    const ahead = this.size >= 4 * 1024 * 1024 ? 1024 * 1024 : this.size >= 256 * 1024 ? 64 * 1024 : 0;
+    const fetched = Math.min(this.size - start, Math.max(length, ahead));
+    this.remaining -= fetched;
     if (this.remaining < 0 || ++this.requests > 256 || Date.now() > this.deadline) {
       throw new Error('Package metadata read limit exceeded');
     }
-    const result = await fetchRange(this.url, start, length);
+    const result = await fetchRange(this.url, start, fetched);
     if (result.size !== this.size) throw new Error('Package size changed');
-    return result.data;
+    this.windowStart = start;
+    this.window = result.data;
+    return result.data.subarray(0, length);
   }
   _createReadStream(start: number, length: number): Readable {
     const reader = this;

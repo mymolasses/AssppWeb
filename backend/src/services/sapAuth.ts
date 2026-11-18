@@ -12,6 +12,7 @@ export interface SAPAuthCookie {
 }
 
 export interface SAPAuthRequest {
+  nativeState?: string;
   email: string;
   password: string;
   authCode?: string;
@@ -20,6 +21,7 @@ export interface SAPAuthRequest {
 }
 
 export interface SAPAuthAccount {
+  nativeState?: string;
   email: string;
   appleId: string;
   store: string;
@@ -33,6 +35,7 @@ export interface SAPAuthAccount {
 }
 
 export interface SAPAuthResult {
+  nativeState?: string;
   account?: SAPAuthAccount;
   error?: string;
   codeRequired?: boolean;
@@ -51,10 +54,8 @@ export interface SAPKBSyncResult {
 
 const MAX_HELPER_OUTPUT_BYTES = 1024 * 1024;
 
-export function runSAPAuthentication(
-  input: SAPAuthRequest,
-): Promise<SAPAuthResult> {
-  return runSAPHelper(input);
+export function runSAPAuthentication(input: SAPAuthRequest, signal?: AbortSignal): Promise<SAPAuthResult> {
+  return runSAPHelper(input, signal);
 }
 
 export function runSAPKBSync(input: SAPKBSyncRequest): Promise<SAPKBSyncResult> {
@@ -66,16 +67,21 @@ export async function prepareIpaForOTA(packagePath: string): Promise<void> {
   if (!result.prepared || result.error) throw new Error('IPA streaming preparation failed');
 }
 
-function runSAPHelper(
-  input: SAPAuthRequest | (SAPKBSyncRequest & { operation: 'kbsync' }) | { operation: 'prepare-ipa'; packagePath: string },
-): Promise<SAPAuthResult & SAPKBSyncResult & { prepared?: boolean }> {
+function runSAPChild(
+  input:
+    | SAPAuthRequest
+    | (SAPKBSyncRequest & { operation: 'kbsync' })
+    | { operation: 'prepare-ipa'; packagePath: string }
+    | Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<SAPAuthResult & SAPKBSyncResult & { prepared?: boolean; [key: string]: unknown }> {
   return new Promise((resolve, reject) => {
     const child = spawn(config.sapAuthHelperPath, [], {
+      signal,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        XDG_CACHE_HOME:
-          process.env.XDG_CACHE_HOME || `${config.dataDir}/cache`,
+        XDG_CACHE_HOME: process.env.XDG_CACHE_HOME || `${config.dataDir}/cache`,
       },
     });
 
@@ -115,15 +121,15 @@ function runSAPHelper(
         if (!stdout.trim()) {
           reject(
             new Error(
-              code === 0
-                ? 'SAP authentication helper returned no response'
-                : `SAP authentication helper failed${stderr.trim() ? `: ${stderr.trim()}` : ''}`,
+              code === 0 ? 'SAP authentication helper returned no response' : 'Apple helper failed; retry the request',
             ),
           );
           return;
         }
         try {
-          resolve(JSON.parse(stdout) as SAPAuthResult & SAPKBSyncResult & { prepared?: boolean });
+          resolve(
+            JSON.parse(stdout) as SAPAuthResult & SAPKBSyncResult & { prepared?: boolean; [key: string]: unknown },
+          );
         } catch {
           reject(new Error('SAP authentication helper returned invalid JSON'));
         }
@@ -132,4 +138,28 @@ function runSAPHelper(
 
     child.stdin.end(JSON.stringify(input));
   });
+}
+
+let activeHelpers = 0;
+const waitingHelpers: Array<() => void> = [];
+export async function runSAPHelper(
+  input: Parameters<typeof runSAPChild>[0],
+  signal?: AbortSignal,
+): ReturnType<typeof runSAPChild> {
+  if (signal?.aborted) throw new Error('Apple request cancelled');
+  if (waitingHelpers.length >= 16) throw new Error('Apple helper is busy; try again shortly');
+  await new Promise<void>((resolve) => {
+    if (activeHelpers < 2) {
+      activeHelpers++;
+      resolve();
+    } else waitingHelpers.push(resolve);
+  });
+  try {
+    if (signal?.aborted) throw new Error('Apple request cancelled');
+    return await runSAPChild(input, signal);
+  } finally {
+    const next = waitingHelpers.shift();
+    if (next) next();
+    else activeHelpers--;
+  }
 }

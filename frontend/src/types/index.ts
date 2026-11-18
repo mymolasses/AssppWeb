@@ -31,6 +31,9 @@ export interface Cookie {
 }
 
 export interface Account {
+  authMethod?: 'browser' | 'native';
+  nativeState?: string;
+  storeCountry?: string;
   email: string;
   password: string;
   appleId: string;
@@ -89,7 +92,7 @@ export interface DownloadOutput {
 export interface VersionMetadata {
   displayVersion: string;
   date: string;
-  dateSource: 'file-modified';
+  dateSource: 'file-modified' | 'package';
 }
 
 export interface DownloadTask {
@@ -104,13 +107,7 @@ export interface DownloadTask {
   displayName?: string;
   originalFileName?: string;
   accountHash: string;
-  status:
-    | "pending"
-    | "downloading"
-    | "paused"
-    | "injecting"
-    | "completed"
-    | "failed";
+  status: 'pending' | 'downloading' | 'paused' | 'injecting' | 'completed' | 'failed';
   progress: number;
   speed: string;
   error?: string;

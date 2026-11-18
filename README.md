@@ -8,9 +8,24 @@ A web-based tool for acquiring and installing iOS apps outside the App Store. Au
 
 ## Authentication architecture in this fork
 
-This fork uses a server-side ipatool SAP helper for Apple ID authentication. During login and reauthentication, your email, password, optional verification code, and cookies are sent to this instance over HTTPS. The helper keeps its account/keychain and cookies in memory; it caches SAP runtime assets separately under `/data/cache`.
+This fork offers two explicit sign-in methods:
 
-After login, purchase, download-info, and version requests still use browser-side libcurl.js WASM TLS through the Wisp relay. The backend downloads and prepares IPA files and serves installation links. Self-host this fork or use an instance whose operator you trust, and use HTTPS.
+- **Browser SAP** uses the official AssppWeb browser implementation. SAP setup,
+  signatures and verification sessions stay in browser memory; sign-in credentials
+  are not POSTed to backend authentication endpoints in this mode.
+- **Server Anisette** uses the pinned current ipatool runtime through a Go helper.
+  Sign-in credentials and subsequent Store session data are sent to this server
+  over HTTPS. Use only a self-hosted or trusted instance. The helper does not log
+  or deliberately persist credentials; public runtime assets are cached separately.
+
+The method is saved per account and never changes automatically. Refresh an old
+account once to prepare the new runtime or explicitly select Browser SAP. Account
+GUIDs and encrypted import/export remain intact. Anisette state lives with the
+browser's account record; transient kbsync caches are not included in backups.
+
+Downloads, licenses and version queries use the chosen mode. Existing shared
+packages, favorites, retention rules, saved regions and local IPA protection remain
+supported. User-triggered operations show a loading dialog and elapsed time.
 
 See [UPSTREAM_SYNC.md](UPSTREAM_SYNC.md) for the exact upstream revisions and integration scope.
 

@@ -1,3 +1,5 @@
+import { withOperation } from '../store/operations';
+import { NativeStoreError } from './nativeStore';
 import { buildPlist } from './plist';
 import { fetchStoreDownloadProduct } from './storeDownloadProduct';
 import i18n from '../i18n';
@@ -15,7 +17,7 @@ export class DownloadError extends Error {
 
 export function isDownloadAuthExpired(error: unknown): boolean {
   return (
-    error instanceof DownloadError &&
+    (error instanceof DownloadError || error instanceof NativeStoreError) &&
     (error.code === '2034' ||
       error.code === '2042' ||
       error.code === '1008' ||
@@ -23,7 +25,7 @@ export function isDownloadAuthExpired(error: unknown): boolean {
   );
 }
 
-export async function getDownloadInfo(
+async function getDownloadInfoInternal(
   account: Account,
   app: Software,
   externalVersionId?: string,
@@ -149,4 +151,8 @@ function base64FromBytes(bytes: Uint8Array): string {
     binary += String.fromCharCode(...chunk);
   }
   return btoa(binary);
+}
+
+export function getDownloadInfo(account: Account, app: Software, externalVersionId?: string) {
+  return withOperation('download', () => getDownloadInfoInternal(account, app, externalVersionId));
 }

@@ -29,7 +29,7 @@ describe('apple/bag', () => {
     const result = await fetchBag('aabbccddeeff');
 
     expect(result.authURL).toBe(
-      'https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate',
+      'https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate/',
     );
   });
 
@@ -152,10 +152,10 @@ describe('apple/bag', () => {
       ).toBe('https://auth.itunes.apple.com/auth/v1/native/fast/');
     });
 
-    it('leaves legacy endpoints on other hosts unchanged', () => {
+    it('normalizes legacy finance endpoints', () => {
       const legacy =
         'https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate';
-      expect(normalizeAuthURL(legacy)).toBe(legacy);
+      expect(normalizeAuthURL(legacy)).toBe(legacy + '/');
     });
   });
 });

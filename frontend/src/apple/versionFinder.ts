@@ -1,7 +1,8 @@
+import { withOperation } from '../store/operations';
 import { fetchStoreDownloadProduct } from './storeDownloadProduct';
 import type { Account, Software } from '../types';
 
-export async function listVersions(
+async function listVersionsInternal(
   account: Account,
   app: Software,
 ): Promise<{ versions: string[]; updatedCookies: typeof account.cookies }> {
@@ -31,4 +32,8 @@ export async function listVersions(
   }
 
   return { versions, updatedCookies };
+}
+
+export function listVersions(account: Account, app: Software) {
+  return withOperation('versions', () => listVersionsInternal(account, app));
 }
