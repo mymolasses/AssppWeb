@@ -15,8 +15,10 @@
 
 ## Release delivery
 
+- User-authorized project changes may be pushed directly to main. Do not trigger image builds on main pushes.
 - Publish server Docker images for `linux/amd64` only; do not add ARM64 builds or QEMU setup.
 - Publish images only from version tags. Keep frontend, backend and Go validation before publication and preserve build caches.
+- Every version update must include a matching CHANGELOG.md entry and version tag. After the image is successfully published, create/update its GitHub Release with that version's changelog.
 
 ## TypeScript Code Style
 
