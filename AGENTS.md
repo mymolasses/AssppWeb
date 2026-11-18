@@ -13,6 +13,11 @@
 - Before pushing, verify both fields with `git log -1 --format='%an <%ae> | %cn <%ce>'`. Both must be `Codex <noreply@openai.com>`.
 - Any persistent identity configuration must be repository-local; do not change the user's global Git identity.
 
+## Release delivery
+
+- Publish server Docker images for `linux/amd64` only; do not add ARM64 builds or QEMU setup.
+- Publish images only from version tags. Keep frontend, backend and Go validation before publication and preserve build caches.
+
 ## TypeScript Code Style
 
 - **Indentation**: 2 spaces
